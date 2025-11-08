@@ -191,7 +191,7 @@
     "dateFormat": "Formato de Fecha",
     "timeFormat": "Formato de Hora",
     "currency": "Moneda",
-    "emailNotifications": "Notificaciones por Correo",
+    "emailNotifications": "Notificaciones por Email",
     "pushNotifications": "Notificaciones Push",
     "taskReminders": "Recordatorios de Tareas",
     "enableTwoFactor": "Activar Autenticación de Dos Factores",
@@ -202,11 +202,58 @@
     "theme": "Tema",
     "themeLight": "Claro",
     "themeDark": "Oscuro",
-    "themeAuto": "Auto (Sistema)",
+    "themeAuto": "Automático",
     "passwordMismatch": "Las contraseñas no coinciden",
     "passwordUpdated": "Contraseña actualizada con éxito",
     "passwordUpdateError": "Error al actualizar la contraseña",
-    "syncSettings": "Configuración de sincronización actualizada"
+    "syncSettings": "Configuración de sincronización actualizada",
+    "googleCalendarAuthInfo": "Por favor autorice el acceso a su Google Calendar en la nueva ventana",
+    "googleCalendarConnectError": "Error al conectar con Google Calendar",
+    "googleCalendarDisconnected": "Google Calendar desconectado",
+    "googleCalendarDisconnectError": "Error al desconectar de Google Calendar",
+    "calendarSyncUpdated": "Sincronización de calendario actualizada",
+    "calendarSyncUpdateError": "Error al actualizar la sincronización del calendario",
+    "stripeUpdated": "Configuración de Stripe actualizada",
+    "stripeUpdateError": "Error al actualizar Stripe",
+    "stripeTestSuccess": "Conexión de Stripe probada exitosamente",
+    "stripeTestError": "Error al probar la conexión de Stripe",
+    "stripeDisabled": "Stripe desactivado",
+    "stripeDisableError": "Error al desactivar Stripe",
+    "passwordUpdateSuccess": "Contraseña actualizada exitosamente",
+    "connected": "Conectado",
+    "notConnected": "No Conectado",
+    "calendarId": "ID del Calendario",
+    "tokenExpires": "Token expira",
+    "enableCalendarSync": "Activar sincronización del calendario",
+    "enableCalendarSyncDescription": "Sincronizar automáticamente sus eventos",
+    "disconnecting": "Desconectando...",
+    "disconnectGoogleCalendar": "Desconectar Google Calendar",
+    "googleCalendarDescription": "Conecte su Google Calendar para sincronizar automáticamente sus eventos",
+    "connecting": "Conectando...",
+    "connectGoogleCalendar": "Conectar Google Calendar",
+    "stripeConfigured": "Stripe configurado y activo",
+    "publishableKey": "Clave Pública",
+    "webhookConfiguration": "Configuración del Webhook",
+    "webhookUrl": "URL del Webhook",
+    "requiredEvents": "Eventos Requeridos",
+    "testing": "Probando...",
+    "testConnection": "Probar Conexión",
+    "updateSettings": "Actualizar Configuración",
+    "confirmDisableStripe": "¿Está seguro de que desea desactivar Stripe?",
+    "disabling": "Desactivando...",
+    "disableStripe": "Desactivar Stripe",
+    "stripeDescription": "Configure Stripe para aceptar pagos en línea en sus facturas",
+    "secretKey": "Clave Secreta",
+    "keepSecretHint": "Mantenga esto en secreto y nunca lo comparta",
+    "webhookSecret": "Secret del Webhook",
+    "webhookSecretHint": "Obtenga esto desde la configuración de webhooks de Stripe",
+    "saving": "Guardando...",
+    "saveStripeSettings": "Guardar Configuración de Stripe",
+    "currentPassword": "Contraseña Actual",
+    "newPassword": "Nueva Contraseña",
+    "confirmNewPassword": "Confirmar Nueva Contraseña",
+    "googleCalendarIntegration": "Integración con Google Calendar",
+    "stripeIntegration": "Integración con Stripe"
   },
   "dashboard": {
     "title": "Panel de Control",
@@ -811,29 +858,85 @@
     },
     "billing": "Facturación",
     "monitoring": {
+      "subtitle": "Monitoreo del sistema en tiempo real",
       "title": "Monitoreo del Sistema",
-      "performance": "Rendimiento",
-      "errors": "Errores",
-      "logs": "Registros",
-      "metrics": "Métricas",
-      "uptime": "Tiempo de Actividad",
-      "responseTime": "Tiempo de Respuesta"
+      "services": {
+        "database": "Base de datos",
+        "cache": "Caché",
+        "storage": "Almacenamiento",
+        "queue": "Cola",
+        "operational": "Operacional",
+        "connections": "Conexiones",
+        "diskUsed": "Disco usado",
+        "queueWorkers": "Workers activos",
+        "redisActive": "Redis activo"
+      },
+      "metrics": {
+        "cpu": "CPU",
+        "memory": "Memoria",
+        "responseTime": "Tiempo de Respuesta",
+        "activeUsers": "Usuarios Activos",
+        "average": "Promedio",
+        "onlineNow": "En línea ahora"
+      },
+      "charts": {
+        "requests": "Solicitudes",
+        "requestsPerMinute": "Solicitudes por minuto",
+        "responseTime": "Tiempo de Respuesta",
+        "responseTimeMs": "Tiempo de respuesta (ms)"
+      },
+      "alerts": {
+        "title": "Alertas",
+        "systemOperational": "Sistema operacional",
+        "allServicesNormal": "Todos los servicios funcionando normalmente",
+        "timeAgo": "hace {time}"
+      },
+      "systemInfo": {
+        "title": "Información del Sistema",
+        "laravelVersion": "Versión de Laravel",
+        "uptime": "Tiempo de actividad",
+        "requestsPerMinute": "Solicitudes/minuto"
+      }
     },
     "notifications": {
-      "title": "Notificaciones del Sistema",
-      "sendNotification": "Enviar Notificación",
-      "recipients": "Destinatarios",
-      "message": "Mensaje",
-      "type": "Tipo",
-      "sent": "Enviado",
-      "pending": "Pendiente"
+      "description": "Enviar notificaciones a los usuarios",
+      "form": {
+        "title": "Título",
+        "titlePlaceholder": "Título de la notificación",
+        "message": "Mensaje",
+        "messagePlaceholder": "Contenido de la notificación",
+        "recipients": "Destinatarios",
+        "targetAll": "Todos los usuarios",
+        "targetActive": "Solo usuarios activos",
+        "targetAdmins": "Solo administradores",
+        "targetTenants": "Organizaciones específicas",
+        "notificationType": "Tipo de notificación",
+        "typeInfo": "Información",
+        "typeSuccess": "Éxito",
+        "typeWarning": "Advertencia",
+        "typeError": "Error",
+        "channels": "Canales",
+        "channelInApp": "En la aplicación",
+        "channelInAppDesc": "Notificación en la interfaz",
+        "channelEmail": "Email",
+        "channelEmailDesc": "Notificación por email",
+        "channelPush": "Push",
+        "channelPushDesc": "Notificación push",
+        "send": "Enviar Notificación",
+        "reset": "Restablecer"
+      },
+      "recent": {
+        "newFeatures": "Nuevas Funcionalidades"
+      }
     },
     "auditLogs": "Registros de Auditoría",
     "systemSettings": "Configuración del Sistema",
     "userManagement": "Gestión de Usuarios",
     "tenantManagement": "Gestión de Organizaciones",
     "statistics": "Estadísticas",
-    "activity": "Actividad",
+    "activity": {
+      "recentActivity": "Actividad Reciente"
+    },
     "dashboard": {
       "title": "Panel de Administración",
       "overview": "Resumen del Sistema",
@@ -842,7 +945,17 @@
       "activeUsers": "Usuarios Activos",
       "totalTenants": "Total Organizaciones",
       "revenueThisMonth": "Ingresos Este Mes",
-      "activeSessions": "Sesiones Activas"
+      "activeSessions": "Sesiones Activas",
+      "subtitle": "Resumen del sistema de administración",
+      "timeRange": {
+        "24h": "Últimas 24h",
+        "7d": "Últimos 7 días",
+        "30d": "Últimos 30 días",
+        "90d": "Últimos 90 días"
+      },
+      "health": {
+        "unknown": "Desconocido"
+      }
     },
     "audit": {
       "title": "Registros de Auditoría",
@@ -853,7 +966,40 @@
       "timestamp": "Marca de Tiempo",
       "ipAddress": "Dirección IP",
       "userAgent": "User Agent",
-      "noLogs": "No se encontraron registros de auditoría"
+      "noLogs": "No se encontraron registros de auditoría",
+      "subtitle": "Vea todas las acciones realizadas en el sistema",
+      "loading": "Cargando registros...",
+      "pagination": "Mostrando {from} a {to} de {total}",
+      "system": "Sistema",
+      "additionalProperties": "Propiedades Adicionales",
+      "stats": {
+        "totalEvents": "Total Eventos",
+        "activeUsers": "Usuarios Activos",
+        "lastActivity": "Última Actividad",
+        "systemErrors": "Errores del Sistema"
+      },
+      "filters": {
+        "allTypes": "Todos los Tipos",
+        "search": "Buscar",
+        "searchPlaceholder": "Buscar en los registros...",
+        "type": "Tipo",
+        "user": "Usuario",
+        "dateFrom": "Desde",
+        "dateTo": "Hasta",
+        "authentication": "Autenticación",
+        "userManagement": "Gestión de Usuarios",
+        "tenantManagement": "Gestión de Organizaciones",
+        "projects": "Proyectos",
+        "invoices": "Facturas",
+        "system": "Sistema"
+      },
+      "table": {
+        "dateTime": "Fecha y Hora",
+        "user": "Usuario",
+        "type": "Tipo",
+        "description": "Descripción",
+        "details": "Detalles"
+      }
     },
     "settings": {
       "title": "Configuración del Sistema",
@@ -870,6 +1016,15 @@
       "systemUsage": "Uso del Sistema",
       "financialReports": "Informes Financieros",
       "generateReport": "Generar Informe"
+    },
+    "charts": {
+      "userGrowth": "Crecimiento de Usuarios",
+      "newUsers": "Nuevos Usuarios",
+      "revenue": "Ingresos",
+      "revenueEvolution": "Evolución de Ingresos"
+    },
+    "health": {
+      "systemIssues": "Problemas del Sistema"
     }
   },
   "notifications": {
@@ -880,11 +1035,16 @@
     "noNotifications": "No hay notificaciones",
     "settings": "Configuración de notificaciones",
     "types": {
-      "info": "Información",
-      "success": "Éxito",
-      "warning": "Advertencia",
-      "error": "Error",
-      "reminder": "Recordatorio"
+      "all": "Todas",
+      "timer": "Temporizador",
+      "invoice": "Factura",
+      "payment": "Pago",
+      "project": "Proyecto",
+      "task": "Tarea",
+      "expense": "Gasto",
+      "team": "Equipo",
+      "report": "Informe",
+      "system": "Sistema"
     },
     "push": {
       "enable": "Activar Notificaciones Push",
@@ -896,7 +1056,34 @@
       "subscribe": "Suscribirse a Notificaciones",
       "unsubscribe": "Cancelar Suscripción",
       "title": "Notificaciones Push"
-    }
+    },
+    "description": "Vea todas sus notificaciones",
+    "stats": {
+      "unread": "No leídas",
+      "today": "Hoy",
+      "thisWeek": "Esta Semana",
+      "total": "Total"
+    },
+    "filters": {
+      "all": "Todas",
+      "unread": "No leídas ({count})",
+      "read": "Leídas"
+    },
+    "markedAsRead": "{count} notificación(es) marcada(s) como leída(s)",
+    "allMarkedAsRead": "Todas las notificaciones marcadas como leídas",
+    "deleted": "{count} notificación(es) eliminada(s)",
+    "searchPlaceholder": "Buscar notificaciones...",
+    "confirmDelete": "¿Está seguro de que desea eliminar estas notificaciones?",
+    "selectAll": "Seleccionar todo",
+    "loading": "Cargando notificaciones...",
+    "tryDifferentSearch": "Intente una búsqueda diferente",
+    "allCaughtUp": "¡Está al día!",
+    "today": "Hoy",
+    "yesterday": "Ayer",
+    "todayAt": "Hoy a las {time}",
+    "yesterdayAt": "Ayer a las {time}",
+    "readAgo": "Leído {time}",
+    "pagination": "Mostrando {from} a {to} de {total} resultados"
   },
   "toast": {
     "success": {
@@ -1133,7 +1320,18 @@
     "noMembers": "Aún no hay miembros del equipo",
     "memberAdded": "Miembro agregado con éxito",
     "memberRemoved": "Miembro eliminado con éxito",
-    "invitationSent": "Invitación enviada con éxito"
+    "invitationSent": "Invitación enviada con éxito",
+    "subtitle": "Gestione los miembros de su equipo",
+    "email": "Email",
+    "emailPlaceholder": "email@ejemplo.com",
+    "sendInvitation": "Enviar Invitación",
+    "remove": "Retirar",
+    "inviteFirstMember": "Invite a su primer miembro del equipo",
+    "roles": {
+      "admin": "Admin",
+      "manager": "Manager",
+      "member": "Miembro"
+    }
   },
   "app": {
     "name": "TimeIsMoney",

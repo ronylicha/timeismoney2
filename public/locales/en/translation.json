@@ -202,11 +202,58 @@
     "theme": "Theme",
     "themeLight": "Light",
     "themeDark": "Dark",
-    "themeAuto": "Auto (System)",
+    "themeAuto": "Auto",
     "passwordMismatch": "Passwords do not match",
     "passwordUpdated": "Password updated successfully",
-    "passwordUpdateError": "Failed to update password",
-    "syncSettings": "Calendar sync settings updated"
+    "passwordUpdateError": "Error updating password",
+    "syncSettings": "Calendar sync settings updated",
+    "googleCalendarAuthInfo": "Please authorize access to your Google Calendar in the new window",
+    "googleCalendarConnectError": "Error connecting to Google Calendar",
+    "googleCalendarDisconnected": "Google Calendar disconnected",
+    "googleCalendarDisconnectError": "Error disconnecting from Google Calendar",
+    "calendarSyncUpdated": "Calendar sync updated",
+    "calendarSyncUpdateError": "Error updating calendar sync",
+    "stripeUpdated": "Stripe settings updated",
+    "stripeUpdateError": "Error updating Stripe",
+    "stripeTestSuccess": "Stripe connection tested successfully",
+    "stripeTestError": "Error testing Stripe connection",
+    "stripeDisabled": "Stripe disabled",
+    "stripeDisableError": "Error disabling Stripe",
+    "passwordUpdateSuccess": "Password updated successfully",
+    "connected": "Connected",
+    "notConnected": "Not Connected",
+    "calendarId": "Calendar ID",
+    "tokenExpires": "Token expires",
+    "enableCalendarSync": "Enable calendar sync",
+    "enableCalendarSyncDescription": "Automatically sync your events",
+    "disconnecting": "Disconnecting...",
+    "disconnectGoogleCalendar": "Disconnect Google Calendar",
+    "googleCalendarDescription": "Connect your Google Calendar to automatically sync your events",
+    "connecting": "Connecting...",
+    "connectGoogleCalendar": "Connect Google Calendar",
+    "stripeConfigured": "Stripe configured and active",
+    "publishableKey": "Publishable Key",
+    "webhookConfiguration": "Webhook Configuration",
+    "webhookUrl": "Webhook URL",
+    "requiredEvents": "Required Events",
+    "testing": "Testing...",
+    "testConnection": "Test Connection",
+    "updateSettings": "Update Settings",
+    "confirmDisableStripe": "Are you sure you want to disable Stripe?",
+    "disabling": "Disabling...",
+    "disableStripe": "Disable Stripe",
+    "stripeDescription": "Configure Stripe to accept online payments on your invoices",
+    "secretKey": "Secret Key",
+    "keepSecretHint": "Keep this secret and never share it",
+    "webhookSecret": "Webhook Secret",
+    "webhookSecretHint": "Get this from your Stripe webhook settings",
+    "saving": "Saving...",
+    "saveStripeSettings": "Save Stripe Settings",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmNewPassword": "Confirm New Password",
+    "googleCalendarIntegration": "Google Calendar Integration",
+    "stripeIntegration": "Stripe Integration"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -811,29 +858,85 @@
     },
     "billing": "Billing",
     "monitoring": {
+      "subtitle": "Real-time system monitoring",
       "title": "System Monitoring",
-      "performance": "Performance",
-      "errors": "Errors",
-      "logs": "Logs",
-      "metrics": "Metrics",
-      "uptime": "Uptime",
-      "responseTime": "Response Time"
+      "services": {
+        "database": "Database",
+        "cache": "Cache",
+        "storage": "Storage",
+        "queue": "Queue",
+        "operational": "Operational",
+        "connections": "Connections",
+        "diskUsed": "Disk used",
+        "queueWorkers": "Active workers",
+        "redisActive": "Redis active"
+      },
+      "metrics": {
+        "cpu": "CPU",
+        "memory": "Memory",
+        "responseTime": "Response Time",
+        "activeUsers": "Active Users",
+        "average": "Average",
+        "onlineNow": "Online now"
+      },
+      "charts": {
+        "requests": "Requests",
+        "requestsPerMinute": "Requests per minute",
+        "responseTime": "Response Time",
+        "responseTimeMs": "Response time (ms)"
+      },
+      "alerts": {
+        "title": "Alerts",
+        "systemOperational": "System operational",
+        "allServicesNormal": "All services running normally",
+        "timeAgo": "{time} ago"
+      },
+      "systemInfo": {
+        "title": "System Information",
+        "laravelVersion": "Laravel Version",
+        "uptime": "Uptime",
+        "requestsPerMinute": "Requests/minute"
+      }
     },
     "notifications": {
-      "title": "System Notifications",
-      "sendNotification": "Send Notification",
-      "recipients": "Recipients",
-      "message": "Message",
-      "type": "Type",
-      "sent": "Sent",
-      "pending": "Pending"
+      "description": "Send notifications to users",
+      "form": {
+        "title": "Title",
+        "titlePlaceholder": "Notification title",
+        "message": "Message",
+        "messagePlaceholder": "Notification content",
+        "recipients": "Recipients",
+        "targetAll": "All users",
+        "targetActive": "Active users only",
+        "targetAdmins": "Administrators only",
+        "targetTenants": "Specific organizations",
+        "notificationType": "Notification type",
+        "typeInfo": "Information",
+        "typeSuccess": "Success",
+        "typeWarning": "Warning",
+        "typeError": "Error",
+        "channels": "Channels",
+        "channelInApp": "In-App",
+        "channelInAppDesc": "In-app notification",
+        "channelEmail": "Email",
+        "channelEmailDesc": "Email notification",
+        "channelPush": "Push",
+        "channelPushDesc": "Push notification",
+        "send": "Send Notification",
+        "reset": "Reset"
+      },
+      "recent": {
+        "newFeatures": "New Features"
+      }
     },
     "auditLogs": "Audit Logs",
     "systemSettings": "System Settings",
     "userManagement": "User Management",
     "tenantManagement": "Organization Management",
     "statistics": "Statistics",
-    "activity": "Activity",
+    "activity": {
+      "recentActivity": "Recent Activity"
+    },
     "dashboard": {
       "title": "Admin Dashboard",
       "overview": "System Overview",
@@ -842,7 +945,17 @@
       "activeUsers": "Active Users",
       "totalTenants": "Total Organizations",
       "revenueThisMonth": "Revenue This Month",
-      "activeSessions": "Active Sessions"
+      "activeSessions": "Active Sessions",
+      "subtitle": "Administration system overview",
+      "timeRange": {
+        "24h": "Last 24h",
+        "7d": "Last 7 days",
+        "30d": "Last 30 days",
+        "90d": "Last 90 days"
+      },
+      "health": {
+        "unknown": "Unknown"
+      }
     },
     "audit": {
       "title": "Audit Logs",
@@ -853,7 +966,40 @@
       "timestamp": "Timestamp",
       "ipAddress": "IP Address",
       "userAgent": "User Agent",
-      "noLogs": "No audit logs found"
+      "noLogs": "No audit logs found",
+      "subtitle": "View all actions performed on the system",
+      "loading": "Loading logs...",
+      "pagination": "Showing {from} to {to} of {total}",
+      "system": "System",
+      "additionalProperties": "Additional Properties",
+      "stats": {
+        "totalEvents": "Total Events",
+        "activeUsers": "Active Users",
+        "lastActivity": "Last Activity",
+        "systemErrors": "System Errors"
+      },
+      "filters": {
+        "allTypes": "All Types",
+        "search": "Search",
+        "searchPlaceholder": "Search in logs...",
+        "type": "Type",
+        "user": "User",
+        "dateFrom": "From",
+        "dateTo": "To",
+        "authentication": "Authentication",
+        "userManagement": "User Management",
+        "tenantManagement": "Tenant Management",
+        "projects": "Projects",
+        "invoices": "Invoices",
+        "system": "System"
+      },
+      "table": {
+        "dateTime": "Date & Time",
+        "user": "User",
+        "type": "Type",
+        "description": "Description",
+        "details": "Details"
+      }
     },
     "settings": {
       "title": "System Settings",
@@ -870,6 +1016,15 @@
       "systemUsage": "System Usage",
       "financialReports": "Financial Reports",
       "generateReport": "Generate Report"
+    },
+    "charts": {
+      "userGrowth": "User Growth",
+      "newUsers": "New Users",
+      "revenue": "Revenue",
+      "revenueEvolution": "Revenue Evolution"
+    },
+    "health": {
+      "systemIssues": "System Issues"
     }
   },
   "notifications": {
@@ -880,11 +1035,16 @@
     "noNotifications": "No notifications",
     "settings": "Notification settings",
     "types": {
-      "info": "Info",
-      "success": "Success",
-      "warning": "Warning",
-      "error": "Error",
-      "reminder": "Reminder"
+      "all": "All",
+      "timer": "Timer",
+      "invoice": "Invoice",
+      "payment": "Payment",
+      "project": "Project",
+      "task": "Task",
+      "expense": "Expense",
+      "team": "Team",
+      "report": "Report",
+      "system": "System"
     },
     "push": {
       "enable": "Enable Push Notifications",
@@ -896,7 +1056,34 @@
       "subscribe": "Subscribe to Notifications",
       "unsubscribe": "Unsubscribe from Notifications",
       "title": "Push Notifications"
-    }
+    },
+    "description": "View all your notifications",
+    "stats": {
+      "unread": "Unread",
+      "today": "Today",
+      "thisWeek": "This Week",
+      "total": "Total"
+    },
+    "filters": {
+      "all": "All",
+      "unread": "Unread ({count})",
+      "read": "Read"
+    },
+    "markedAsRead": "{count} notification(s) marked as read",
+    "allMarkedAsRead": "All notifications marked as read",
+    "deleted": "{count} notification(s) deleted",
+    "searchPlaceholder": "Search notifications...",
+    "confirmDelete": "Are you sure you want to delete these notifications?",
+    "selectAll": "Select all",
+    "loading": "Loading notifications...",
+    "tryDifferentSearch": "Try a different search",
+    "allCaughtUp": "You're all caught up!",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "todayAt": "Today at {time}",
+    "yesterdayAt": "Yesterday at {time}",
+    "readAgo": "Read {time}",
+    "pagination": "Showing {from} to {to} of {total} results"
   },
   "toast": {
     "success": {
@@ -1133,7 +1320,18 @@
     "noMembers": "No team members yet",
     "memberAdded": "Team member added successfully",
     "memberRemoved": "Team member removed successfully",
-    "invitationSent": "Invitation sent successfully"
+    "invitationSent": "Invitation sent successfully",
+    "subtitle": "Manage your team members",
+    "email": "Email",
+    "emailPlaceholder": "email@example.com",
+    "sendInvitation": "Send Invitation",
+    "remove": "Remove",
+    "inviteFirstMember": "Invite your first team member",
+    "roles": {
+      "admin": "Admin",
+      "manager": "Manager",
+      "member": "Member"
+    }
   },
   "app": {
     "name": "TimeIsMoney",

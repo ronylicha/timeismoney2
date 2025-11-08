@@ -202,11 +202,58 @@
     "theme": "Thème",
     "themeLight": "Clair",
     "themeDark": "Sombre",
-    "themeAuto": "Auto (Système)",
+    "themeAuto": "Automatique",
     "passwordMismatch": "Les mots de passe ne correspondent pas",
     "passwordUpdated": "Mot de passe mis à jour avec succès",
-    "passwordUpdateError": "Échec de la mise à jour du mot de passe",
-    "syncSettings": "Paramètres de synchronisation mis à jour"
+    "passwordUpdateError": "Erreur lors de la mise à jour du mot de passe",
+    "syncSettings": "Paramètres de synchronisation mis à jour",
+    "googleCalendarAuthInfo": "Veuillez autoriser l'accès à votre Google Calendar dans la nouvelle fenêtre",
+    "googleCalendarConnectError": "Erreur lors de la connexion à Google Calendar",
+    "googleCalendarDisconnected": "Google Calendar déconnecté",
+    "googleCalendarDisconnectError": "Erreur lors de la déconnexion de Google Calendar",
+    "calendarSyncUpdated": "Synchronisation du calendrier mise à jour",
+    "calendarSyncUpdateError": "Erreur lors de la mise à jour de la synchronisation",
+    "stripeUpdated": "Paramètres Stripe mis à jour",
+    "stripeUpdateError": "Erreur lors de la mise à jour de Stripe",
+    "stripeTestSuccess": "Connexion Stripe testée avec succès",
+    "stripeTestError": "Erreur lors du test de connexion Stripe",
+    "stripeDisabled": "Stripe désactivé",
+    "stripeDisableError": "Erreur lors de la désactivation de Stripe",
+    "passwordUpdateSuccess": "Mot de passe mis à jour avec succès",
+    "connected": "Connecté",
+    "notConnected": "Non connecté",
+    "calendarId": "ID du calendrier",
+    "tokenExpires": "Token expire le",
+    "enableCalendarSync": "Activer la synchronisation du calendrier",
+    "enableCalendarSyncDescription": "Synchronisez automatiquement vos événements",
+    "disconnecting": "Déconnexion...",
+    "disconnectGoogleCalendar": "Déconnecter Google Calendar",
+    "googleCalendarDescription": "Connectez votre Google Calendar pour synchroniser vos événements automatiquement",
+    "connecting": "Connexion...",
+    "connectGoogleCalendar": "Connecter Google Calendar",
+    "stripeConfigured": "Stripe configuré et actif",
+    "publishableKey": "Clé publique",
+    "webhookConfiguration": "Configuration du Webhook",
+    "webhookUrl": "URL du Webhook",
+    "requiredEvents": "Événements requis",
+    "testing": "Test...",
+    "testConnection": "Tester la connexion",
+    "updateSettings": "Modifier les paramètres",
+    "confirmDisableStripe": "Êtes-vous sûr de vouloir désactiver Stripe ?",
+    "disabling": "Désactivation...",
+    "disableStripe": "Désactiver Stripe",
+    "stripeDescription": "Configurez Stripe pour accepter les paiements en ligne sur vos factures",
+    "secretKey": "Clé secrète",
+    "keepSecretHint": "Gardez cette clé secrète et ne la partagez jamais",
+    "webhookSecret": "Secret du Webhook",
+    "webhookSecretHint": "Obtenez ceci depuis vos paramètres webhook Stripe",
+    "saving": "Enregistrement...",
+    "saveStripeSettings": "Enregistrer les paramètres Stripe",
+    "currentPassword": "Mot de passe actuel",
+    "newPassword": "Nouveau mot de passe",
+    "confirmNewPassword": "Confirmer le nouveau mot de passe",
+    "googleCalendarIntegration": "Intégration Google Calendar",
+    "stripeIntegration": "Intégration Stripe"
   },
   "dashboard": {
     "title": "Tableau de bord",
@@ -811,29 +858,85 @@
     },
     "billing": "Facturation",
     "monitoring": {
-      "title": "Surveillance du système",
-      "performance": "Performance",
-      "errors": "Erreurs",
-      "logs": "Journaux",
-      "metrics": "Métriques",
-      "uptime": "Temps de disponibilité",
-      "responseTime": "Temps de réponse"
+      "subtitle": "Surveillance en temps réel du système",
+      "title": "Surveillance du Système",
+      "services": {
+        "database": "Base de données",
+        "cache": "Cache",
+        "storage": "Stockage",
+        "queue": "File d'attente",
+        "operational": "Opérationnel",
+        "connections": "Connexions",
+        "diskUsed": "Disque utilisé",
+        "queueWorkers": "Workers actifs",
+        "redisActive": "Redis actif"
+      },
+      "metrics": {
+        "cpu": "CPU",
+        "memory": "Mémoire",
+        "responseTime": "Temps de réponse",
+        "activeUsers": "Utilisateurs actifs",
+        "average": "Moyenne",
+        "onlineNow": "En ligne maintenant"
+      },
+      "charts": {
+        "requests": "Requêtes",
+        "requestsPerMinute": "Requêtes par minute",
+        "responseTime": "Temps de réponse",
+        "responseTimeMs": "Temps de réponse (ms)"
+      },
+      "alerts": {
+        "title": "Alertes",
+        "systemOperational": "Système opérationnel",
+        "allServicesNormal": "Tous les services fonctionnent normalement",
+        "timeAgo": "il y a {time}"
+      },
+      "systemInfo": {
+        "title": "Informations système",
+        "laravelVersion": "Version Laravel",
+        "uptime": "Temps de fonctionnement",
+        "requestsPerMinute": "Requêtes/minute"
+      }
     },
     "notifications": {
-      "title": "Notifications système",
-      "sendNotification": "Envoyer une notification",
-      "recipients": "Destinataires",
-      "message": "Message",
-      "type": "Type",
-      "sent": "Envoyé",
-      "pending": "En attente"
+      "description": "Envoyez des notifications aux utilisateurs",
+      "form": {
+        "title": "Titre",
+        "titlePlaceholder": "Titre de la notification",
+        "message": "Message",
+        "messagePlaceholder": "Contenu de la notification",
+        "recipients": "Destinataires",
+        "targetAll": "Tous les utilisateurs",
+        "targetActive": "Utilisateurs actifs seulement",
+        "targetAdmins": "Administrateurs seulement",
+        "targetTenants": "Organisations spécifiques",
+        "notificationType": "Type de notification",
+        "typeInfo": "Information",
+        "typeSuccess": "Succès",
+        "typeWarning": "Avertissement",
+        "typeError": "Erreur",
+        "channels": "Canaux",
+        "channelInApp": "Dans l'application",
+        "channelInAppDesc": "Notification dans l'interface",
+        "channelEmail": "Email",
+        "channelEmailDesc": "Notification par email",
+        "channelPush": "Push",
+        "channelPushDesc": "Notification push",
+        "send": "Envoyer la notification",
+        "reset": "Réinitialiser"
+      },
+      "recent": {
+        "newFeatures": "Nouvelles fonctionnalités"
+      }
     },
     "auditLogs": "Journaux d'audit",
     "systemSettings": "Paramètres système",
     "userManagement": "Gestion des utilisateurs",
     "tenantManagement": "Gestion des organisations",
     "statistics": "Statistiques",
-    "activity": "Activité",
+    "activity": {
+      "recentActivity": "Activité récente"
+    },
     "dashboard": {
       "title": "Tableau de bord admin",
       "overview": "Vue d'ensemble du système",
@@ -842,7 +945,17 @@
       "activeUsers": "Utilisateurs actifs",
       "totalTenants": "Total organisations",
       "revenueThisMonth": "Revenu ce mois",
-      "activeSessions": "Sessions actives"
+      "activeSessions": "Sessions actives",
+      "subtitle": "Vue d'ensemble du système d'administration",
+      "timeRange": {
+        "24h": "Dernières 24h",
+        "7d": "Derniers 7 jours",
+        "30d": "Derniers 30 jours",
+        "90d": "Derniers 90 jours"
+      },
+      "health": {
+        "unknown": "Inconnu"
+      }
     },
     "audit": {
       "title": "Journaux d'audit",
@@ -853,7 +966,40 @@
       "timestamp": "Horodatage",
       "ipAddress": "Adresse IP",
       "userAgent": "User Agent",
-      "noLogs": "Aucun journal d'audit trouvé"
+      "noLogs": "Aucun journal d'audit trouvé",
+      "subtitle": "Consultez toutes les actions effectuées sur le système",
+      "loading": "Chargement des journaux...",
+      "pagination": "Affichage de {from} à {to} sur {total}",
+      "system": "Système",
+      "additionalProperties": "Propriétés additionnelles",
+      "stats": {
+        "totalEvents": "Total événements",
+        "activeUsers": "Utilisateurs actifs",
+        "lastActivity": "Dernière activité",
+        "systemErrors": "Erreurs système"
+      },
+      "filters": {
+        "allTypes": "Tous les types",
+        "search": "Rechercher",
+        "searchPlaceholder": "Rechercher dans les journaux...",
+        "type": "Type",
+        "user": "Utilisateur",
+        "dateFrom": "Du",
+        "dateTo": "Au",
+        "authentication": "Authentification",
+        "userManagement": "Gestion utilisateurs",
+        "tenantManagement": "Gestion organisations",
+        "projects": "Projets",
+        "invoices": "Factures",
+        "system": "Système"
+      },
+      "table": {
+        "dateTime": "Date & Heure",
+        "user": "Utilisateur",
+        "type": "Type",
+        "description": "Description",
+        "details": "Détails"
+      }
     },
     "settings": {
       "title": "Paramètres système",
@@ -870,6 +1016,15 @@
       "systemUsage": "Utilisation système",
       "financialReports": "Rapports financiers",
       "generateReport": "Générer un rapport"
+    },
+    "charts": {
+      "userGrowth": "Croissance des utilisateurs",
+      "newUsers": "Nouveaux utilisateurs",
+      "revenue": "Revenu",
+      "revenueEvolution": "Évolution du revenu"
+    },
+    "health": {
+      "systemIssues": "Problèmes système"
     }
   },
   "notifications": {
@@ -880,11 +1035,16 @@
     "noNotifications": "Aucune notification",
     "settings": "Paramètres de notification",
     "types": {
-      "info": "Information",
-      "success": "Succès",
-      "warning": "Avertissement",
-      "error": "Erreur",
-      "reminder": "Rappel"
+      "all": "Toutes",
+      "timer": "Chronomètre",
+      "invoice": "Facture",
+      "payment": "Paiement",
+      "project": "Projet",
+      "task": "Tâche",
+      "expense": "Dépense",
+      "team": "Équipe",
+      "report": "Rapport",
+      "system": "Système"
     },
     "push": {
       "enable": "Activer les notifications push",
@@ -896,7 +1056,34 @@
       "subscribe": "S'abonner aux notifications",
       "unsubscribe": "Se désabonner des notifications",
       "title": "Notifications Push"
-    }
+    },
+    "description": "Consultez toutes vos notifications",
+    "stats": {
+      "unread": "Non lues",
+      "today": "Aujourd'hui",
+      "thisWeek": "Cette semaine",
+      "total": "Total"
+    },
+    "filters": {
+      "all": "Toutes",
+      "unread": "Non lues ({count})",
+      "read": "Lues"
+    },
+    "markedAsRead": "{count} notification(s) marquée(s) comme lue(s)",
+    "allMarkedAsRead": "Toutes les notifications marquées comme lues",
+    "deleted": "{count} notification(s) supprimée(s)",
+    "searchPlaceholder": "Rechercher des notifications...",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer ces notifications ?",
+    "selectAll": "Tout sélectionner",
+    "loading": "Chargement des notifications...",
+    "tryDifferentSearch": "Essayez une recherche différente",
+    "allCaughtUp": "Vous êtes à jour !",
+    "today": "Aujourd'hui",
+    "yesterday": "Hier",
+    "todayAt": "Aujourd'hui à {time}",
+    "yesterdayAt": "Hier à {time}",
+    "readAgo": "Lu {time}",
+    "pagination": "Affichage de {from} à {to} sur {total} résultats"
   },
   "toast": {
     "success": {
@@ -1133,7 +1320,18 @@
     "noMembers": "Aucun membre d'équipe pour le moment",
     "memberAdded": "Membre ajouté avec succès",
     "memberRemoved": "Membre retiré avec succès",
-    "invitationSent": "Invitation envoyée avec succès"
+    "invitationSent": "Invitation envoyée avec succès",
+    "subtitle": "Gérez les membres de votre équipe",
+    "email": "Email",
+    "emailPlaceholder": "email@exemple.com",
+    "sendInvitation": "Envoyer l'invitation",
+    "remove": "Retirer",
+    "inviteFirstMember": "Invitez votre premier membre d'équipe",
+    "roles": {
+      "admin": "Admin",
+      "manager": "Manager",
+      "member": "Membre"
+    }
   },
   "app": {
     "name": "TimeIsMoney",

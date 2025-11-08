@@ -19,21 +19,26 @@ import { COUNTRIES } from '../constants/countries';
 
 interface ClientFormData {
     name: string;
-    email: string;
-    phone: string;
-    website: string;
+    company_name: string;
+    is_company: boolean;
+    legal_form: string;
+    siret: string;
+    vat_number: string;
     address: string;
     city: string;
     postal_code: string;
     country: string;
-    vat_number: string;
-    siret: string;
-    legal_form: string;
-    is_company: boolean;
+    phone: string;
+    email: string;
+    website: string;
+    billing_email: string;
     payment_terms: number;
+    payment_method: string;
     discount_percentage: number;
+    vat_exempt: boolean;
     hourly_rate: number;
     currency: string;
+    status: string;
     notes: string;
 }
 
