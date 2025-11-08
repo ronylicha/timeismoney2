@@ -25,16 +25,21 @@ const TimeTracking = lazy(() => import('./pages/TimeTracking'));
 const TimeSheet = lazy(() => import('./pages/TimeSheet'));
 const Projects = lazy(() => import('./pages/Projects'));
 const ProjectDetail = lazy(() => import('./pages/ProjectDetail'));
+const CreateProject = lazy(() => import('./pages/CreateProject'));
 const Tasks = lazy(() => import('./pages/Tasks'));
 const KanbanBoard = lazy(() => import('./pages/KanbanBoard'));
 const Clients = lazy(() => import('./pages/Clients'));
 const ClientDetail = lazy(() => import('./pages/ClientDetail'));
+const CreateClient = lazy(() => import('./pages/CreateClient'));
+const EditClient = lazy(() => import('./pages/EditClient'));
 const Invoices = lazy(() => import('./pages/Invoices'));
 const InvoiceDetail = lazy(() => import('./pages/InvoiceDetail'));
 const CreateInvoice = lazy(() => import('./pages/CreateInvoice'));
 const Quotes = lazy(() => import('./pages/Quotes'));
 const QuoteDetail = lazy(() => import('./pages/QuoteDetail'));
+const CreateQuote = lazy(() => import('./pages/CreateQuote'));
 const Expenses = lazy(() => import('./pages/Expenses'));
+const CreateExpense = lazy(() => import('./pages/CreateExpense'));
 const ExpenseCategories = lazy(() => import('./pages/ExpenseCategories'));
 const Reports = lazy(() => import('./pages/Reports'));
 const Analytics = lazy(() => import('./pages/Analytics'));
@@ -42,6 +47,7 @@ const Settings = lazy(() => import('./pages/Settings'));
 const Profile = lazy(() => import('./pages/Profile'));
 const TeamManagement = lazy(() => import('./pages/TeamManagement'));
 const Integrations = lazy(() => import('./pages/Integrations'));
+const NotificationCenter = lazy(() => import('./pages/NotificationCenter'));
 const AdminDashboard = lazy(() => import('./pages/Admin/AdminDashboard'));
 const AdminUsers = lazy(() => import('./pages/Admin/UserManagement'));
 const AdminTenants = lazy(() => import('./pages/Admin/TenantManagement'));
@@ -63,6 +69,8 @@ import AdminRoute from './components/AdminRoute';
 
 // PWA
 import { registerServiceWorker } from './utils/serviceWorker';
+import { InstallPromptBanner } from './components/PWAInstallPrompt';
+import { ServiceWorkerUpdatePrompt } from './components/ServiceWorkerUpdatePrompt';
 
 // Create QueryClient instance
 const queryClient = new QueryClient({
@@ -222,7 +230,7 @@ function App() {
 
                                         {/* Projects & Tasks */}
                                         <Route path="/projects" element={<Projects />} />
-                                        <Route path="/projects/new" element={<ProjectDetail />} />
+                                        <Route path="/projects/new" element={<CreateProject />} />
                                         <Route path="/projects/:id" element={<ProjectDetail />} />
                                         <Route path="/projects/:id/kanban" element={<KanbanBoard />} />
                                         <Route path="/tasks" element={<Tasks />} />
@@ -230,20 +238,21 @@ function App() {
 
                                         {/* Clients */}
                                         <Route path="/clients" element={<Clients />} />
-                                        <Route path="/clients/new" element={<ClientDetail />} />
+                                        <Route path="/clients/new" element={<CreateClient />} />
                                         <Route path="/clients/:id" element={<ClientDetail />} />
+                                        <Route path="/clients/:id/edit" element={<EditClient />} />
 
                                         {/* Invoicing */}
                                         <Route path="/invoices" element={<Invoices />} />
                                         <Route path="/invoices/new" element={<CreateInvoice />} />
                                         <Route path="/invoices/:id" element={<InvoiceDetail />} />
                                         <Route path="/quotes" element={<Quotes />} />
-                                        <Route path="/quotes/new" element={<QuoteDetail />} />
+                                        <Route path="/quotes/new" element={<CreateQuote />} />
                                         <Route path="/quotes/:id" element={<QuoteDetail />} />
 
                                         {/* Expenses */}
                                         <Route path="/expenses" element={<Expenses />} />
-                                        <Route path="/expenses/new" element={<Expenses />} />
+                                        <Route path="/expenses/new" element={<CreateExpense />} />
                                         <Route path="/expense-categories" element={<ExpenseCategories />} />
 
                                         {/* Reports & Analytics */}
@@ -255,6 +264,9 @@ function App() {
                                         <Route path="/profile" element={<Profile />} />
                                         <Route path="/team" element={<TeamManagement />} />
                                         <Route path="/integrations" element={<Integrations />} />
+
+                                        {/* Notifications */}
+                                        <Route path="/notifications" element={<NotificationCenter />} />
                                     </Route>
                                 </Route>
 
@@ -289,6 +301,12 @@ function App() {
                                 pauseOnHover
                                 theme="light"
                             />
+
+                            {/* PWA Install Prompt */}
+                            <InstallPromptBanner />
+
+                            {/* Service Worker Update Prompt */}
+                            <ServiceWorkerUpdatePrompt />
                                     </AuthProvider>
                                 </OfflineProvider>
                             </ThemeProvider>

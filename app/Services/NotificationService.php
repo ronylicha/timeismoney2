@@ -54,6 +54,34 @@ class NotificationService
     }
 
     /**
+     * Send a generic notification to a user
+     */
+    public function notify(User $user, array $data): bool
+    {
+        try {
+            // Create a database notification
+            $user->notifications()->create([
+                'id' => \Illuminate\Support\Str::uuid(),
+                'type' => $data['type'] ?? 'general',
+                'data' => json_encode([
+                    'title' => $data['title'] ?? 'Notification',
+                    'message' => $data['message'] ?? '',
+                    'priority' => $data['priority'] ?? 'medium',
+                    'data' => $data['data'] ?? []
+                ])
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Failed to create notification', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
      * Send invoice created notification
      */
     public function notifyInvoiceCreated(Invoice $invoice): void
@@ -84,7 +112,7 @@ class NotificationService
         }
 
         if ($this->shouldSendEmail($user, 'invoice_created')) {
-            $this->sendEmailNotification($user, 'invoice.created', $data);
+            $this->doSendEmailNotification($user, 'invoice.created', $data);
         }
 
         // Send to client if enabled
@@ -167,7 +195,7 @@ class NotificationService
         }
 
         if ($this->shouldSendEmail($user, 'payment_received')) {
-            $this->sendEmailNotification($user, 'payment.received', $data);
+            $this->doSendEmailNotification($user, 'payment.received', $data);
         }
 
         $this->logNotification($user, 'payment_received', $data);
@@ -202,7 +230,7 @@ class NotificationService
         }
 
         if ($this->shouldSendEmail($user, 'invoice_overdue')) {
-            $this->sendEmailNotification($user, 'invoice.overdue', $data);
+            $this->doSendEmailNotification($user, 'invoice.overdue', $data);
         }
 
         $this->logNotification($user, 'invoice_overdue', $data);
@@ -265,7 +293,7 @@ class NotificationService
         }
 
         if ($this->shouldSendEmail($assignee, 'task_assigned')) {
-            $this->sendEmailNotification($assignee, 'task.assigned', $data);
+            $this->doSendEmailNotification($assignee, 'task.assigned', $data);
         }
 
         $this->logNotification($assignee, 'task_assigned', $data);
@@ -303,7 +331,7 @@ class NotificationService
         }
 
         if ($this->shouldSendEmail($task->assignee, 'task_due_soon')) {
-            $this->sendEmailNotification($task->assignee, 'task.due_soon', $data);
+            $this->doSendEmailNotification($task->assignee, 'task.due_soon', $data);
         }
 
         $this->logNotification($task->assignee, 'task_due_soon', $data);
@@ -352,7 +380,7 @@ class NotificationService
         }
 
         if ($this->shouldSendEmail($user, 'chorus_pro_update')) {
-            $this->sendEmailNotification($user, 'chorus.status_update', $data);
+            $this->doSendEmailNotification($user, 'chorus.status_update', $data);
         }
 
         $this->logNotification($user, 'chorus_pro_update', $data);
@@ -405,7 +433,7 @@ class NotificationService
         ];
 
         if ($this->shouldSendEmail($user, 'daily_summary')) {
-            $this->sendEmailNotification($user, 'summary.daily', $data);
+            $this->doSendEmailNotification($user, 'summary.daily', $data);
         }
 
         $this->logNotification($user, 'daily_summary', $data);
@@ -463,16 +491,51 @@ class NotificationService
         ];
 
         if ($this->shouldSendEmail($user, 'weekly_report')) {
-            $this->sendEmailNotification($user, 'summary.weekly', $data);
+            $this->doSendEmailNotification($user, 'summary.weekly', $data);
         }
 
         $this->logNotification($user, 'weekly_report', $data);
     }
 
     /**
-     * Send push notification
+     * Send push notification (public method)
      */
-    protected function sendPushNotification(User $user, array $data): void
+    public function sendPushNotification(User $user, array $data): bool
+    {
+        try {
+            $this->doSendPushNotification($user, $data);
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Failed to send push notification', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Send email notification (public method)
+     */
+    public function sendEmailNotification(User $user, string $template, array $data = []): bool
+    {
+        try {
+            $this->doSendEmailNotification($user, $template, $data);
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Failed to send email notification', [
+                'user_id' => $user->id,
+                'template' => $template,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Send push notification (internal)
+     */
+    protected function doSendPushNotification(User $user, array $data): void
     {
         $webPush = $this->getWebPush();
         if (!$webPush) {
@@ -515,9 +578,9 @@ class NotificationService
     }
 
     /**
-     * Send email notification
+     * Send email notification (internal)
      */
-    protected function sendEmailNotification(User $user, string $template, array $data): void
+    protected function doSendEmailNotification(User $user, string $template, array $data): void
     {
         try {
             Mail::send("emails.notifications.{$template}", [

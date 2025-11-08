@@ -15,8 +15,11 @@ class TaskController extends Controller
      */
     public function index(Request $request)
     {
+        $tenantId = auth()->user()->tenant_id;
         $query = Task::with(['project', 'users', 'parent'])
-            ->where('tenant_id', auth()->user()->tenant_id);
+            ->whereHas('project', function ($q) use ($tenantId) {
+                $q->where('tenant_id', $tenantId);
+            });
 
         // Filter by user's tasks if not admin
         if (!auth()->user()->can('view_all_tasks')) {
@@ -70,8 +73,11 @@ class TaskController extends Controller
      */
     public function kanban(Request $request)
     {
+        $tenantId = auth()->user()->tenant_id;
         $query = Task::with(['project', 'users', 'parent', 'children'])
-            ->where('tenant_id', auth()->user()->tenant_id);
+            ->whereHas('project', function ($q) use ($tenantId) {
+                $q->where('tenant_id', $tenantId);
+            });
 
         // Filter by project
         if ($request->project_id) {
@@ -91,25 +97,25 @@ class TaskController extends Controller
         $columns = [
             'todo' => [
                 'id' => 'todo',
-                'title' => 'To Do',
+                'title' => 'À faire',
                 'color' => '#94a3b8',
                 'tasks' => []
             ],
             'in_progress' => [
                 'id' => 'in_progress',
-                'title' => 'In Progress',
+                'title' => 'En cours',
                 'color' => '#3b82f6',
                 'tasks' => []
             ],
             'review' => [
                 'id' => 'review',
-                'title' => 'Review',
+                'title' => 'Révision',
                 'color' => '#f59e0b',
                 'tasks' => []
             ],
             'completed' => [
                 'id' => 'completed',
-                'title' => 'Completed',
+                'title' => 'Terminé',
                 'color' => '#10b981',
                 'tasks' => []
             ]
@@ -161,7 +167,6 @@ class TaskController extends Controller
         // Generate task code
         $project = Project::find($validated['project_id']);
         $validated['code'] = $this->generateTaskCode($project);
-        $validated['tenant_id'] = auth()->user()->tenant_id;
 
         // Set position for Kanban
         $maxPosition = Task::where('project_id', $validated['project_id'])
@@ -183,7 +188,7 @@ class TaskController extends Controller
         }
 
         return response()->json([
-            'message' => 'Task created successfully',
+            'message' => 'Tâche créée avec succès',
             'task' => $task->load(['project', 'users'])
         ], 201);
     }
@@ -198,7 +203,7 @@ class TaskController extends Controller
             $hasAccess = $task->users()->where('user_id', auth()->id())->exists() ||
                         $task->project->users()->where('user_id', auth()->id())->exists();
             if (!$hasAccess) {
-                return response()->json(['message' => 'Unauthorized'], 403);
+                return response()->json(['message' => 'Non autorisé'], 403);
             }
         }
 
@@ -223,7 +228,7 @@ class TaskController extends Controller
         if (!auth()->user()->can('edit_all_tasks')) {
             $hasAccess = $task->users()->where('user_id', auth()->id())->exists();
             if (!$hasAccess) {
-                return response()->json(['message' => 'Unauthorized'], 403);
+                return response()->json(['message' => 'Non autorisé'], 403);
             }
         }
 
@@ -249,7 +254,7 @@ class TaskController extends Controller
         $task->update($validated);
 
         return response()->json([
-            'message' => 'Task updated successfully',
+            'message' => 'Tâche mise à jour avec succès',
             'task' => $task->fresh()->load(['project', 'users'])
         ]);
     }
@@ -306,7 +311,7 @@ class TaskController extends Controller
         $task->save();
 
         return response()->json([
-            'message' => 'Task status updated successfully',
+            'message' => 'Statut de la tâche mis à jour avec succès',
             'task' => $task->fresh()->load(['project', 'users'])
         ]);
     }
@@ -325,7 +330,7 @@ class TaskController extends Controller
         $task->users()->sync($validated['user_ids']);
 
         return response()->json([
-            'message' => 'Users assigned successfully',
+            'message' => 'Utilisateurs assignés avec succès',
             'task' => $task->fresh()->load('users')
         ]);
     }
@@ -337,20 +342,20 @@ class TaskController extends Controller
     {
         // Check permission
         if (!auth()->user()->can('delete_all_tasks')) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json(['message' => 'Non autorisé'], 403);
         }
 
         // Check if task has time entries
         if ($task->timeEntries()->exists()) {
             return response()->json([
-                'message' => 'Cannot delete task with time entries'
+                'message' => 'Impossible de supprimer une tâche avec des entrées de temps'
             ], 422);
         }
 
         $task->delete();
 
         return response()->json([
-            'message' => 'Task deleted successfully'
+            'message' => 'Tâche supprimée avec succès'
         ]);
     }
 

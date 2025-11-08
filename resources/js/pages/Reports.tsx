@@ -10,7 +10,8 @@ import {
     FolderIcon,
     ArrowDownTrayIcon,
     CalendarIcon,
-    FunnelIcon
+    FunnelIcon,
+    ArrowLeftIcon
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -233,9 +234,22 @@ const Reports: React.FC = () => {
             {showFilters && (
                 <div className="bg-white rounded-lg shadow p-6">
                     <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-xl font-semibold text-gray-900">
-                            {reportTypes.find((r) => r.id === selectedReport)?.name}
-                        </h2>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => {
+                                    setShowFilters(false);
+                                    setReportData(null);
+                                    setSelectedReport(null);
+                                }}
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                title="Retour aux rapports"
+                            >
+                                <ArrowLeftIcon className="h-5 w-5 text-gray-600" />
+                            </button>
+                            <h2 className="text-xl font-semibold text-gray-900">
+                                {reportTypes.find((r) => r.id === selectedReport)?.name}
+                            </h2>
+                        </div>
                         <button
                             onClick={() => {
                                 setShowFilters(false);

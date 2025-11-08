@@ -5,7 +5,7 @@ import axios from 'axios';
 interface LanguageContextType {
     language: string;
     changeLanguage: (lng: string) => Promise<void>;
-    languages: Array<{ code: string; name: string; nativeName: string }>;
+    languages: Array<{ code: string; name: string; nativeName: string; flag: string }>;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -27,9 +27,9 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
     const [language, setLanguage] = useState<string>(i18n.language || 'fr');
 
     const languages = [
-        { code: 'fr', name: 'French', nativeName: 'Français' },
-        { code: 'en', name: 'English', nativeName: 'English' },
-        { code: 'es', name: 'Spanish', nativeName: 'Español' },
+        { code: 'fr', name: 'French', nativeName: 'Français', flag: '🇫🇷' },
+        { code: 'en', name: 'English', nativeName: 'English', flag: '🇬🇧' },
+        { code: 'es', name: 'Spanish', nativeName: 'Español', flag: '🇪🇸' },
     ];
 
     useEffect(() => {

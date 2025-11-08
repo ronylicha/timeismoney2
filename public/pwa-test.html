@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA Test - Time Is Money 2</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#3B82F6">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #3B82F6 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+        }
+        h1 {
+            color: #1a202c;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #718096;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        .status {
+            background: #f7fafc;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .status-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .status-item:last-child {
+            margin-bottom: 0;
+        }
+        .icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 12px;
+            border-radius: 50%;
+        }
+        .icon.success {
+            background: #48bb78;
+        }
+        .icon.error {
+            background: #f56565;
+        }
+        .icon.warning {
+            background: #ed8936;
+        }
+        .label {
+            flex: 1;
+            color: #4a5568;
+            font-weight: 500;
+        }
+        .value {
+            color: #2d3748;
+            font-weight: 600;
+        }
+        .install-button {
+            background: #3B82F6;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: background 0.3s;
+        }
+        .install-button:hover {
+            background: #2563eb;
+        }
+        .install-button:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+        }
+        .test-notification {
+            background: #edf2f7;
+            color: #4a5568;
+            border: 2px solid #e2e8f0;
+        }
+        .test-notification:hover {
+            background: #e2e8f0;
+        }
+        .log {
+            background: #1a202c;
+            color: #68d391;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+        }
+        .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        @media (max-width: 480px) {
+            .actions {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 PWA Test Suite</h1>
+        <p class="subtitle">Time Is Money 2 - Test d'installation Progressive Web App</p>
+
+        <div class="status">
+            <div class="status-item">
+                <div class="icon" id="manifest-icon"></div>
+                <span class="label">Manifest</span>
+                <span class="value" id="manifest-status">Vérification...</span>
+            </div>
+            <div class="status-item">
+                <div class="icon" id="sw-icon"></div>
+                <span class="label">Service Worker</span>
+                <span class="value" id="sw-status">Vérification...</span>
+            </div>
+            <div class="status-item">
+                <div class="icon" id="https-icon"></div>
+                <span class="label">HTTPS</span>
+                <span class="value" id="https-status">Vérification...</span>
+            </div>
+            <div class="status-item">
+                <div class="icon" id="install-icon"></div>
+                <span class="label">Installable</span>
+                <span class="value" id="install-status">Vérification...</span>
+            </div>
+            <div class="status-item">
+                <div class="icon" id="offline-icon"></div>
+                <span class="label">Mode Offline</span>
+                <span class="value" id="offline-status">Non testé</span>
+            </div>
+        </div>
+
+        <button class="install-button" id="install-btn" disabled>
+            Installation non disponible
+        </button>
+
+        <div class="actions">
+            <button class="install-button test-notification" onclick="testNotification()">
+                🔔 Tester Notification
+            </button>
+            <button class="install-button test-notification" onclick="testOffline()">
+                📡 Tester Offline
+            </button>
+        </div>
+
+        <div class="log" id="log">
+            <div class="log-entry">Console PWA Test démarrée...</div>
+        </div>
+    </div>
+
+    <script>
+        let deferredPrompt;
+        const log = (message, type = 'info') => {
+            const logEl = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#fc8181' : type === 'success' ? '#68d391' : '#a0aec0';
+            logEl.innerHTML += `<div class="log-entry" style="color: ${color}">[${timestamp}] ${message}</div>`;
+            logEl.scrollTop = logEl.scrollHeight;
+        };
+
+        // Check Manifest
+        fetch('/manifest.json')
+            .then(r => {
+                if (r.ok) {
+                    document.getElementById('manifest-icon').className = 'icon success';
+                    document.getElementById('manifest-status').textContent = '✓ Trouvé';
+                    log('Manifest chargé avec succès', 'success');
+                    return r.json();
+                }
+                throw new Error('Manifest non trouvé');
+            })
+            .then(manifest => {
+                log(`App: ${manifest.name} (${manifest.short_name})`, 'info');
+                log(`Display: ${manifest.display}`, 'info');
+                log(`Icons: ${manifest.icons?.length || 0} tailles définies`, 'info');
+            })
+            .catch(e => {
+                document.getElementById('manifest-icon').className = 'icon error';
+                document.getElementById('manifest-status').textContent = '✗ Erreur';
+                log(`Erreur manifest: ${e.message}`, 'error');
+            });
+
+        // Check Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js')
+                .then(reg => {
+                    document.getElementById('sw-icon').className = 'icon success';
+                    document.getElementById('sw-status').textContent = '✓ Actif';
+                    log('Service Worker enregistré', 'success');
+
+                    if (reg.waiting) {
+                        log('Nouvelle version du SW en attente', 'info');
+                    }
+                    if (reg.active) {
+                        log('Service Worker actif et fonctionnel', 'success');
+                    }
+                })
+                .catch(e => {
+                    document.getElementById('sw-icon').className = 'icon error';
+                    document.getElementById('sw-status').textContent = '✗ Erreur';
+                    log(`Erreur SW: ${e.message}`, 'error');
+                });
+        } else {
+            document.getElementById('sw-icon').className = 'icon warning';
+            document.getElementById('sw-status').textContent = 'Non supporté';
+            log('Service Worker non supporté par ce navigateur', 'error');
+        }
+
+        // Check HTTPS
+        const isHttps = location.protocol === 'https:' || location.hostname === 'localhost';
+        document.getElementById('https-icon').className = isHttps ? 'icon success' : 'icon error';
+        document.getElementById('https-status').textContent = isHttps ? '✓ Sécurisé' : '✗ HTTP non sécurisé';
+        if (isHttps) {
+            log('Connexion sécurisée (HTTPS)', 'success');
+        } else {
+            log('ATTENTION: PWA nécessite HTTPS en production', 'error');
+        }
+
+        // Install Prompt
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('install-icon').className = 'icon success';
+            document.getElementById('install-status').textContent = '✓ Prêt';
+            document.getElementById('install-btn').disabled = false;
+            document.getElementById('install-btn').textContent = '📲 Installer l\'application';
+            log('PWA installable détectée !', 'success');
+        });
+
+        document.getElementById('install-btn').addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+
+            if (outcome === 'accepted') {
+                log('Installation acceptée par l\'utilisateur', 'success');
+                document.getElementById('install-btn').textContent = '✓ Installé';
+                document.getElementById('install-btn').disabled = true;
+            } else {
+                log('Installation refusée par l\'utilisateur', 'error');
+            }
+
+            deferredPrompt = null;
+        });
+
+        // Check if already installed
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            document.getElementById('install-icon').className = 'icon success';
+            document.getElementById('install-status').textContent = '✓ Déjà installé';
+            document.getElementById('install-btn').textContent = '✓ Application installée';
+            document.getElementById('install-btn').disabled = true;
+            log('Application déjà installée en mode standalone', 'success');
+        }
+
+        // Test functions
+        function testNotification() {
+            if (!('Notification' in window)) {
+                log('Notifications non supportées', 'error');
+                return;
+            }
+
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    new Notification('Time Is Money 2', {
+                        body: 'Les notifications fonctionnent correctement !',
+                        icon: '/images/icons/icon-192x192.png',
+                        badge: '/images/icons/badge-72x72.png'
+                    });
+                    log('Notification envoyée', 'success');
+                } else {
+                    log(`Permission notifications: ${permission}`, 'error');
+                }
+            });
+        }
+
+        function testOffline() {
+            fetch('/offline.html')
+                .then(r => {
+                    if (r.ok) {
+                        document.getElementById('offline-icon').className = 'icon success';
+                        document.getElementById('offline-status').textContent = '✓ Page offline prête';
+                        log('Page offline accessible', 'success');
+                        return r.text();
+                    }
+                    throw new Error('Page offline non trouvée');
+                })
+                .then(() => {
+                    log('Test: Désactivez votre connexion et rechargez la page', 'info');
+                })
+                .catch(e => {
+                    document.getElementById('offline-icon').className = 'icon error';
+                    document.getElementById('offline-status').textContent = '✗ Non configuré';
+                    log(`Erreur offline: ${e.message}`, 'error');
+                });
+        }
+
+        // Network status
+        window.addEventListener('online', () => log('Connexion rétablie', 'success'));
+        window.addEventListener('offline', () => log('Mode hors ligne activé', 'info'));
+    </script>
+</body>
+</html>

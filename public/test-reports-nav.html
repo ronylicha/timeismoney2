@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Navigation Rapports - Time Is Money 2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-6">
+        <h1 class="text-2xl font-bold mb-6">Test Navigation Rapports</h1>
+
+        <!-- Simulation accueil rapports -->
+        <div id="reports-home" class="space-y-4">
+            <h2 class="text-xl font-semibold mb-4">Accueil des Rapports</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div
+                    onclick="showReportDetail('Rapport de temps')"
+                    class="bg-white rounded-lg shadow p-6 hover:shadow-lg cursor-pointer transition"
+                >
+                    <div class="p-3 bg-blue-100 text-blue-600 rounded-lg inline-block mb-3">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-gray-900">Rapport de temps</h3>
+                    <p class="text-sm text-gray-600 mt-1">Résumé du temps suivi par utilisateurs</p>
+                </div>
+
+                <div
+                    onclick="showReportDetail('Rapport de facturation')"
+                    class="bg-white rounded-lg shadow p-6 hover:shadow-lg cursor-pointer transition"
+                >
+                    <div class="p-3 bg-green-100 text-green-600 rounded-lg inline-block mb-3">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-gray-900">Rapport de facturation</h3>
+                    <p class="text-sm text-gray-600 mt-1">Résumé des factures par statut</p>
+                </div>
+
+                <div
+                    onclick="showReportDetail('Rapport de dépenses')"
+                    class="bg-white rounded-lg shadow p-6 hover:shadow-lg cursor-pointer transition"
+                >
+                    <div class="p-3 bg-red-100 text-red-600 rounded-lg inline-block mb-3">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-gray-900">Rapport de dépenses</h3>
+                    <p class="text-sm text-gray-600 mt-1">Résumé des dépenses par catégorie</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Simulation vue détaillée -->
+        <div id="report-detail" class="bg-white rounded-lg shadow p-6 hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                    <!-- NOUVELLE FLÈCHE DE RETOUR -->
+                    <button
+                        onclick="showReportsHome()"
+                        class="p-2 hover:bg-gray-100 rounded-lg transition-colors group"
+                        title="Retour aux rapports"
+                    >
+                        <svg class="w-5 h-5 text-gray-600 group-hover:text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                    </button>
+                    <h2 id="report-title" class="text-xl font-semibold text-gray-900"></h2>
+                </div>
+                <button
+                    onclick="showReportsHome()"
+                    class="text-gray-600 hover:text-gray-900"
+                >
+                    ✕ Fermer
+                </button>
+            </div>
+
+            <div class="border border-gray-200 rounded-lg p-4 mb-4">
+                <h3 class="font-medium text-gray-700 mb-2">Filtres</h3>
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1">Date début</label>
+                        <input type="date" class="w-full px-3 py-2 border rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1">Date fin</label>
+                        <input type="date" class="w-full px-3 py-2 border rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1">Projet</label>
+                        <select class="w-full px-3 py-2 border rounded-lg">
+                            <option>Tous les projets</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <button class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                Générer le rapport
+            </button>
+
+            <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+                <p class="text-gray-600">Zone de résultats du rapport...</p>
+            </div>
+        </div>
+
+        <!-- Explication -->
+        <div class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h3 class="font-semibold text-blue-900 mb-2">📋 Amélioration de la navigation</h3>
+            <p class="text-blue-800">
+                Une flèche de retour a été ajoutée dans l'entête des rapports détaillés pour faciliter la navigation.
+                Les utilisateurs peuvent maintenant retourner à l'accueil des rapports de trois façons :
+            </p>
+            <ul class="mt-2 space-y-1 text-blue-700">
+                <li>• En cliquant sur la flèche de retour (←) à gauche du titre</li>
+                <li>• En cliquant sur le bouton "✕ Fermer" à droite</li>
+                <li>• Les deux boutons effectuent la même action</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function showReportDetail(reportName) {
+            document.getElementById('reports-home').classList.add('hidden');
+            document.getElementById('report-detail').classList.remove('hidden');
+            document.getElementById('report-title').textContent = reportName;
+        }
+
+        function showReportsHome() {
+            document.getElementById('reports-home').classList.remove('hidden');
+            document.getElementById('report-detail').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>

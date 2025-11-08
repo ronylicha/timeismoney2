@@ -52,6 +52,15 @@ class User extends Authenticatable implements MustVerifyEmail
         'google_calendar_id',
         'google_calendar_enabled',
         'google_token_expires_at',
+        'push_notifications_enabled',
+        'email_notifications_enabled',
+        'timer_reminders_enabled',
+        'invoice_notifications_enabled',
+        'project_notifications_enabled',
+        'task_notifications_enabled',
+        'quiet_hours_enabled',
+        'quiet_hours_start',
+        'quiet_hours_end',
     ];
 
     /**
@@ -79,6 +88,13 @@ class User extends Authenticatable implements MustVerifyEmail
         'password' => 'hashed',
         'google_calendar_enabled' => 'boolean',
         'google_token_expires_at' => 'datetime',
+        'push_notifications_enabled' => 'boolean',
+        'email_notifications_enabled' => 'boolean',
+        'timer_reminders_enabled' => 'boolean',
+        'invoice_notifications_enabled' => 'boolean',
+        'project_notifications_enabled' => 'boolean',
+        'task_notifications_enabled' => 'boolean',
+        'quiet_hours_enabled' => 'boolean',
     ];
 
     /**

@@ -77,11 +77,11 @@ const Settings: React.FC = () => {
             return response.data;
         },
         onSuccess: () => {
-            toast.success('Password updated successfully');
+            toast.success('Mot de passe mis à jour avec succès');
             setPasswordForm({ current_password: '', password: '', password_confirmation: '' });
         },
         onError: (error: any) => {
-            toast.error(error.response?.data?.message || 'Failed to update password');
+            toast.error(error.response?.data?.message || 'Échec de la mise à jour du mot de passe');
         },
     });
 
@@ -156,7 +156,7 @@ const Settings: React.FC = () => {
     const handlePasswordSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (passwordForm.password !== passwordForm.password_confirmation) {
-            toast.error('Passwords do not match');
+            toast.error('Les mots de passe ne correspondent pas');
             return;
         }
         updatePasswordMutation.mutate(passwordForm);
@@ -171,10 +171,10 @@ const Settings: React.FC = () => {
         onSuccess: (data) => {
             // Open authorization URL in new window
             window.open(data.authorization_url, '_blank', 'width=600,height=700');
-            toast.info('Please authorize in the opened window. Refresh this page after completing authorization.');
+            toast.info('Veuillez autoriser dans la fenêtre ouverte. Actualisez cette page après avoir terminé l\'autorisation.');
         },
         onError: (error: any) => {
-            toast.error(error.response?.data?.message || 'Failed to connect Google Calendar');
+            toast.error(error.response?.data?.message || 'Échec de la connexion à Google Calendar');
         },
     });
 
@@ -185,10 +185,10 @@ const Settings: React.FC = () => {
         },
         onSuccess: () => {
             refetchGoogleCalendar();
-            toast.success('Google Calendar disconnected successfully');
+            toast.success('Google Calendar déconnecté avec succès');
         },
         onError: (error: any) => {
-            toast.error(error.response?.data?.message || 'Failed to disconnect Google Calendar');
+            toast.error(error.response?.data?.message || 'Échec de la déconnexion de Google Calendar');
         },
     });
 
@@ -199,10 +199,10 @@ const Settings: React.FC = () => {
         },
         onSuccess: () => {
             refetchGoogleCalendar();
-            toast.success('Calendar sync settings updated');
+            toast.success('Paramètres de synchronisation du calendrier mis à jour');
         },
         onError: (error: any) => {
-            toast.error(error.response?.data?.message || 'Failed to update sync settings');
+            toast.error(error.response?.data?.message || 'Échec de la mise à jour des paramètres de synchronisation');
         },
     });
 
@@ -215,10 +215,10 @@ const Settings: React.FC = () => {
         onSuccess: () => {
             refetchStripe();
             setShowStripeForm(false);
-            toast.success('Stripe settings updated successfully');
+            toast.success('Paramètres Stripe mis à jour avec succès');
         },
         onError: (error: any) => {
-            toast.error(error.response?.data?.message || 'Failed to update Stripe settings');
+            toast.error(error.response?.data?.message || 'Échec de la mise à jour des paramètres Stripe');
         },
     });
 
@@ -228,10 +228,10 @@ const Settings: React.FC = () => {
             return response.data;
         },
         onSuccess: () => {
-            toast.success('Stripe connection test successful');
+            toast.success('Test de connexion Stripe réussi');
         },
         onError: (error: any) => {
-            toast.error(error.response?.data?.message || 'Stripe connection test failed');
+            toast.error(error.response?.data?.message || 'Le test de connexion Stripe a échoué');
         },
     });
 
@@ -242,10 +242,10 @@ const Settings: React.FC = () => {
         },
         onSuccess: () => {
             refetchStripe();
-            toast.success('Stripe disabled successfully');
+            toast.success('Stripe désactivé avec succès');
         },
         onError: (error: any) => {
-            toast.error(error.response?.data?.message || 'Failed to disable Stripe');
+            toast.error(error.response?.data?.message || 'Échec de la désactivation de Stripe');
         },
     });
 
@@ -350,16 +350,16 @@ const Settings: React.FC = () => {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Theme
+                                Thème
                             </label>
                             <select
                                 value={preferences.theme}
                                 onChange={(e) => setPreferences({ ...preferences, theme: e.target.value as 'light' | 'dark' | 'auto' })}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             >
-                                <option value="light">Light</option>
-                                <option value="dark">Dark</option>
-                                <option value="auto">Auto (System)</option>
+                                <option value="light">Clair</option>
+                                <option value="dark">Sombre</option>
+                                <option value="auto">Auto (Système)</option>
                             </select>
                         </div>
                     </div>
@@ -422,17 +422,17 @@ const Settings: React.FC = () => {
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center space-x-3">
                             <CalendarIcon className="h-6 w-6 text-gray-600" />
-                            <h2 className="text-lg font-semibold text-gray-900">Google Calendar Integration</h2>
+                            <h2 className="text-lg font-semibold text-gray-900">Intégration Google Calendar</h2>
                         </div>
                         {googleCalendarStatus?.connected ? (
                             <div className="flex items-center space-x-2 text-green-600">
                                 <CheckCircleIcon className="h-5 w-5" />
-                                <span className="text-sm font-medium">Connected</span>
+                                <span className="text-sm font-medium">Connecté</span>
                             </div>
                         ) : (
                             <div className="flex items-center space-x-2 text-gray-400">
                                 <XCircleIcon className="h-5 w-5" />
-                                <span className="text-sm font-medium">Not Connected</span>
+                                <span className="text-sm font-medium">Non connecté</span>
                             </div>
                         )}
                     </div>
@@ -442,19 +442,19 @@ const Settings: React.FC = () => {
                             <>
                                 <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                                     <p className="text-sm text-green-800">
-                                        <strong>Calendar ID:</strong> {googleCalendarStatus.calendar_id || 'primary'}
+                                        <strong>ID du calendrier :</strong> {googleCalendarStatus.calendar_id || 'primary'}
                                     </p>
                                     {googleCalendarStatus.token_expires_at && (
                                         <p className="text-sm text-green-800 mt-1">
-                                            <strong>Token Expires:</strong> {new Date(googleCalendarStatus.token_expires_at).toLocaleString()}
+                                            <strong>Expiration du jeton :</strong> {new Date(googleCalendarStatus.token_expires_at).toLocaleString()}
                                         </p>
                                     )}
                                 </div>
 
                                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                                     <div>
-                                        <p className="font-medium text-gray-900">Enable Calendar Sync</p>
-                                        <p className="text-sm text-gray-600">Automatically sync time entries to Google Calendar</p>
+                                        <p className="font-medium text-gray-900">Activer la synchronisation du calendrier</p>
+                                        <p className="text-sm text-gray-600">Synchroniser automatiquement les entrées de temps avec Google Calendar</p>
                                     </div>
                                     <label className="relative inline-flex items-center cursor-pointer">
                                         <input
@@ -472,15 +472,15 @@ const Settings: React.FC = () => {
                                     disabled={disconnectGoogleCalendarMutation.isPending}
                                     className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:bg-gray-400"
                                 >
-                                    {disconnectGoogleCalendarMutation.isPending ? 'Disconnecting...' : 'Disconnect Google Calendar'}
+                                    {disconnectGoogleCalendarMutation.isPending ? 'Déconnexion...' : 'Déconnecter Google Calendar'}
                                 </button>
                             </>
                         ) : (
                             <>
                                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                                     <p className="text-sm text-blue-800">
-                                        Connect your Google Calendar to automatically sync time entries as calendar events.
-                                        Billable entries will appear in green, non-billable in gray.
+                                        Connectez votre Google Calendar pour synchroniser automatiquement les entrées de temps comme des événements de calendrier.
+                                        Les entrées facturables apparaîtront en vert, les non facturables en gris.
                                     </p>
                                 </div>
 
@@ -490,7 +490,7 @@ const Settings: React.FC = () => {
                                     className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400 flex items-center justify-center space-x-2"
                                 >
                                     <CalendarIcon className="h-5 w-5" />
-                                    <span>{connectGoogleCalendarMutation.isPending ? 'Connecting...' : 'Connect Google Calendar'}</span>
+                                    <span>{connectGoogleCalendarMutation.isPending ? 'Connexion...' : 'Connecter Google Calendar'}</span>
                                 </button>
                             </>
                         )}
@@ -502,17 +502,17 @@ const Settings: React.FC = () => {
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center space-x-3">
                             <CreditCardIcon className="h-6 w-6 text-gray-600" />
-                            <h2 className="text-lg font-semibold text-gray-900">Stripe Payment Integration</h2>
+                            <h2 className="text-lg font-semibold text-gray-900">Intégration des paiements Stripe</h2>
                         </div>
                         {stripeSettings?.stripe_enabled ? (
                             <div className="flex items-center space-x-2 text-green-600">
                                 <CheckCircleIcon className="h-5 w-5" />
-                                <span className="text-sm font-medium">Enabled</span>
+                                <span className="text-sm font-medium">Activé</span>
                             </div>
                         ) : (
                             <div className="flex items-center space-x-2 text-gray-400">
                                 <XCircleIcon className="h-5 w-5" />
-                                <span className="text-sm font-medium">Disabled</span>
+                                <span className="text-sm font-medium">Désactivé</span>
                             </div>
                         )}
                     </div>
@@ -522,26 +522,26 @@ const Settings: React.FC = () => {
                             <>
                                 <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                                     <p className="text-sm text-green-800 mb-2">
-                                        <strong>Status:</strong> Stripe is configured and active
+                                        <strong>Statut :</strong> Stripe est configuré et actif
                                     </p>
                                     {stripeSettings.stripe_publishable_key && (
                                         <p className="text-sm text-green-800 font-mono">
-                                            <strong>Public Key:</strong> {stripeSettings.stripe_publishable_key.substring(0, 20)}...
+                                            <strong>Clé publique :</strong> {stripeSettings.stripe_publishable_key.substring(0, 20)}...
                                         </p>
                                     )}
                                 </div>
 
                                 {stripeSettings.webhook_instructions && (
                                     <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                                        <p className="text-sm font-semibold text-purple-900 mb-2">Webhook Configuration</p>
+                                        <p className="text-sm font-semibold text-purple-900 mb-2">Configuration du Webhook</p>
                                         <p className="text-sm text-purple-800 mb-2">
-                                            <strong>Webhook URL:</strong>
+                                            <strong>URL du Webhook :</strong>
                                         </p>
                                         <code className="block px-3 py-2 bg-white border border-purple-300 rounded text-xs font-mono mb-3 overflow-x-auto">
                                             {stripeSettings.webhook_instructions.url}
                                         </code>
                                         <p className="text-sm text-purple-800 mb-2">
-                                            <strong>Required Events:</strong>
+                                            <strong>Événements requis :</strong>
                                         </p>
                                         <ul className="list-disc list-inside text-xs text-purple-700 space-y-1 ml-2">
                                             {stripeSettings.webhook_instructions.events.map((event: string) => (
@@ -560,26 +560,26 @@ const Settings: React.FC = () => {
                                         disabled={testStripeConnectionMutation.isPending}
                                         className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400"
                                     >
-                                        {testStripeConnectionMutation.isPending ? 'Testing...' : 'Test Connection'}
+                                        {testStripeConnectionMutation.isPending ? 'Test...' : 'Tester la connexion'}
                                     </button>
                                     <button
                                         onClick={() => setShowStripeForm(true)}
                                         className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
                                     >
-                                        Update Settings
+                                        Mettre à jour les paramètres
                                     </button>
                                 </div>
 
                                 <button
                                     onClick={() => {
-                                        if (confirm('Are you sure you want to disable Stripe? Payment links will no longer be generated.')) {
+                                        if (confirm('Êtes-vous sûr de vouloir désactiver Stripe ? Les liens de paiement ne seront plus générés.')) {
                                             disableStripeMutation.mutate();
                                         }
                                     }}
                                     disabled={disableStripeMutation.isPending}
                                     className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:bg-gray-400"
                                 >
-                                    {disableStripeMutation.isPending ? 'Disabling...' : 'Disable Stripe'}
+                                    {disableStripeMutation.isPending ? 'Désactivation...' : 'Désactiver Stripe'}
                                 </button>
                             </>
                         ) : (
@@ -593,7 +593,7 @@ const Settings: React.FC = () => {
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Publishable Key <span className="text-red-500">*</span>
+                                        Clé publique <span className="text-red-500">*</span>
                                     </label>
                                     <input
                                         type="text"
@@ -607,7 +607,7 @@ const Settings: React.FC = () => {
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Secret Key <span className="text-red-500">*</span>
+                                        Clé secrète <span className="text-red-500">*</span>
                                     </label>
                                     <input
                                         type="password"
@@ -617,12 +617,12 @@ const Settings: React.FC = () => {
                                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
                                         required
                                     />
-                                    <p className="text-xs text-gray-500 mt-1">Keep this secret and never share it publicly</p>
+                                    <p className="text-xs text-gray-500 mt-1">Gardez ce secret et ne le partagez jamais publiquement</p>
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Webhook Secret (Optional)
+                                        Secret du Webhook (Optionnel)
                                     </label>
                                     <input
                                         type="password"
@@ -641,7 +641,7 @@ const Settings: React.FC = () => {
                                             onClick={() => setShowStripeForm(false)}
                                             className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                                         >
-                                            Cancel
+                                            Annuler
                                         </button>
                                     )}
                                     <button
@@ -649,7 +649,7 @@ const Settings: React.FC = () => {
                                         disabled={updateStripeMutation.isPending}
                                         className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:bg-gray-400"
                                     >
-                                        {updateStripeMutation.isPending ? 'Saving...' : 'Save Stripe Settings'}
+                                        {updateStripeMutation.isPending ? 'Enregistrement...' : 'Enregistrer les paramètres Stripe'}
                                     </button>
                                 </div>
                             </form>
@@ -684,7 +684,7 @@ const Settings: React.FC = () => {
                             <form onSubmit={handlePasswordSubmit} className="mt-4 space-y-4 p-4 bg-gray-50 rounded-lg">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Current Password
+                                        Mot de passe actuel
                                     </label>
                                     <input
                                         type="password"
@@ -698,7 +698,7 @@ const Settings: React.FC = () => {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        New Password
+                                        Nouveau mot de passe
                                     </label>
                                     <input
                                         type="password"
@@ -711,7 +711,7 @@ const Settings: React.FC = () => {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Confirm New Password
+                                        Confirmer le nouveau mot de passe
                                     </label>
                                     <input
                                         type="password"

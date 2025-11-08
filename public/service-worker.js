@@ -1,4 +1,4 @@
-// Service Worker for Time Is Money 2 PWA
+// Service Worker for TimeIsMoney PWA
 const CACHE_NAME = 'tim2-v1.0.0';
 const STATIC_CACHE = 'tim2-static-v1.0.0';
 const DYNAMIC_CACHE = 'tim2-dynamic-v1.0.0';
@@ -48,6 +48,11 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
     const { request } = event;
     const url = new URL(request.url);
+
+    // Skip chrome extension requests and other unsupported schemes
+    if (!url.protocol.startsWith('http')) {
+        return;
+    }
 
     // Skip non-GET requests
     if (request.method !== 'GET') {
@@ -173,7 +178,7 @@ async function syncTimeEntries() {
 self.addEventListener('push', event => {
     console.log('[ServiceWorker] Push received');
 
-    let title = 'Time Is Money 2';
+    let title = 'TimeIsMoney';
     let options = {
         body: 'You have a new notification',
         icon: '/images/icons/icon-192x192.png',

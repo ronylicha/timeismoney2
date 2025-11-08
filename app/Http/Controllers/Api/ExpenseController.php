@@ -79,7 +79,7 @@ class ExpenseController extends Controller
         $expense->save();
 
         return response()->json([
-            'message' => 'Expense created successfully',
+            'message' => 'Dépense créée avec succès',
             'data' => $expense->load(['user', 'project', 'category'])
         ], 201);
     }
@@ -91,7 +91,7 @@ class ExpenseController extends Controller
     {
         // Check tenant access
         if ($expense->tenant_id !== auth()->user()->tenant_id) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json(['message' => 'Non autorisé'], 403);
         }
 
         return response()->json([
@@ -106,13 +106,13 @@ class ExpenseController extends Controller
     {
         // Check tenant access
         if ($expense->tenant_id !== auth()->user()->tenant_id) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json(['message' => 'Non autorisé'], 403);
         }
 
         // Only allow updates if pending
         if ($expense->status !== 'pending') {
             return response()->json([
-                'message' => 'Cannot update expense that is not pending'
+                'message' => 'Impossible de mettre à jour une dépense qui n\'est pas en attente'
             ], 422);
         }
 
@@ -130,7 +130,7 @@ class ExpenseController extends Controller
         $expense->update($validated);
 
         return response()->json([
-            'message' => 'Expense updated successfully',
+            'message' => 'Dépense mise à jour avec succès',
             'data' => $expense->fresh()->load(['user', 'project', 'category'])
         ]);
     }
@@ -142,13 +142,13 @@ class ExpenseController extends Controller
     {
         // Check tenant access
         if ($expense->tenant_id !== auth()->user()->tenant_id) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json(['message' => 'Non autorisé'], 403);
         }
 
         // Only allow deletion if pending
         if ($expense->status !== 'pending') {
             return response()->json([
-                'message' => 'Cannot delete expense that is not pending'
+                'message' => 'Impossible de supprimer une dépense qui n\'est pas en attente'
             ], 422);
         }
 
@@ -159,7 +159,7 @@ class ExpenseController extends Controller
 
         $expense->delete();
 
-        return response()->json(['message' => 'Expense deleted successfully']);
+        return response()->json(['message' => 'Dépense supprimée avec succès']);
     }
 
     /**
@@ -169,17 +169,17 @@ class ExpenseController extends Controller
     {
         // Check tenant access
         if ($expense->tenant_id !== auth()->user()->tenant_id) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json(['message' => 'Non autorisé'], 403);
         }
 
         // Check if user has permission to approve
         if (!auth()->user()->hasPermission('approve_expenses')) {
-            return response()->json(['message' => 'Insufficient permissions'], 403);
+            return response()->json(['message' => 'Permissions insuffisantes'], 403);
         }
 
         if ($expense->status !== 'pending') {
             return response()->json([
-                'message' => 'Expense is not pending approval'
+                'message' => 'La dépense n\'est pas en attente d\'approbation'
             ], 422);
         }
 
@@ -190,7 +190,7 @@ class ExpenseController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Expense approved successfully',
+            'message' => 'Dépense approuvée avec succès',
             'data' => $expense->fresh()->load(['user', 'project', 'approver'])
         ]);
     }
@@ -202,7 +202,7 @@ class ExpenseController extends Controller
     {
         // Check tenant access
         if ($expense->tenant_id !== auth()->user()->tenant_id) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json(['message' => 'Non autorisé'], 403);
         }
 
         $validated = $request->validate([
@@ -219,7 +219,7 @@ class ExpenseController extends Controller
         $expense->update(['receipt_path' => $path]);
 
         return response()->json([
-            'message' => 'Receipt attached successfully',
+            'message' => 'Reçu joint avec succès',
             'data' => $expense->fresh()
         ]);
     }

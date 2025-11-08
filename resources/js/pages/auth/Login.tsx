@@ -59,7 +59,7 @@ const Login: React.FC = () => {
                         </div>
                     </div>
                     <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-                        Time Is Money 2
+                        TimeIsMoney
                     </h2>
                     <p className="mt-2 text-sm text-gray-600">
                         Connectez-vous à votre compte

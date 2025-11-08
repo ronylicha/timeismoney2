@@ -178,18 +178,33 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/google-calendar/toggle-sync', [GoogleCalendarController::class, 'toggleSync']);
 
     // Notifications
-    Route::get('/notifications/preferences', [NotificationController::class, 'getPreferences']);
-    Route::put('/notifications/preferences', [NotificationController::class, 'updatePreferences']);
+    Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index']);
+    Route::get('/notifications/preferences', [\App\Http\Controllers\NotificationController::class, 'getPreferences']);
+    Route::put('/notifications/preferences', [\App\Http\Controllers\NotificationController::class, 'updatePreferences']);
     Route::post('/notifications/subscribe', [NotificationController::class, 'subscribe']);
     Route::post('/notifications/unsubscribe', [NotificationController::class, 'unsubscribe']);
     Route::get('/notifications/subscriptions', [NotificationController::class, 'getSubscriptions']);
     Route::delete('/notifications/subscriptions/{id}', [NotificationController::class, 'deleteSubscription']);
     Route::get('/notifications/history', [NotificationController::class, 'getHistory']);
-    Route::put('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
-    Route::put('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
-    Route::get('/notifications/unread-count', [NotificationController::class, 'getUnreadCount']);
+    Route::put('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead']);
+    Route::put('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead']);
+    Route::get('/notifications/unread-count', [\App\Http\Controllers\NotificationController::class, 'unreadCount']);
+    Route::delete('/notifications/{id}', [\App\Http\Controllers\NotificationController::class, 'destroy']);
     Route::post('/notifications/test', [NotificationController::class, 'testNotification']);
     Route::get('/notifications/vapid-key', [NotificationController::class, 'getVapidPublicKey']);
+
+    // Timer notifications
+    Route::post('/notifications/timer-started', [\App\Http\Controllers\NotificationController::class, 'timerStarted']);
+    Route::post('/notifications/timer-stopped', [\App\Http\Controllers\NotificationController::class, 'timerStopped']);
+    Route::post('/notifications/timer-long-running', [\App\Http\Controllers\NotificationController::class, 'timerLongRunning']);
+
+    // Invoice notifications
+    Route::post('/notifications/invoice-created', [\App\Http\Controllers\NotificationController::class, 'invoiceCreated']);
+    Route::post('/notifications/payment-received', [\App\Http\Controllers\NotificationController::class, 'paymentReceived']);
+
+    // Project notifications
+    Route::post('/notifications/project-deadline', [\App\Http\Controllers\NotificationController::class, 'projectDeadlineApproaching']);
+    Route::post('/notifications/task-assigned', [\App\Http\Controllers\NotificationController::class, 'taskAssigned']);
 
     // Admin Routes
     Route::prefix('admin')->middleware('auth:sanctum')->group(function () {

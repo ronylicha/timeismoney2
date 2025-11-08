@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 import react from '@vitejs/plugin-react';
+import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
 
 export default defineConfig({
@@ -13,6 +14,34 @@ export default defineConfig({
             refresh: true,
         }),
         react(),
+        VitePWA({
+            registerType: 'autoUpdate',
+            injectRegister: null, // We have our own registration
+            manifest: false, // Using custom manifest.json
+            workbox: {
+                globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+                maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
+                runtimeCaching: [
+                    {
+                        urlPattern: /^https:\/\/fonts\.bunny\.net\/.*/i,
+                        handler: 'CacheFirst',
+                        options: {
+                            cacheName: 'google-fonts',
+                            expiration: {
+                                maxEntries: 10,
+                                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+                            },
+                            cacheableResponse: {
+                                statuses: [0, 200]
+                            }
+                        }
+                    }
+                ]
+            },
+            devOptions: {
+                enabled: false // Enable in development if needed
+            }
+        }),
     ],
     resolve: {
         alias: {

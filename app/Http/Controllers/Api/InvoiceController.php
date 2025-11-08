@@ -232,6 +232,32 @@ class InvoiceController extends Controller
 
             DB::commit();
 
+            // Send notification for invoice created
+            try {
+                $notificationData = [
+                    'invoice_id' => $invoice->id,
+                    'client_name' => $invoice->client->name,
+                    'invoice_number' => $invoice->invoice_number,
+                    'amount' => $invoice->total
+                ];
+
+                // Send notification via HTTP request to notification endpoint
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, config('app.url') . '/api/notifications/invoice-created');
+                curl_setopt($ch, CURLOPT_POST, 1);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($notificationData));
+                curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                    'Content-Type: application/json',
+                    'Authorization: Bearer ' . auth()->user()->currentAccessToken()->plainTextToken
+                ]);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_exec($ch);
+                curl_close($ch);
+            } catch (\Exception $e) {
+                // Log error but don't fail the invoice creation
+                Log::warning('Failed to send invoice created notification', ['error' => $e->getMessage()]);
+            }
+
             return response()->json([
                 'message' => 'Invoice created successfully',
                 'invoice' => $invoice->load(['client', 'items'])
@@ -398,6 +424,32 @@ class InvoiceController extends Controller
             }
 
             DB::commit();
+
+            // Send notification for payment received
+            try {
+                $notificationData = [
+                    'invoice_id' => $invoice->id,
+                    'client_name' => $invoice->client->name,
+                    'invoice_number' => $invoice->invoice_number,
+                    'amount' => $paidAmount
+                ];
+
+                // Send notification via HTTP request to notification endpoint
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, config('app.url') . '/api/notifications/payment-received');
+                curl_setopt($ch, CURLOPT_POST, 1);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($notificationData));
+                curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                    'Content-Type: application/json',
+                    'Authorization: Bearer ' . auth()->user()->currentAccessToken()->plainTextToken
+                ]);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_exec($ch);
+                curl_close($ch);
+            } catch (\Exception $e) {
+                // Log error but don't fail the payment process
+                Log::warning('Failed to send payment received notification', ['error' => $e->getMessage()]);
+            }
 
             return response()->json([
                 'message' => 'Invoice marked as paid',

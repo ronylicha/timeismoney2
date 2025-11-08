@@ -11,14 +11,15 @@ import {
     Cog6ToothIcon,
     Bars3Icon,
     XMarkIcon,
-    BellIcon,
     UserCircleIcon,
     ArrowRightOnRectangleIcon,
     ShieldCheckIcon,
     ClipboardDocumentListIcon
 } from '@heroicons/react/24/outline';
-import { useAuth } from '../contexts/AuthContext';
-import UserAvatar from '../components/UserAvatar';
+import { useAuth } from '@/contexts/AuthContext';
+import UserAvatar from '@/components/UserAvatar';
+import LanguageSelector from '@/components/LanguageSelector';
+import NotificationBell from '@/components/Notifications/NotificationBell';
 
 interface MainLayoutProps {
     isAdmin?: boolean;
@@ -40,8 +41,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
         { name: 'Paramètres', href: '/admin/settings', icon: Cog6ToothIcon },
     ] : [
         { name: 'Tableau de bord', href: '/dashboard', icon: HomeIcon },
-        { name: 'Time Tracking', href: '/time', icon: ClockIcon },
-        { name: 'TimeSheet', href: '/timesheet', icon: ClipboardDocumentListIcon },
+        { name: 'Suivi du temps', href: '/time', icon: ClockIcon },
+        { name: 'Feuille de temps', href: '/timesheet', icon: ClipboardDocumentListIcon },
         { name: 'Projets', href: '/projects', icon: FolderIcon },
         { name: 'Clients', href: '/clients', icon: UserGroupIcon },
         { name: 'Factures', href: '/invoices', icon: DocumentTextIcon },
@@ -72,7 +73,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
                             <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
                                 <ClockIcon className="w-5 h-5 text-blue-600" />
                             </div>
-                            <span className="ml-2 text-white font-bold">Time Is Money</span>
+                            <span className="ml-2 text-white font-bold">TimeIsMoney</span>
                         </div>
                         <button onClick={() => setSidebarOpen(false)} className="text-white">
                             <XMarkIcon className="h-6 w-6" />
@@ -106,7 +107,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
                         <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
                             <ClockIcon className="w-5 h-5 text-blue-600" />
                         </div>
-                        <span className="ml-2 text-white font-bold">Time Is Money</span>
+                        <span className="ml-2 text-white font-bold">TimeIsMoney</span>
                     </div>
 
                     <nav className="flex-1 px-2 py-4 space-y-1">
@@ -161,11 +162,11 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
                         </div>
 
                         <div className="ml-4 flex items-center space-x-4">
+                            {/* Language Selector */}
+                            <LanguageSelector />
+
                             {/* Notifications */}
-                            <button className="p-2 text-gray-400 hover:text-gray-500 relative">
-                                <BellIcon className="h-6 w-6" />
-                                <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500"></span>
-                            </button>
+                            <NotificationBell />
 
                             {/* User menu */}
                             <div className="relative">
@@ -205,7 +206,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
                                                         onClick={() => setUserMenuOpen(false)}
                                                     >
                                                         <HomeIcon className="mr-3 h-5 w-5 text-gray-400" />
-                                                        Dashboard
+                                                        Tableau de bord
                                                     </Link>
                                                 ) : (
                                                     <Link

@@ -1,6 +1,6 @@
 {
-    "name": "Time Is Money 2",
-    "short_name": "TIM2",
+    "name": "TimeIsMoney",
+    "short_name": "TIM",
     "description": "Application complète de gestion du temps et de facturation",
     "start_url": "/",
     "display": "standalone",

@@ -25,19 +25,19 @@ class LoginController extends Controller
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['The provided credentials are incorrect.'],
+                'email' => ['Les identifiants fournis sont incorrects.'],
             ]);
         }
 
         if (!$user->is_active) {
             throw ValidationException::withMessages([
-                'email' => ['Your account has been deactivated.'],
+                'email' => ['Votre compte a été désactivé.'],
             ]);
         }
 
         if ($user->tenant && !$user->tenant->is_active) {
             throw ValidationException::withMessages([
-                'email' => ['Your organization account is not active.'],
+                'email' => ['Le compte de votre organisation n\'est pas actif.'],
             ]);
         }
 
@@ -55,7 +55,7 @@ class LoginController extends Controller
             return response()->json([
                 'requires_2fa' => true,
                 'temp_token' => $tempToken,
-                'message' => 'Please provide your 2FA code'
+                'message' => 'Veuillez fournir votre code 2FA'
             ]);
         }
 
@@ -69,7 +69,7 @@ class LoginController extends Controller
         return response()->json([
             'user' => $user->load('tenant', 'teamMember', 'roles'),
             'token' => $token,
-            'message' => 'Login successful!'
+            'message' => 'Connexion réussie !'
         ]);
     }
 
@@ -88,7 +88,7 @@ class LoginController extends Controller
         // Check if user has 2FA pending permission
         if (!$user->tokenCan('2fa-pending')) {
             return response()->json([
-                'message' => 'Invalid request'
+                'message' => 'Requête invalide'
             ], 403);
         }
 
@@ -96,7 +96,7 @@ class LoginController extends Controller
         $twoFA = $user->twoFactorAuthentication;
         if (!$twoFA || !$this->verify2FACode($twoFA->secret, $request->code)) {
             return response()->json([
-                'message' => 'Invalid 2FA code'
+                'message' => 'Code 2FA invalide'
             ], 422);
         }
 
@@ -113,7 +113,7 @@ class LoginController extends Controller
         return response()->json([
             'user' => $user->load('tenant', 'teamMember', 'roles'),
             'token' => $token,
-            'message' => 'Login successful!'
+            'message' => 'Connexion réussie !'
         ]);
     }
 
@@ -125,7 +125,7 @@ class LoginController extends Controller
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([
-            'message' => 'Logged out successfully'
+            'message' => 'Déconnexion réussie'
         ]);
     }
 
@@ -137,7 +137,7 @@ class LoginController extends Controller
         $request->user()->tokens()->delete();
 
         return response()->json([
-            'message' => 'Logged out from all devices successfully'
+            'message' => 'Déconnexion de tous les appareils réussie'
         ]);
     }
 

@@ -34,11 +34,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
 
-    // Check if user is authenticated on mount
-    useEffect(() => {
-        checkAuth();
-    }, [checkAuth]);
-
     const checkAuth = useCallback(async () => {
         try {
             setIsLoading(true);
@@ -73,6 +68,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setIsLoading(false);
         }
     }, []);
+
+    // Check if user is authenticated on mount
+    useEffect(() => {
+        checkAuth();
+    }, [checkAuth]);
 
     const login = useCallback(async (credentials: LoginCredentials) => {
         try {
@@ -152,7 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             localStorage.setItem('auth_token', token);
             setUser(user);
 
-            toast.success('Registration successful! Welcome to Time Is Money!');
+            toast.success('Registration successful! Welcome to TimeIsMoney!');
             navigate('/dashboard');
         } catch (error: any) {
             const message = error.response?.data?.message || 'Registration failed';

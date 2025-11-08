@@ -21,15 +21,30 @@ export const Timer: React.FC<TimerProps> = ({ onTimerStop }) => {
     const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
     const { tasks, loadTasks } = useTasks(selectedProject);
 
-    // Update elapsed time every second
+    // Update elapsed time every second and check for long-running timer
     useEffect(() => {
         let interval: NodeJS.Timeout;
+        let longRunningChecked = false;
 
         if (activeTimer && !activeTimer.ended_at) {
             interval = setInterval(() => {
                 const startTime = new Date(activeTimer.started_at).getTime();
                 const now = Date.now();
-                setElapsedSeconds(Math.floor((now - startTime) / 1000));
+                const elapsed = Math.floor((now - startTime) / 1000);
+                setElapsedSeconds(elapsed);
+
+                // Check if timer has been running for 4 hours (14400 seconds)
+                if (!longRunningChecked && elapsed >= 14400) {
+                    longRunningChecked = true;
+                    // Send long-running timer notification
+                    axios.post('/api/notifications/timer-long-running', {
+                        timer_id: activeTimer.id,
+                        project_name: activeTimer.project?.name || 'Unknown Project',
+                        duration_hours: Math.floor(elapsed / 3600)
+                    }).catch((error) => {
+                        console.error('Failed to send long-running timer notification:', error);
+                    });
+                }
             }, 1000);
         } else {
             setElapsedSeconds(0);

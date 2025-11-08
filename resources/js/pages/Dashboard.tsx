@@ -196,7 +196,7 @@ const Dashboard: React.FC = () => {
             {/* Header */}
             <div className="mb-8">
                 <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
-                    Welcome back, {user?.name}!
+                    Bon retour, {user?.name} !
                 </h1>
                 <p className="text-gray-600 dark:text-gray-400 mt-2">
                     {formatDate(new Date(), 'fr-FR')}
@@ -218,13 +218,13 @@ const Dashboard: React.FC = () => {
                         <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-lg">
                             <Clock className="text-blue-600 dark:text-blue-400" size={24} />
                         </div>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">Today</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">Aujourd'hui</span>
                     </div>
                     <div className="text-2xl font-bold text-gray-800 dark:text-white">
                         {formatDuration((stats?.today?.hours || 0) * 3600)}
                     </div>
                     <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        {stats?.today?.entries || 0} entries
+                        {stats?.today?.entries || 0} entrées
                     </div>
                 </div>
 
@@ -234,7 +234,7 @@ const Dashboard: React.FC = () => {
                         <div className="p-3 bg-green-100 dark:bg-green-900 rounded-lg">
                             <TrendingUp className="text-green-600 dark:text-green-400" size={24} />
                         </div>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">This Week</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">Cette semaine</span>
                     </div>
                     <div className="text-2xl font-bold text-gray-800 dark:text-white">
                         {formatDuration((stats.week.hours || 0) * 3600)}
@@ -257,7 +257,7 @@ const Dashboard: React.FC = () => {
                             </>
                         )}
                         <span className="text-sm text-gray-600 dark:text-gray-400 ml-2">
-                            vs last week
+                            vs semaine dernière
                         </span>
                     </div>
                 </div>
@@ -268,18 +268,18 @@ const Dashboard: React.FC = () => {
                         <div className="p-3 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
                             <FileText className="text-yellow-600 dark:text-yellow-400" size={24} />
                         </div>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">Pending</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">En attente</span>
                     </div>
                     <div className="text-2xl font-bold text-gray-800 dark:text-white">
                         {formatCurrency(stats.invoices.pending_amount || 0)}
                     </div>
                     <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        {stats.invoices.pending || 0} invoices
+                        {stats.invoices.pending || 0} factures
                     </div>
                     {stats.invoices.overdue && stats.invoices.overdue > 0 && (
                         <div className="flex items-center mt-2 text-red-600">
                             <AlertCircle size={14} className="mr-1" />
-                            <span className="text-xs">{stats.invoices.overdue} overdue</span>
+                            <span className="text-xs">{stats.invoices.overdue} en retard</span>
                         </div>
                     )}
                 </div>
@@ -290,13 +290,13 @@ const Dashboard: React.FC = () => {
                         <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-lg">
                             <Briefcase className="text-purple-600 dark:text-purple-400" size={24} />
                         </div>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">Projects</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">Projets</span>
                     </div>
                     <div className="text-2xl font-bold text-gray-800 dark:text-white">
                         {stats?.projects.active || 0}
                     </div>
                     <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        Active projects
+                        Projets actifs
                     </div>
                 </div>
             </div>
@@ -306,7 +306,7 @@ const Dashboard: React.FC = () => {
                 {/* Time Tracking Chart */}
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
                     <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-                        Time Tracking Trend
+                        Tendance du suivi de temps
                     </h2>
                     <ResponsiveContainer width="100%" height={250}>
                         <LineChart data={chartData?.daily_hours || []}>
@@ -347,7 +347,7 @@ const Dashboard: React.FC = () => {
                 {/* Project Distribution */}
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
                     <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-                        Project Distribution
+                        Répartition des projets
                     </h2>
                     <ResponsiveContainer width="100%" height={250}>
                         <PieChart>
@@ -357,7 +357,7 @@ const Dashboard: React.FC = () => {
                                 cy="50%"
                                 labelLine={false}
                                 label={({ name, percent }) =>
-                                    `${name} (${(percent * 100).toFixed(0)}%)`
+                                    `${name} (${(percent as number * 100).toFixed(0)}%)`
                                 }
                                 outerRadius={80}
                                 fill="#8884d8"
@@ -381,7 +381,7 @@ const Dashboard: React.FC = () => {
                 {/* Recent Activity */}
                 <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
                     <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-                        Recent Activity
+                        Activité récente
                     </h2>
                     <div className="space-y-3 max-h-96 overflow-y-auto">
                         {activities?.map((activity) => (
@@ -404,7 +404,7 @@ const Dashboard: React.FC = () => {
                         ))}
                         {(!activities || activities.length === 0) && (
                             <p className="text-center text-gray-500 dark:text-gray-400 py-8">
-                                No recent activity
+                                Aucune activité récente
                             </p>
                         )}
                     </div>
@@ -413,7 +413,7 @@ const Dashboard: React.FC = () => {
                 {/* Quick Actions */}
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
                     <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-                        Quick Actions
+                        Actions rapides
                     </h2>
                     <div className="space-y-3">
                         <Link
@@ -423,7 +423,7 @@ const Dashboard: React.FC = () => {
                             <div className="flex items-center">
                                 <Timer className="text-blue-600 dark:text-blue-400 mr-3" size={20} />
                                 <span className="text-sm font-medium text-gray-800 dark:text-white">
-                                    Start Timer
+                                    Démarrer le chronomètre
                                 </span>
                             </div>
                             <ArrowUp className="text-gray-400" size={16} />
@@ -438,7 +438,7 @@ const Dashboard: React.FC = () => {
                                     size={20}
                                 />
                                 <span className="text-sm font-medium text-gray-800 dark:text-white">
-                                    Create Invoice
+                                    Créer une facture
                                 </span>
                             </div>
                             <ArrowUp className="text-gray-400" size={16} />
@@ -453,7 +453,7 @@ const Dashboard: React.FC = () => {
                                     size={20}
                                 />
                                 <span className="text-sm font-medium text-gray-800 dark:text-white">
-                                    New Project
+                                    Nouveau projet
                                 </span>
                             </div>
                             <ArrowUp className="text-gray-400" size={16} />
@@ -468,7 +468,7 @@ const Dashboard: React.FC = () => {
                                     size={20}
                                 />
                                 <span className="text-sm font-medium text-gray-800 dark:text-white">
-                                    View Timesheet
+                                    Voir la feuille de temps
                                 </span>
                             </div>
                             <ArrowUp className="text-gray-400" size={16} />
@@ -479,12 +479,12 @@ const Dashboard: React.FC = () => {
                     {stats?.tasks && (
                         <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-white mb-3">
-                                Tasks Overview
+                                Aperçu des tâches
                             </h3>
                             <div className="space-y-2">
                                 <div className="flex justify-between items-center">
                                     <span className="text-xs text-gray-600 dark:text-gray-400">
-                                        To Do
+                                        À faire
                                     </span>
                                     <span className="text-xs font-semibold text-gray-800 dark:text-white">
                                         {stats.tasks.todo}
@@ -492,7 +492,7 @@ const Dashboard: React.FC = () => {
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <span className="text-xs text-gray-600 dark:text-gray-400">
-                                        In Progress
+                                        En cours
                                     </span>
                                     <span className="text-xs font-semibold text-blue-600">
                                         {stats.tasks.in_progress}
@@ -500,7 +500,7 @@ const Dashboard: React.FC = () => {
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <span className="text-xs text-gray-600 dark:text-gray-400">
-                                        Completed
+                                        Terminé
                                     </span>
                                     <span className="text-xs font-semibold text-green-600">
                                         {stats.tasks.completed}
@@ -509,7 +509,7 @@ const Dashboard: React.FC = () => {
                                 {stats.tasks.overdue > 0 && (
                                     <div className="flex justify-between items-center">
                                         <span className="text-xs text-gray-600 dark:text-gray-400">
-                                            Overdue
+                                            En retard
                                         </span>
                                         <span className="text-xs font-semibold text-red-600">
                                             {stats.tasks.overdue}

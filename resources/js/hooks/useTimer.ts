@@ -49,6 +49,15 @@ export const useTimer = (): UseTimerReturn => {
             queryClient.setQueryData(['activeTimer'], data);
             queryClient.invalidateQueries({ queryKey: ['timeEntries'] });
             toast.success('Timer started successfully');
+
+            // Send timer started notification
+            axios.post('/api/notifications/timer-started', {
+                timer_id: data.id,
+                project_name: data.project?.name || 'Unknown Project',
+                task_name: data.task?.name || null
+            }).catch((error) => {
+                console.error('Failed to send timer notification:', error);
+            });
         },
         onError: (error: any) => {
             const message = error.response?.data?.message || 'Failed to start timer';
@@ -68,6 +77,19 @@ export const useTimer = (): UseTimerReturn => {
             queryClient.invalidateQueries({ queryKey: ['timeEntries'] });
             queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
             toast.success('Timer stopped successfully');
+
+            // Send timer stopped notification
+            if (data) {
+                axios.post('/api/notifications/timer-stopped', {
+                    timer_id: data.id,
+                    project_name: data.project?.name || 'Unknown Project',
+                    task_name: data.task?.name || null,
+                    duration: data.duration || 0,
+                    is_billable: data.is_billable
+                }).catch((error) => {
+                    console.error('Failed to send timer stopped notification:', error);
+                });
+            }
         },
         onError: (error: any) => {
             const message = error.response?.data?.message || 'Failed to stop timer';

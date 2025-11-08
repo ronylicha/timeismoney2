@@ -1,0 +1,15 @@
+<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background Circle -->
+  <circle cx="256" cy="256" r="240" fill="#3B82F6"/>
+
+  <!-- Clock Icon -->
+  <circle cx="256" cy="180" r="70" fill="none" stroke="white" stroke-width="12"/>
+  <path d="M256 140 L256 180 L285 205" fill="none" stroke="white" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Dollar Sign -->
+  <path d="M256 300 Q220 310, 220 330 Q220 350, 240 360 L272 370 Q292 380, 292 400 Q292 420, 256 430" fill="none" stroke="white" stroke-width="16" stroke-linecap="round"/>
+  <line x1="256" y1="285" x2="256" y2="445" stroke="white" stroke-width="12"/>
+
+  <!-- TIM2 Text -->
+  <text x="256" y="490" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="white" text-anchor="middle">TIM2</text>
+</svg>
