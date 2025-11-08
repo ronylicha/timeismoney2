@@ -35,7 +35,8 @@ class Client extends Model
         'is_active',
         'chorus_structure_id',
         'chorus_service_id',
-        'chorus_engagement_id'
+        'chorus_engagement_id',
+        'stripe_customer_id',
     ];
 
     protected $casts = [

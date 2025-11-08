@@ -77,14 +77,16 @@ const ProjectDetail: React.FC = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const isNewProject = !id || id === 'new';
 
-    // Fetch project details
+    // Fetch project details (skip if creating new project)
     const { data: project, isLoading } = useQuery({
         queryKey: ['project', id],
         queryFn: async () => {
             const response = await axios.get(`/projects/${id}`);
             return response.data.data;
         },
+        enabled: !isNewProject, // Only fetch if we have a valid ID
     });
 
     // Delete project mutation

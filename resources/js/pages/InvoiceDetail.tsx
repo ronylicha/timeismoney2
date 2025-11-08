@@ -51,14 +51,16 @@ const InvoiceDetail: React.FC = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const isNewInvoice = !id || id === 'new';
 
-    // Fetch invoice details
+    // Fetch invoice details (skip if creating new invoice)
     const { data: invoice, isLoading } = useQuery({
         queryKey: ['invoice', id],
         queryFn: async () => {
             const response = await axios.get(`/invoices/${id}`);
             return response.data.data;
         },
+        enabled: !isNewInvoice, // Only fetch if we have a valid ID
     });
 
     // Update status mutation

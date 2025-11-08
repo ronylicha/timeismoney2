@@ -18,6 +18,7 @@ import {
     ClipboardDocumentListIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
+import UserAvatar from '../components/UserAvatar';
 
 interface MainLayoutProps {
     isAdmin?: boolean;
@@ -43,6 +44,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
         { name: 'Projets', href: '/projects', icon: FolderIcon },
         { name: 'Clients', href: '/clients', icon: UserGroupIcon },
         { name: 'Factures', href: '/invoices', icon: DocumentTextIcon },
+        { name: 'Devis', href: '/quotes', icon: DocumentTextIcon },
         { name: 'Dépenses', href: '/expenses', icon: BanknotesIcon },
         { name: 'Rapports', href: '/reports', icon: ChartBarIcon },
         { name: 'Paramètres', href: '/settings', icon: Cog6ToothIcon },
@@ -128,7 +130,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
                         <div className="p-4 border-t border-gray-200">
                             <div className="flex items-center">
                                 <div className="flex-shrink-0">
-                                    <UserCircleIcon className="h-10 w-10 text-gray-400" />
+                                    <UserAvatar avatar={user.avatar} name={user.name} size="md" />
                                 </div>
                                 <div className="ml-3 flex-1">
                                     <p className="text-sm font-medium text-gray-700">{user.name}</p>
@@ -170,7 +172,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
                                     onClick={() => setUserMenuOpen(!userMenuOpen)}
                                     className="flex items-center text-sm focus:outline-none"
                                 >
-                                    <UserCircleIcon className="h-8 w-8 text-gray-400" />
+                                    <UserAvatar avatar={user?.avatar} name={user?.name} size="sm" />
                                 </button>
 
                                 {userMenuOpen && (
@@ -181,7 +183,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
                                                 className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                                 onClick={() => setUserMenuOpen(false)}
                                             >
-                                                <UserCircleIcon className="mr-3 h-5 w-5 text-gray-400" />
+                                                <div className="mr-3">
+                                                    <UserAvatar avatar={user?.avatar} name={user?.name} size="xs" />
+                                                </div>
                                                 Mon profil
                                             </Link>
                                             <Link
@@ -192,7 +196,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
                                                 <Cog6ToothIcon className="mr-3 h-5 w-5 text-gray-400" />
                                                 Paramètres
                                             </Link>
-                                            {user?.role === 'admin' && (
+                                            {(user?.role === 'admin' || user?.role === 'super-admin') && (
                                                 <Link
                                                     to="/admin"
                                                     className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"

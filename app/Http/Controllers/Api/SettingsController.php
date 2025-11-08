@@ -146,4 +146,156 @@ class SettingsController extends Controller
             'data' => $tenant->fresh()
         ]);
     }
+
+    /**
+     * Get Stripe configuration for current tenant
+     */
+    public function getStripeSettings()
+    {
+        $user = auth()->user();
+
+        if (!$user->hasPermission('manage_settings')) {
+            return response()->json(['message' => 'Insufficient permissions'], 403);
+        }
+
+        $tenant = $user->tenant;
+
+        return response()->json([
+            'data' => [
+                'stripe_enabled' => $tenant->stripe_enabled,
+                'stripe_publishable_key' => $tenant->stripe_publishable_key,
+                'stripe_account_id' => $tenant->stripe_account_id,
+                'stripe_connected_at' => $tenant->stripe_connected_at,
+                'stripe_configured' => $tenant->hasStripeConfigured(),
+                'webhook_url' => route('stripe.webhook'),
+                'webhook_instructions' => [
+                    'url' => route('stripe.webhook'),
+                    'events' => [
+                        'payment_intent.succeeded',
+                        'payment_intent.payment_failed',
+                        'payment_intent.canceled',
+                        'charge.refunded',
+                        'checkout.session.completed',
+                        'checkout.session.expired',
+                    ],
+                    'description' => 'Configurez cette URL dans votre tableau de bord Stripe (Developers > Webhooks)',
+                ],
+            ]
+        ]);
+    }
+
+    /**
+     * Update Stripe configuration for current tenant
+     */
+    public function updateStripeSettings(Request $request)
+    {
+        $user = auth()->user();
+
+        if (!$user->hasPermission('manage_settings')) {
+            return response()->json(['message' => 'Insufficient permissions'], 403);
+        }
+
+        $validated = $request->validate([
+            'stripe_publishable_key' => 'required|string|starts_with:pk_',
+            'stripe_secret_key' => 'required|string|starts_with:sk_',
+            'stripe_webhook_secret' => 'nullable|string|starts_with:whsec_',
+            'stripe_enabled' => 'boolean',
+        ]);
+
+        $tenant = $user->tenant;
+
+        // Validate Stripe keys by attempting a test connection
+        try {
+            \Stripe\Stripe::setApiKey($validated['stripe_secret_key']);
+            \Stripe\Balance::retrieve(); // Test API call
+
+            $tenant->update([
+                'stripe_publishable_key' => $validated['stripe_publishable_key'],
+                'stripe_secret_key' => $validated['stripe_secret_key'],
+                'stripe_webhook_secret' => $validated['stripe_webhook_secret'] ?? null,
+                'stripe_enabled' => $validated['stripe_enabled'] ?? true,
+                'stripe_connected_at' => $tenant->stripe_connected_at ?? now(),
+            ]);
+
+            return response()->json([
+                'message' => 'Stripe configuration updated successfully',
+                'data' => [
+                    'stripe_enabled' => $tenant->stripe_enabled,
+                    'stripe_configured' => $tenant->hasStripeConfigured(),
+                    'webhook_url' => route('stripe.webhook'),
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Invalid Stripe API keys',
+                'error' => $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Test Stripe connection for current tenant
+     */
+    public function testStripeConnection()
+    {
+        $user = auth()->user();
+
+        if (!$user->hasPermission('manage_settings')) {
+            return response()->json(['message' => 'Insufficient permissions'], 403);
+        }
+
+        $tenant = $user->tenant;
+
+        if (!$tenant->hasStripeConfigured()) {
+            return response()->json([
+                'message' => 'Stripe is not configured for this tenant',
+                'success' => false
+            ], 400);
+        }
+
+        try {
+            \Stripe\Stripe::setApiKey($tenant->getStripeSecretKey());
+            $balance = \Stripe\Balance::retrieve();
+
+            return response()->json([
+                'message' => 'Stripe connection successful',
+                'success' => true,
+                'data' => [
+                    'available' => $balance->available,
+                    'pending' => $balance->pending,
+                    'currency' => $balance->available[0]->currency ?? 'eur',
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Stripe connection failed',
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Disable Stripe for current tenant
+     */
+    public function disableStripe()
+    {
+        $user = auth()->user();
+
+        if (!$user->hasPermission('manage_settings')) {
+            return response()->json(['message' => 'Insufficient permissions'], 403);
+        }
+
+        $tenant = $user->tenant;
+        $tenant->update(['stripe_enabled' => false]);
+
+        return response()->json([
+            'message' => 'Stripe disabled successfully',
+            'data' => [
+                'stripe_enabled' => false
+            ]
+        ]);
+    }
 }

@@ -8,9 +8,12 @@ use App\Models\InvoiceItem;
 use App\Models\TimeEntry;
 use App\Models\Expense;
 use App\Models\Payment;
+use App\Services\PdfGeneratorService;
+use App\Services\EmailService;
+use App\Services\StripePaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Log;
 
 class InvoiceController extends Controller
 {
@@ -282,7 +285,7 @@ class InvoiceController extends Controller
     /**
      * Send invoice to client
      */
-    public function send(Request $request, Invoice $invoice)
+    public function send(Request $request, Invoice $invoice, EmailService $emailService, StripePaymentService $stripeService)
     {
         if ($invoice->status === 'paid' || $invoice->status === 'cancelled') {
             return response()->json([
@@ -290,8 +293,60 @@ class InvoiceController extends Controller
             ], 422);
         }
 
-        // TODO: Implement email sending logic
-        // For now, just update status
+        $validated = $request->validate([
+            'recipient_email' => 'nullable|email'
+        ]);
+
+        // Generate Stripe payment link if Stripe is configured for tenant
+        $tenant = auth()->user()->tenant;
+        if ($tenant && $tenant->hasStripeConfigured()) {
+            try {
+                // Configure Stripe service with tenant
+                $stripeService->setTenant($tenant);
+
+                // Create checkout session for the invoice
+                $successUrl = config('app.url') . '/invoices/' . $invoice->id . '/payment/success';
+                $cancelUrl = config('app.url') . '/invoices/' . $invoice->id . '/payment/cancel';
+
+                $session = $stripeService->createCheckoutSession(
+                    $invoice->load(['items', 'client']),
+                    $successUrl,
+                    $cancelUrl
+                );
+
+                // Update invoice with payment link and session ID
+                $invoice->update([
+                    'stripe_payment_link' => $session->url,
+                    'stripe_checkout_session_id' => $session->id,
+                ]);
+
+                Log::info('Stripe payment link generated for invoice', [
+                    'invoice_id' => $invoice->id,
+                    'invoice_number' => $invoice->invoice_number,
+                    'session_id' => $session->id,
+                ]);
+
+            } catch (\Exception $e) {
+                // Log error but don't fail the send operation
+                Log::error('Failed to generate Stripe payment link', [
+                    'invoice_id' => $invoice->id,
+                    'error' => $e->getMessage(),
+                ]);
+                // Continue with sending the invoice even if Stripe link generation fails
+            }
+        }
+
+        // Send email
+        $sent = $emailService->sendInvoice($invoice, $validated['recipient_email'] ?? null);
+
+        if (!$sent) {
+            return response()->json([
+                'message' => 'Failed to send invoice. Please check the client email address.',
+                'error' => 'Email sending failed'
+            ], 422);
+        }
+
+        // Update status
         $invoice->markAsSent();
 
         return response()->json([
@@ -303,7 +358,7 @@ class InvoiceController extends Controller
     /**
      * Mark invoice as paid
      */
-    public function markAsPaid(Request $request, Invoice $invoice)
+    public function markAsPaid(Request $request, Invoice $invoice, EmailService $emailService)
     {
         if ($invoice->status === 'paid') {
             return response()->json([
@@ -314,24 +369,33 @@ class InvoiceController extends Controller
         $validated = $request->validate([
             'payment_method' => 'nullable|string|max:50',
             'payment_reference' => 'nullable|string|max:100',
-            'paid_amount' => 'nullable|numeric|min:0'
+            'paid_amount' => 'nullable|numeric|min:0',
+            'send_confirmation' => 'nullable|boolean'
         ]);
 
         DB::beginTransaction();
         try {
+            $paidAmount = $validated['paid_amount'] ?? $invoice->total;
+            $paymentMethod = $validated['payment_method'] ?? 'bank_transfer';
+
             // Create payment record
             Payment::create([
                 'invoice_id' => $invoice->id,
                 'client_id' => $invoice->client_id,
-                'amount' => $validated['paid_amount'] ?? $invoice->total,
+                'amount' => $paidAmount,
                 'payment_date' => now(),
-                'payment_method' => $validated['payment_method'] ?? 'bank_transfer',
+                'payment_method' => $paymentMethod,
                 'reference' => $validated['payment_reference'],
                 'status' => 'completed'
             ]);
 
             // Mark invoice as paid
             $invoice->markAsPaid();
+
+            // Send payment confirmation email if requested
+            if ($validated['send_confirmation'] ?? true) {
+                $emailService->queuePaymentReceived($invoice, $paidAmount, $paymentMethod);
+            }
 
             DB::commit();
 
@@ -350,18 +414,40 @@ class InvoiceController extends Controller
     }
 
     /**
+     * Send invoice reminder
+     */
+    public function sendReminder(Request $request, Invoice $invoice, EmailService $emailService)
+    {
+        if ($invoice->status === 'paid') {
+            return response()->json([
+                'message' => 'Cannot send reminder for paid invoice'
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'recipient_email' => 'nullable|email'
+        ]);
+
+        $sent = $emailService->sendInvoiceReminder($invoice, $validated['recipient_email'] ?? null);
+
+        if (!$sent) {
+            return response()->json([
+                'message' => 'Failed to send reminder. Please check the client email address.',
+                'error' => 'Email sending failed'
+            ], 422);
+        }
+
+        return response()->json([
+            'message' => 'Reminder sent successfully'
+        ]);
+    }
+
+    /**
      * Download invoice PDF
      */
-    public function downloadPdf(Invoice $invoice)
+    public function downloadPdf(Invoice $invoice, PdfGeneratorService $pdfService)
     {
-        $data = [
-            'invoice' => $invoice->load(['client', 'items', 'tenant']),
-            'tenant' => auth()->user()->tenant
-        ];
-
-        $pdf = Pdf::loadView('invoices.pdf', $data);
-
-        return $pdf->download('invoice-' . $invoice->invoice_number . '.pdf');
+        return $pdfService->generateInvoicePdf($invoice, download: true);
     }
 
     /**

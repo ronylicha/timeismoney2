@@ -30,12 +30,27 @@ class Tenant extends Model
         'country',
         'email',
         'phone',
-        'website'
+        'website',
+        'stripe_publishable_key',
+        'stripe_secret_key',
+        'stripe_webhook_secret',
+        'stripe_enabled',
+        'stripe_account_id',
+        'stripe_settings',
+        'stripe_connected_at',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
-        'settings' => 'array'
+        'settings' => 'array',
+        'stripe_enabled' => 'boolean',
+        'stripe_settings' => 'array',
+        'stripe_connected_at' => 'datetime',
+    ];
+
+    protected $hidden = [
+        'stripe_secret_key',
+        'stripe_webhook_secret',
     ];
 
     protected $attributes = [
@@ -100,5 +115,39 @@ class Tenant extends Model
     public static function findBySlug(string $slug)
     {
         return static::where('slug', $slug)->first();
+    }
+
+    /**
+     * Check if Stripe is configured for this tenant
+     */
+    public function hasStripeConfigured(): bool
+    {
+        return $this->stripe_enabled &&
+               !empty($this->stripe_publishable_key) &&
+               !empty($this->stripe_secret_key);
+    }
+
+    /**
+     * Get Stripe publishable key
+     */
+    public function getStripePublishableKey(): ?string
+    {
+        return $this->stripe_enabled ? $this->stripe_publishable_key : null;
+    }
+
+    /**
+     * Get Stripe secret key
+     */
+    public function getStripeSecretKey(): ?string
+    {
+        return $this->stripe_enabled ? $this->stripe_secret_key : null;
+    }
+
+    /**
+     * Get Stripe webhook secret
+     */
+    public function getStripeWebhookSecret(): ?string
+    {
+        return $this->stripe_enabled ? $this->stripe_webhook_secret : null;
     }
 }

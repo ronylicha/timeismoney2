@@ -8,6 +8,7 @@ import { fr } from 'date-fns/locale';
 
 const QuoteDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
+    const isNewQuote = !id || id === 'new';
 
     const { data: quote, isLoading } = useQuery({
         queryKey: ['quote', id],
@@ -15,6 +16,7 @@ const QuoteDetail: React.FC = () => {
             const response = await axios.get(`/quotes/${id}`);
             return response.data.data;
         },
+        enabled: !isNewQuote, // Only fetch if we have a valid ID
     });
 
     const getStatusBadge = (status: string) => {

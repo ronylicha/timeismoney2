@@ -23,18 +23,35 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $fillable = [
         'tenant_id',
         'name',
+        'first_name',
+        'last_name',
         'email',
         'password',
         'phone',
         'avatar',
+        'job_title',
+        'department',
+        'bio',
         'locale',
         'timezone',
         'date_format',
         'time_format',
+        'theme',
+        'hourly_rate',
         'is_active',
         'last_login_at',
         'last_login_ip',
-        'email_verified_at'
+        'email_verified_at',
+        'preferences',
+        'two_factor_enabled',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
+        'google_id',
+        'google_access_token',
+        'google_refresh_token',
+        'google_calendar_id',
+        'google_calendar_enabled',
+        'google_token_expires_at',
     ];
 
     /**
@@ -44,7 +61,9 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'remember_token',
         'two_factor_secret',
-        'two_factor_recovery_codes'
+        'two_factor_recovery_codes',
+        'google_access_token',
+        'google_refresh_token',
     ];
 
     /**
@@ -54,7 +73,21 @@ class User extends Authenticatable implements MustVerifyEmail
         'email_verified_at' => 'datetime',
         'last_login_at' => 'datetime',
         'is_active' => 'boolean',
-        'password' => 'hashed'
+        'two_factor_enabled' => 'boolean',
+        'hourly_rate' => 'decimal:2',
+        'preferences' => 'array',
+        'password' => 'hashed',
+        'google_calendar_enabled' => 'boolean',
+        'google_token_expires_at' => 'datetime',
+    ];
+
+    /**
+     * The accessors to append to the model's array form.
+     */
+    protected $appends = [
+        'role',
+        'role_names',
+        'permissions_array'
     ];
 
     /**
@@ -214,5 +247,46 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->teamMember?->can_approve_expenses ||
                $this->hasPermissionTo('approve_expenses');
+    }
+
+    /**
+     * Get the user's primary role name (for frontend compatibility)
+     * Returns the first role name or null
+     */
+    public function getRoleAttribute(): ?string
+    {
+        return $this->roles->first()?->name;
+    }
+
+    /**
+     * Get all role names as array
+     */
+    public function getRoleNamesAttribute(): array
+    {
+        return $this->roles->pluck('name')->toArray();
+    }
+
+    /**
+     * Get all permissions as array (for frontend)
+     */
+    public function getPermissionsArrayAttribute(): array
+    {
+        return $this->getAllPermissions()->pluck('name')->toArray();
+    }
+
+    /**
+     * Check if user is super admin
+     */
+    public function isSuperAdmin(): bool
+    {
+        return $this->hasRole('super-admin');
+    }
+
+    /**
+     * Check if user has admin access (super-admin or admin)
+     */
+    public function isAdmin(): bool
+    {
+        return $this->hasAnyRole(['super-admin', 'admin']);
     }
 }

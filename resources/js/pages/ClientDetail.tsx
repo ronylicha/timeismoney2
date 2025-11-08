@@ -57,14 +57,16 @@ const ClientDetail: React.FC = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const isNewClient = !id || id === 'new';
 
-    // Fetch client details
+    // Fetch client details (skip if creating new client)
     const { data: client, isLoading } = useQuery({
         queryKey: ['client', id],
         queryFn: async () => {
             const response = await axios.get(`/clients/${id}`);
             return response.data.data;
         },
+        enabled: !isNewClient, // Only fetch if we have a valid ID
     });
 
     // Delete client mutation

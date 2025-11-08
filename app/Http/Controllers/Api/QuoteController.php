@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Quote;
 use App\Models\Client;
+use App\Services\PdfGeneratorService;
+use App\Services\EmailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -287,7 +289,7 @@ class QuoteController extends Controller
     /**
      * Send quote to client
      */
-    public function send($id)
+    public function send(Request $request, $id, EmailService $emailService)
     {
         $quote = Quote::where('tenant_id', auth()->user()->tenant_id)
             ->findOrFail($id);
@@ -298,12 +300,24 @@ class QuoteController extends Controller
             ], 400);
         }
 
+        $validated = $request->validate([
+            'recipient_email' => 'nullable|email'
+        ]);
+
+        // Send email to client with quote PDF
+        $sent = $emailService->sendQuote($quote, $validated['recipient_email'] ?? null);
+
+        if (!$sent) {
+            return response()->json([
+                'message' => 'Failed to send quote. Please check the client email address.',
+                'error' => 'Email sending failed'
+            ], 422);
+        }
+
         $quote->update([
             'status' => 'sent',
             'sent_at' => now()
         ]);
-
-        // TODO: Send email to client with quote PDF
 
         return response()->json([
             'message' => 'Quote sent successfully',
@@ -441,17 +455,11 @@ class QuoteController extends Controller
     /**
      * Download quote as PDF
      */
-    public function downloadPdf($id)
+    public function downloadPdf($id, PdfGeneratorService $pdfService)
     {
         $quote = Quote::where('tenant_id', auth()->user()->tenant_id)
-            ->with(['client', 'items', 'tenant'])
             ->findOrFail($id);
 
-        // TODO: Implement PDF generation
-        // For now, return JSON
-        return response()->json([
-            'message' => 'PDF generation not yet implemented',
-            'data' => $quote
-        ]);
+        return $pdfService->generateQuotePdf($quote, download: true);
     }
 }

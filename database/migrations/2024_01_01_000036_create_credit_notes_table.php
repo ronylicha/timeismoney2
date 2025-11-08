@@ -14,27 +14,23 @@ return new class extends Migration
             $table->foreignId('client_id')->constrained()->onDelete('cascade');
             $table->foreignId('invoice_id')->nullable()->constrained()->onDelete('set null');
             $table->string('credit_note_number')->unique();
-            $table->string('sequential_number'); // For NF525
             $table->date('credit_note_date');
             $table->enum('status', ['draft', 'issued', 'applied', 'cancelled'])->default('draft');
-            $table->enum('reason', ['error', 'return', 'discount', 'cancellation', 'other'])->default('other');
-            $table->text('reason_text')->nullable();
-            $table->json('items'); // Credit note line items
-            $table->decimal('subtotal', 12, 2);
-            $table->decimal('tax_amount', 10, 2)->default(0);
-            $table->decimal('total', 12, 2);
+            $table->string('reason')->nullable(); // Reason for credit note
+            $table->text('description')->nullable(); // Detailed description
+            $table->decimal('subtotal', 12, 2)->default(0);
+            $table->decimal('tax', 10, 2)->default(0);
+            $table->decimal('discount', 10, 2)->default(0);
+            $table->decimal('total', 12, 2)->default(0);
             $table->string('currency', 3)->default('EUR');
-            $table->decimal('remaining_credit', 12, 2);
+            $table->string('payment_method')->nullable(); // Method for refund
             $table->text('notes')->nullable();
-            $table->text('internal_notes')->nullable();
 
             // NF525 compliance
-            $table->string('hash'); // Hash for immutability
-            $table->string('previous_hash')->nullable(); // Chain integrity
-            $table->timestamp('issued_at')->nullable();
-            $table->string('signature')->nullable();
+            $table->string('compliance_hash')->nullable(); // Hash for immutability
+            $table->timestamp('compliance_date')->nullable(); // Timestamp for compliance
 
-            $table->foreignId('created_by')->constrained('users');
+            $table->softDeletes();
             $table->timestamps();
 
             $table->index(['tenant_id', 'client_id']);

@@ -1,9 +1,13 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ToastContainer } from 'react-toastify';
+import { I18nextProvider } from 'react-i18next';
 import 'react-toastify/dist/ReactToastify.css';
+
+// i18n configuration
+import i18n from './i18n/config';
 
 // Layout Components
 import MainLayout from './layouts/MainLayout';
@@ -59,7 +63,6 @@ import AdminUsers from './pages/Admin/UserManagement';
 import AdminTenants from './pages/Admin/TenantManagement';
 import AdminSettings from './pages/Admin/SystemSettings';
 import AdminAuditLogs from './pages/Admin/AuditLogs';
-import AdminBilling from './pages/Admin/Billing';
 import AdminMonitoring from './pages/Admin/Monitoring';
 import AdminNotifications from './pages/Admin/Notifications';
 import AdminReports from './pages/Admin/Reports';
@@ -68,6 +71,7 @@ import AdminReports from './pages/Admin/Reports';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { OfflineProvider } from './contexts/OfflineContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 
 // Guards
 import PrivateRoute from './components/PrivateRoute';
@@ -169,11 +173,14 @@ function App() {
     }, []);
 
     return (
-        <QueryClientProvider client={queryClient}>
-            <Router>
-                <ThemeProvider>
-                    <OfflineProvider>
-                        <AuthProvider>
+        <I18nextProvider i18n={i18n}>
+            <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+                <QueryClientProvider client={queryClient}>
+                    <Router>
+                        <LanguageProvider>
+                            <ThemeProvider>
+                                <OfflineProvider>
+                                    <AuthProvider>
                             <Routes>
                                 {/* Public Auth Routes */}
                                 <Route element={<AuthLayout />}>
@@ -240,7 +247,6 @@ function App() {
                                         <Route path="/admin/tenants" element={<AdminTenants />} />
                                         <Route path="/admin/settings" element={<AdminSettings />} />
                                         <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
-                                        <Route path="/admin/billing" element={<AdminBilling />} />
                                         <Route path="/admin/monitoring" element={<AdminMonitoring />} />
                                         <Route path="/admin/notifications" element={<AdminNotifications />} />
                                         <Route path="/admin/reports" element={<AdminReports />} />
@@ -264,14 +270,17 @@ function App() {
                                 pauseOnHover
                                 theme="light"
                             />
-                        </AuthProvider>
-                    </OfflineProvider>
-                </ThemeProvider>
+                                    </AuthProvider>
+                                </OfflineProvider>
+                            </ThemeProvider>
+                        </LanguageProvider>
 
-                {/* React Query Dev Tools - Only in development */}
-                {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
-            </Router>
-        </QueryClientProvider>
+                        {/* React Query Dev Tools - Only in development */}
+                        {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+                    </Router>
+                </QueryClientProvider>
+            </Suspense>
+        </I18nextProvider>
     );
 }
 

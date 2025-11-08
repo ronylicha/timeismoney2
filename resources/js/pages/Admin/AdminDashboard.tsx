@@ -18,8 +18,33 @@ import {
     ArrowDownIcon
 } from '@heroicons/react/24/outline';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend,
+    ArcElement
+} from 'chart.js';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+
+// Register Chart.js components
+ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend,
+    ArcElement
+);
 
 interface SystemStats {
     users: {
@@ -114,13 +139,16 @@ const AdminDashboard: React.FC = () => {
     }
 
     const getHealthIcon = () => {
-        switch (stats?.health.status) {
+        const status = stats?.health?.status;
+        switch (status) {
             case 'healthy':
                 return <CheckCircleIcon className="h-6 w-6 text-green-500" />;
             case 'degraded':
                 return <ExclamationTriangleIcon className="h-6 w-6 text-yellow-500" />;
             case 'critical':
                 return <ExclamationTriangleIcon className="h-6 w-6 text-red-500" />;
+            default:
+                return <CheckCircleIcon className="h-6 w-6 text-gray-400" />;
         }
     };
 
@@ -138,7 +166,7 @@ const AdminDashboard: React.FC = () => {
                     <div className="flex items-center space-x-2 px-4 py-2 bg-white rounded-lg shadow">
                         {getHealthIcon()}
                         <span className="text-sm font-medium capitalize">
-                            {stats?.health.status}
+                            {stats?.health?.status || 'unknown'}
                         </span>
                     </div>
 
@@ -164,16 +192,16 @@ const AdminDashboard: React.FC = () => {
                         <div>
                             <p className="text-sm font-medium text-gray-600">Utilisateurs</p>
                             <p className="text-2xl font-bold text-gray-900 mt-1">
-                                {stats?.users.total.toLocaleString()}
+                                {stats?.users?.total?.toLocaleString() || '0'}
                             </p>
                             <div className="flex items-center mt-2">
-                                {stats?.users.growth > 0 ? (
+                                {(stats?.users?.growth || 0) > 0 ? (
                                     <ArrowUpIcon className="h-4 w-4 text-green-500 mr-1" />
                                 ) : (
                                     <ArrowDownIcon className="h-4 w-4 text-red-500 mr-1" />
                                 )}
-                                <span className={`text-sm ${stats?.users.growth > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                    {Math.abs(stats?.users.growth || 0)}%
+                                <span className={`text-sm ${(stats?.users?.growth || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                    {Math.abs(stats?.users?.growth || 0)}%
                                 </span>
                                 <span className="text-sm text-gray-500 ml-1">ce mois</span>
                             </div>
@@ -188,17 +216,17 @@ const AdminDashboard: React.FC = () => {
                         <div>
                             <p className="text-sm font-medium text-gray-600">Organisations</p>
                             <p className="text-2xl font-bold text-gray-900 mt-1">
-                                {stats?.tenants.total.toLocaleString()}
+                                {stats?.tenants?.total?.toLocaleString() || '0'}
                             </p>
                             <div className="mt-2 space-y-1">
                                 <div className="text-xs text-gray-500">
-                                    Individual: {stats?.tenants.by_plan.individual}
+                                    Individual: {stats?.tenants?.by_plan?.individual || 0}
                                 </div>
                                 <div className="text-xs text-gray-500">
-                                    Team: {stats?.tenants.by_plan.team}
+                                    Team: {stats?.tenants?.by_plan?.team || 0}
                                 </div>
                                 <div className="text-xs text-gray-500">
-                                    Enterprise: {stats?.tenants.by_plan.enterprise}
+                                    Enterprise: {stats?.tenants?.by_plan?.enterprise || 0}
                                 </div>
                             </div>
                         </div>
@@ -212,7 +240,7 @@ const AdminDashboard: React.FC = () => {
                         <div>
                             <p className="text-sm font-medium text-gray-600">Revenu mensuel</p>
                             <p className="text-2xl font-bold text-gray-900 mt-1">
-                                {stats?.tenants.revenue.toLocaleString()}€
+                                {stats?.tenants?.revenue?.toLocaleString() || '0'}€
                             </p>
                             <p className="text-sm text-gray-500 mt-2">
                                 MRR actuel
@@ -233,43 +261,43 @@ const AdminDashboard: React.FC = () => {
                                     <div className="flex-1 bg-gray-200 rounded-full h-2">
                                         <div
                                             className={`h-2 rounded-full ${
-                                                (stats?.system.cpu_percent || 0) > 80 ? 'bg-red-500' :
-                                                (stats?.system.cpu_percent || 0) > 60 ? 'bg-yellow-500' : 'bg-green-500'
+                                                (stats?.system?.cpu_percent || 0) > 80 ? 'bg-red-500' :
+                                                (stats?.system?.cpu_percent || 0) > 60 ? 'bg-yellow-500' : 'bg-green-500'
                                             }`}
-                                            style={{width: `${stats?.system.cpu_percent}%`}}
+                                            style={{width: `${stats?.system?.cpu_percent || 0}%`}}
                                         />
                                     </div>
-                                    <span className="text-xs ml-2">{stats?.system.cpu_percent}%</span>
+                                    <span className="text-xs ml-2">{stats?.system?.cpu_percent || 0}%</span>
                                 </div>
                                 <div className="flex items-center">
                                     <span className="text-xs text-gray-500 w-12">RAM:</span>
                                     <div className="flex-1 bg-gray-200 rounded-full h-2">
                                         <div
                                             className={`h-2 rounded-full ${
-                                                (stats?.system.memory_percent || 0) > 80 ? 'bg-red-500' :
-                                                (stats?.system.memory_percent || 0) > 60 ? 'bg-yellow-500' : 'bg-green-500'
+                                                (stats?.system?.memory_percent || 0) > 80 ? 'bg-red-500' :
+                                                (stats?.system?.memory_percent || 0) > 60 ? 'bg-yellow-500' : 'bg-green-500'
                                             }`}
-                                            style={{width: `${stats?.system.memory_percent}%`}}
+                                            style={{width: `${stats?.system?.memory_percent || 0}%`}}
                                         />
                                     </div>
-                                    <span className="text-xs ml-2">{stats?.system.memory_percent}%</span>
+                                    <span className="text-xs ml-2">{stats?.system?.memory_percent || 0}%</span>
                                 </div>
                                 <div className="flex items-center">
                                     <span className="text-xs text-gray-500 w-12">Disk:</span>
                                     <div className="flex-1 bg-gray-200 rounded-full h-2">
                                         <div
                                             className={`h-2 rounded-full ${
-                                                (stats?.system.disk_percent || 0) > 80 ? 'bg-red-500' :
-                                                (stats?.system.disk_percent || 0) > 60 ? 'bg-yellow-500' : 'bg-green-500'
+                                                (stats?.system?.disk_percent || 0) > 80 ? 'bg-red-500' :
+                                                (stats?.system?.disk_percent || 0) > 60 ? 'bg-yellow-500' : 'bg-green-500'
                                             }`}
-                                            style={{width: `${stats?.system.disk_percent}%`}}
+                                            style={{width: `${stats?.system?.disk_percent || 0}%`}}
                                         />
                                     </div>
-                                    <span className="text-xs ml-2">{stats?.system.disk_percent}%</span>
+                                    <span className="text-xs ml-2">{stats?.system?.disk_percent || 0}%</span>
                                 </div>
                             </div>
                             <p className="text-xs text-gray-500 mt-2">
-                                Uptime: {stats?.system.uptime_days} jours
+                                Uptime: {stats?.system?.uptime_days || 0} jours
                             </p>
                         </div>
                         <ServerIcon className="h-10 w-10 text-gray-600" />
@@ -350,11 +378,11 @@ const AdminDashboard: React.FC = () => {
             {/* System Issues & Recent Activity */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* System Issues */}
-                {stats?.health.issues && stats.health.issues.length > 0 && (
+                {stats?.health?.issues && stats?.health?.issues.length > 0 && (
                     <div className="bg-white rounded-lg shadow p-6">
                         <h3 className="text-lg font-semibold text-gray-900 mb-4">Problèmes système</h3>
                         <div className="space-y-3">
-                            {stats.health.issues.map((issue, index) => (
+                            {stats?.health?.issues.map((issue, index) => (
                                 <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
                                     <ExclamationTriangleIcon className={`h-5 w-5 mt-0.5 ${
                                         issue.severity === 'high' ? 'text-red-500' :
@@ -374,7 +402,7 @@ const AdminDashboard: React.FC = () => {
                 <div className="bg-white rounded-lg shadow p-6">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Activité récente</h3>
                     <div className="space-y-3 max-h-64 overflow-y-auto">
-                        {recentActivity.map((activity: any, index: number) => (
+                        {(Array.isArray(recentActivity) ? recentActivity : []).map((activity: any, index: number) => (
                             <div key={index} className="flex items-start space-x-3">
                                 <ClockIcon className="h-5 w-5 text-gray-400 mt-0.5" />
                                 <div className="flex-1">
@@ -409,13 +437,6 @@ const AdminDashboard: React.FC = () => {
                     >
                         <BuildingOfficeIcon className="h-8 w-8 text-purple-600 mb-2" />
                         <span className="text-sm font-medium text-gray-900">Gérer organisations</span>
-                    </a>
-                    <a
-                        href="/admin/billing"
-                        className="flex flex-col items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                    >
-                        <CreditCardIcon className="h-8 w-8 text-green-600 mb-2" />
-                        <span className="text-sm font-medium text-gray-900">Facturation</span>
                     </a>
                     <a
                         href="/admin/settings"

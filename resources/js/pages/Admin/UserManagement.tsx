@@ -23,18 +23,21 @@ import {
 } from '@heroicons/react/24/outline';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import UserForm from '../../components/Admin/UserForm';
+
+type UserRole = 'super-admin' | 'admin' | 'manager' | 'employee' | 'accountant' | 'client';
 
 interface User {
     id: number;
     name: string;
     email: string;
     phone: string | null;
-    role: 'admin' | 'manager' | 'user';
+    role: UserRole;
+    role_names?: string[];
     tenant_id: number;
     tenant?: {
         id: number;
         name: string;
-        plan: string;
     };
     email_verified_at: string | null;
     two_factor_enabled: boolean;
@@ -46,6 +49,11 @@ interface User {
     invoices_count?: number;
 }
 
+interface Tenant {
+    id: number;
+    name: string;
+}
+
 const UserManagement: React.FC = () => {
     const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
@@ -55,10 +63,11 @@ const UserManagement: React.FC = () => {
     const [showEditModal, setShowEditModal] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
+    const [refreshKey, setRefreshKey] = useState(0);
 
-    // Fetch users
-    const { data: usersData, isLoading } = useQuery({
-        queryKey: ['admin-users', searchTerm, filterRole, filterStatus, currentPage],
+    // Fetch users with proper cache invalidation
+    const { data: usersData, isLoading, error, refetch } = useQuery({
+        queryKey: ['admin-users', searchTerm, filterRole, filterStatus, currentPage, refreshKey],
         queryFn: async () => {
             const response = await axios.get('/api/admin/users', {
                 params: {
@@ -69,8 +78,14 @@ const UserManagement: React.FC = () => {
                     per_page: 20
                 }
             });
+            console.log('Admin users response:', response.data);
             return response.data;
-        }
+        },
+        staleTime: 0,
+        gcTime: 0,
+        refetchOnWindowFocus: false,
+        refetchOnMount: true,
+        retry: 2
     });
 
     // Suspend user mutation
@@ -128,6 +143,43 @@ const UserManagement: React.FC = () => {
         }
     });
 
+    // Create user mutation
+    const createUserMutation = useMutation({
+        mutationFn: async (data: any) => {
+            const response = await axios.post('/api/admin/users', data);
+            return response.data;
+        },
+        onSuccess: () => {
+            toast.success('Utilisateur créé avec succès');
+            queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+            setShowCreateModal(false);
+        },
+        onError: (error: any) => {
+            const message = error.response?.data?.message || 'Erreur lors de la création';
+            toast.error(message);
+            throw error;
+        }
+    });
+
+    // Update user mutation
+    const updateUserMutation = useMutation({
+        mutationFn: async ({ id, data }: { id: number; data: any }) => {
+            const response = await axios.put(`/api/admin/users/${id}`, data);
+            return response.data;
+        },
+        onSuccess: () => {
+            toast.success('Utilisateur mis à jour');
+            queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+            setShowEditModal(false);
+            setSelectedUser(null);
+        },
+        onError: (error: any) => {
+            const message = error.response?.data?.message || 'Erreur lors de la mise à jour';
+            toast.error(message);
+            throw error;
+        }
+    });
+
     // Impersonate user
     const impersonateUser = async (userId: number) => {
         try {
@@ -165,6 +217,20 @@ const UserManagement: React.FC = () => {
 
     return (
         <div className="p-6">
+            {/* Error Display */}
+            {error && (
+                <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                    <p className="font-bold">Erreur de chargement</p>
+                    <p className="text-sm">{(error as any)?.response?.data?.message || 'Impossible de charger les utilisateurs'}</p>
+                    <button
+                        onClick={() => setRefreshKey(prev => prev + 1)}
+                        className="mt-2 text-sm underline hover:text-red-900"
+                    >
+                        Réessayer
+                    </button>
+                </div>
+            )}
+
             {/* Header */}
             <div className="mb-6">
                 <div className="flex justify-between items-center">
@@ -175,6 +241,15 @@ const UserManagement: React.FC = () => {
                         </p>
                     </div>
                     <div className="flex space-x-3">
+                        <button
+                            onClick={() => setRefreshKey(prev => prev + 1)}
+                            className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                            title="Actualiser"
+                        >
+                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                        </button>
                         <button
                             onClick={exportUsers}
                             className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
@@ -215,9 +290,12 @@ const UserManagement: React.FC = () => {
                         className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                     >
                         <option value="all">Tous les rôles</option>
+                        <option value="super-admin">Super Admin</option>
                         <option value="admin">Admin</option>
                         <option value="manager">Manager</option>
-                        <option value="user">Utilisateur</option>
+                        <option value="employee">Employé</option>
+                        <option value="accountant">Comptable</option>
+                        <option value="client">Client</option>
                     </select>
 
                     {/* Status Filter */}
@@ -304,20 +382,27 @@ const UserManagement: React.FC = () => {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm text-gray-900">
+                                        <div className="text-sm text-gray-900 dark:text-white">
                                             {user.tenant?.name || '-'}
-                                        </div>
-                                        <div className="text-sm text-gray-500">
-                                            {user.tenant?.plan || '-'}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                            user.role === 'super-admin' ? 'bg-red-100 text-red-800' :
                                             user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
                                             user.role === 'manager' ? 'bg-blue-100 text-blue-800' :
+                                            user.role === 'accountant' ? 'bg-green-100 text-green-800' :
+                                            user.role === 'employee' ? 'bg-gray-100 text-gray-800' :
+                                            user.role === 'client' ? 'bg-yellow-100 text-yellow-800' :
                                             'bg-gray-100 text-gray-800'
                                         }`}>
-                                            {user.role}
+                                            {user.role === 'super-admin' ? 'Super Admin' :
+                                             user.role === 'admin' ? 'Admin' :
+                                             user.role === 'manager' ? 'Manager' :
+                                             user.role === 'accountant' ? 'Comptable' :
+                                             user.role === 'employee' ? 'Employé' :
+                                             user.role === 'client' ? 'Client' :
+                                             user.role}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
@@ -463,6 +548,32 @@ const UserManagement: React.FC = () => {
                     </div>
                 )}
             </div>
+
+            {/* Create User Modal */}
+            {showCreateModal && (
+                <UserForm
+                    onSubmit={async (data) => {
+                        await createUserMutation.mutateAsync(data);
+                    }}
+                    onClose={() => setShowCreateModal(false)}
+                    isLoading={createUserMutation.isLoading}
+                />
+            )}
+
+            {/* Edit User Modal */}
+            {showEditModal && selectedUser && (
+                <UserForm
+                    user={selectedUser}
+                    onSubmit={async (data) => {
+                        await updateUserMutation.mutateAsync({ id: selectedUser.id, data });
+                    }}
+                    onClose={() => {
+                        setShowEditModal(false);
+                        setSelectedUser(null);
+                    }}
+                    isLoading={updateUserMutation.isLoading}
+                />
+            )}
         </div>
     );
 };

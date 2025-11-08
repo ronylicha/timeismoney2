@@ -46,7 +46,9 @@ class Invoice extends Model
         'chorus_status',
         'chorus_number',
         'chorus_sent_at',
-        'chorus_response'
+        'chorus_response',
+        'stripe_payment_link',
+        'stripe_checkout_session_id',
     ];
 
     protected $casts = [
