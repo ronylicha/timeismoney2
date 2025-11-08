@@ -60,7 +60,7 @@ const CreateClient: React.FC = () => {
     // Create client mutation
     const createClientMutation = useMutation({
         mutationFn: async (data: ClientFormData) => {
-            const response = await axios.post('/api/clients', data);
+            const response = await axios.post('/clients', data);
             return response.data;
         },
         onSuccess: (client) => {

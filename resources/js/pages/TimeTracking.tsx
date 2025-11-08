@@ -12,6 +12,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
 
 interface Timer {
     id: number;
@@ -43,6 +44,7 @@ interface TimeEntry {
 }
 
 const TimeTracking: React.FC = () => {
+    const { t } = useTranslation();
     const queryClient = useQueryClient();
     const [elapsedTime, setElapsedTime] = useState(0);
     const [description, setDescription] = useState('');
@@ -91,11 +93,11 @@ const TimeTracking: React.FC = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['current-timer'] });
             queryClient.invalidateQueries({ queryKey: ['today-entries'] });
-            toast.success('Timer démarré');
+            toast.success(t('time.timerStarted'));
             setDescription('');
         },
         onError: () => {
-            toast.error('Erreur lors du démarrage du timer');
+            toast.error(t('time.timerError'));
         },
     });
 
@@ -108,10 +110,10 @@ const TimeTracking: React.FC = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['current-timer'] });
             queryClient.invalidateQueries({ queryKey: ['today-entries'] });
-            toast.success('Timer arrêté');
+            toast.success(t('time.timerStopped'));
         },
         onError: () => {
-            toast.error('Erreur lors de l\'arrêt du timer');
+            toast.error(t('time.stopError'));
         },
     });
 
@@ -143,13 +145,13 @@ const TimeTracking: React.FC = () => {
 
     const handleStartTimer = () => {
         if (!selectedProject) {
-            toast.error('Veuillez sélectionner un projet');
+            toast.error(t('time.projectRequired'));
             return;
         }
 
         startTimerMutation.mutate({
             project_id: selectedProject,
-            description: description || 'Sans description',
+            description: description || t('time.noDescription'),
         });
     };
 
@@ -162,8 +164,8 @@ const TimeTracking: React.FC = () => {
         <div className="p-6 max-w-7xl mx-auto">
             {/* Header */}
             <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900">Suivi du temps</h1>
-                <p className="mt-2 text-gray-600">Suivez votre temps en temps réel</p>
+                <h1 className="text-3xl font-bold text-gray-900">{t('time.title')}</h1>
+                <p className="mt-2 text-gray-600">{t('time.subtitle')}</p>
             </div>
 
             {/* Timer Card */}
@@ -190,14 +192,14 @@ const TimeTracking: React.FC = () => {
                     <div className="space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Projet *
+                                {t('time.project')} *
                             </label>
                             <select
                                 value={selectedProject || ''}
                                 onChange={(e) => setSelectedProject(Number(e.target.value))}
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             >
-                                <option value="">Sélectionner un projet</option>
+                                <option value="">{t('time.selectProject')}</option>
                                 {projects?.map((project: any) => (
                                     <option key={project.id} value={project.id}>
                                         {project.name}
@@ -208,13 +210,13 @@ const TimeTracking: React.FC = () => {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Description
+                                {t('time.description')}
                             </label>
                             <input
                                 type="text"
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
-                                placeholder="Que faites-vous ?"
+                                placeholder={t('time.descriptionPlaceholder')}
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
                         </div>
@@ -225,7 +227,7 @@ const TimeTracking: React.FC = () => {
                             className="w-full flex items-center justify-center space-x-2 bg-green-600 text-white py-4 rounded-lg hover:bg-green-700 transition disabled:opacity-50"
                         >
                             <PlayIcon className="h-6 w-6" />
-                            <span className="text-lg font-medium">Démarrer</span>
+                            <span className="text-lg font-medium">{t('time.start')}</span>
                         </button>
                     </div>
                 ) : (
@@ -236,7 +238,7 @@ const TimeTracking: React.FC = () => {
                             className="flex items-center space-x-2 bg-red-600 text-white px-8 py-4 rounded-lg hover:bg-red-700 transition disabled:opacity-50"
                         >
                             <StopIcon className="h-6 w-6" />
-                            <span className="text-lg font-medium">Arrêter</span>
+                            <span className="text-lg font-medium">{t('time.stop')}</span>
                         </button>
                     </div>
                 )}
@@ -245,7 +247,7 @@ const TimeTracking: React.FC = () => {
             {/* Today's Summary */}
             <div className="bg-white rounded-lg shadow p-6 mb-8">
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold text-gray-900">Aujourd'hui</h2>
+                    <h2 className="text-xl font-bold text-gray-900">{t('time.today')}</h2>
                     <div className="text-2xl font-bold text-blue-600">
                         {formatDuration(getTotalToday())}
                     </div>
@@ -255,14 +257,14 @@ const TimeTracking: React.FC = () => {
             {/* Today's Entries */}
             <div className="bg-white rounded-lg shadow overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-200">
-                    <h2 className="text-lg font-semibold text-gray-900">Entrées d'aujourd'hui</h2>
+                    <h2 className="text-lg font-semibold text-gray-900">{t('time.todayEntries')}</h2>
                 </div>
 
                 <div className="divide-y divide-gray-200">
                     {todayEntries?.length === 0 ? (
                         <div className="p-8 text-center text-gray-500">
                             <ClockIcon className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                            <p>Aucune entrée pour aujourd'hui</p>
+                            <p>{t('time.noEntriesToday')}</p>
                         </div>
                     ) : (
                         todayEntries?.map((entry: TimeEntry) => (

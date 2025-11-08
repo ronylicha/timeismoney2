@@ -65,7 +65,7 @@ const TwoFactorAuth: React.FC = () => {
                     <form className="space-y-6" onSubmit={handleSubmit}>
                         <div>
                             <label htmlFor="code" className="block text-sm font-medium text-gray-700">
-                                {useRecoveryCode ? 'Code de récupération' : 'Code de vérification'}
+                                {useRecoveryCode ? t('auth.recoveryCode') : t('auth.verificationCode')}
                             </label>
                             <input
                                 id="code"
@@ -85,7 +85,7 @@ const TwoFactorAuth: React.FC = () => {
                             disabled={verifyMutation.isPending}
                             className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         >
-                            {verifyMutation.isPending ? 'Vérification...' : 'Vérifier'}
+                            {verifyMutation.isPending ? t('auth.verifying') : t('auth.verify')}
                         </button>
 
                         <div className="text-center">
@@ -98,8 +98,8 @@ const TwoFactorAuth: React.FC = () => {
                                 className="text-sm text-blue-600 hover:text-blue-500 transition"
                             >
                                 {useRecoveryCode
-                                    ? 'Utiliser un code d\'authentification'
-                                    : 'Utiliser un code de récupération'}
+                                    ? t('auth.useAuthCode')
+                                    : t('auth.useRecoveryCode')}
                             </button>
                         </div>
                     </form>

@@ -9,9 +9,11 @@ import {
     FileText,
     AlertCircle,
     Briefcase,
-    Settings,
+    Settings as SettingsIcon,
     RotateCcw,
+    Sliders,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { useTimer } from '../hooks/useTimer';
 import { formatDuration, formatDate } from '../utils/time';
@@ -25,14 +27,15 @@ import {
     RecentActivityWidget,
     QuickActionsWidget,
     TasksSummaryWidget,
+    ClientStatsWidget,
+    ExpensesSummaryWidget,
+    TopProjectsWidget,
 } from '../components/Dashboard/Widgets';
 import DashboardGrid from '../components/Dashboard/DashboardGrid';
-import {
-    defaultLayout,
-    loadLayout,
-    saveLayout,
-    resetLayout,
-} from '../components/Dashboard/defaultLayouts';
+import DashboardSettings from '../components/Dashboard/DashboardSettings';
+import DateRangeFilter from '../components/Dashboard/DateRangeFilter';
+import { useDashboardPreferences } from '../hooks/useDashboardPreferences';
+import { DateRangeType, CustomDateRange, UserRole } from '../types/dashboard';
 
 interface DashboardStats {
     today: {
@@ -88,21 +91,33 @@ interface ChartData {
 }
 
 const Dashboard: React.FC = () => {
+    const { t } = useTranslation();
     const { user } = useAuth();
     const { activeTimer, isRunning } = useTimer();
-    const [dateRange, setDateRange] = useState<'week' | 'month'>('week');
-    const [editMode, setEditMode] = useState(false);
-    const [layout, setLayout] = useState<Layout[]>(defaultLayout);
 
-    // Load saved layout on mount
-    useEffect(() => {
-        if (user?.id) {
-            const savedLayout = loadLayout(user.id);
-            if (savedLayout) {
-                setLayout(savedLayout);
-            }
-        }
-    }, [user?.id]);
+    // Dashboard preferences
+    const {
+        preferences,
+        isLoading: preferencesLoading,
+        getCurrentLayout,
+        getVisibleWidgets,
+        setCustomLayout,
+        savePreferences,
+        resetPreferences,
+    } = useDashboardPreferences(user?.id || 0, (user?.role as UserRole) || 'employee');
+
+    const [editMode, setEditMode] = useState(false);
+    const [showSettings, setShowSettings] = useState(false);
+    const [dateRange, setDateRange] = useState<DateRangeType>(
+        preferences.defaultDateRange || 'week'
+    );
+    const [customDateRange, setCustomDateRange] = useState<CustomDateRange | undefined>(
+        preferences.customDateRange
+    );
+
+    // Get current layout based on preferences
+    const currentLayout = getCurrentLayout();
+    const visibleWidgets = getVisibleWidgets();
 
     // Fetch dashboard statistics
     const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
@@ -111,7 +126,7 @@ const Dashboard: React.FC = () => {
             const response = await axios.get('/dashboard/stats');
             return response.data;
         },
-        refetchInterval: 60000, // Refresh every minute
+        refetchInterval: preferences.refreshInterval || 60000,
     });
 
     // Fetch recent activity
@@ -121,14 +136,18 @@ const Dashboard: React.FC = () => {
             const response = await axios.get('/dashboard/activity');
             return response.data;
         },
-        refetchInterval: 30000, // Refresh every 30 seconds
+        refetchInterval: preferences.refreshInterval || 60000,
     });
 
     // Fetch chart data
     const { data: chartData, isLoading: chartsLoading } = useQuery<ChartData>({
-        queryKey: ['dashboardCharts', dateRange],
+        queryKey: ['dashboardCharts', dateRange, customDateRange],
         queryFn: async () => {
-            const response = await axios.get(`/dashboard/charts?range=${dateRange}`);
+            let url = `/dashboard/charts?range=${dateRange}`;
+            if (dateRange === 'custom' && customDateRange) {
+                url += `&start=${customDateRange.start}&end=${customDateRange.end}`;
+            }
+            const response = await axios.get(url);
             return response.data;
         },
     });
@@ -143,10 +162,7 @@ const Dashboard: React.FC = () => {
 
     // Handle layout change
     const handleLayoutChange = (newLayout: Layout[]) => {
-        setLayout(newLayout);
-        if (user?.id) {
-            saveLayout(newLayout, user.id);
-        }
+        setCustomLayout(newLayout);
     };
 
     // Toggle edit mode
@@ -154,16 +170,31 @@ const Dashboard: React.FC = () => {
         setEditMode(!editMode);
     };
 
-    // Reset to default layout
-    const handleResetLayout = () => {
-        setLayout(defaultLayout);
-        if (user?.id) {
-            resetLayout(user.id);
+    // Handle date range change
+    const handleDateRangeChange = (range: DateRangeType, custom?: CustomDateRange) => {
+        setDateRange(range);
+        if (custom) {
+            setCustomDateRange(custom);
         }
     };
 
+    // Handle settings save
+    const handleSettingsSave = (newPreferences: typeof preferences) => {
+        savePreferences(newPreferences);
+        setDateRange(newPreferences.defaultDateRange);
+        setCustomDateRange(newPreferences.customDateRange);
+    };
+
+    // Handle reset
+    const handleReset = () => {
+        resetPreferences();
+    };
+
+    // Helper to check if widget is visible
+    const isWidgetVisible = (widgetId: string) => visibleWidgets.includes(widgetId as any);
+
     // Show loading state
-    if (statsLoading) {
+    if (statsLoading || preferencesLoading) {
         return (
             <div className="flex items-center justify-center h-screen">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -178,7 +209,7 @@ const Dashboard: React.FC = () => {
                 <div className="text-center">
                     <AlertCircle className="mx-auto text-red-500 mb-4" size={48} />
                     <p className="text-gray-600 dark:text-gray-400">
-                        Unable to load dashboard data
+                        {t('dashboard.unableToLoad')}
                     </p>
                 </div>
             </div>
@@ -188,79 +219,100 @@ const Dashboard: React.FC = () => {
     return (
         <div className="container mx-auto px-4 py-8">
             {/* Header */}
-            <div className="mb-8 flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
-                        Bon retour, {user?.name} !
-                    </h1>
-                    <p className="text-gray-600 dark:text-gray-400 mt-2">
-                        {formatDate(new Date(), 'fr-FR')}
-                    </p>
-                </div>
+            <div className="mb-8">
+                <div className="flex items-center justify-between mb-4">
+                    <div>
+                        {preferences.showWelcomeMessage && (
+                            <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
+                                {t('dashboard.welcome')}, {user?.name} !
+                            </h1>
+                        )}
+                        <p className="text-gray-600 dark:text-gray-400 mt-2">
+                            {formatDate(new Date(), 'fr-FR')}
+                        </p>
+                    </div>
 
-                {/* Dashboard Controls */}
-                <div className="flex items-center space-x-3">
-                    <button
-                        onClick={handleResetLayout}
-                        className="flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                        title="Réinitialiser la disposition"
-                    >
-                        <RotateCcw size={18} className="mr-2" />
-                        Réinitialiser
-                    </button>
-                    <button
-                        onClick={toggleEditMode}
-                        className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
-                            editMode
-                                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                        }`}
-                    >
-                        <Settings size={18} className="mr-2" />
-                        {editMode ? 'Terminer' : 'Personnaliser'}
-                    </button>
+                    {/* Dashboard Controls */}
+                    <div className="flex items-center space-x-3">
+                        {/* Date Range Filter */}
+                        <DateRangeFilter
+                            value={dateRange}
+                            customRange={customDateRange}
+                            onChange={handleDateRangeChange}
+                        />
+
+                        <button
+                            onClick={handleReset}
+                            className="flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            title={t('common.reset')}
+                        >
+                            <RotateCcw size={18} className="mr-2" />
+                            {t('common.reset')}
+                        </button>
+                        <button
+                            onClick={() => setShowSettings(true)}
+                            className="flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                        >
+                            <Sliders size={18} className="mr-2" />
+                            {t('settings.title')}
+                        </button>
+                        <button
+                            onClick={toggleEditMode}
+                            className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
+                                editMode
+                                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                            }`}
+                        >
+                            <SettingsIcon size={18} className="mr-2" />
+                            {editMode ? t('common.finish') : 'Personnaliser'}
+                        </button>
+                    </div>
                 </div>
             </div>
 
             {/* Dashboard Grid with Widgets */}
             <DashboardGrid
-                layouts={layout}
+                layouts={currentLayout}
                 onLayoutChange={handleLayoutChange}
                 editable={editMode}
             >
                 {/* Today's Hours Widget */}
-                <StatWidget
-                    title="Aujourd'hui"
-                    value={formatDuration((stats?.today?.hours || 0) * 3600)}
-                    subtitle={`${stats?.today?.entries || 0} entrées`}
-                    icon={Clock}
-                    iconColor="text-blue-600 dark:text-blue-400"
-                    iconBgColor="bg-blue-100 dark:bg-blue-900"
-                />
+                {isWidgetVisible('today-hours') && (
+                    <StatWidget
+                        title={t('dashboard.stats.today')}
+                        value={formatDuration((stats?.today?.hours || 0) * 3600)}
+                        subtitle={`${stats?.today?.entries || 0} ${t('dashboard.stats.entries')}`}
+                        icon={Clock}
+                        iconColor="text-blue-600 dark:text-blue-400"
+                        iconBgColor="bg-blue-100 dark:bg-blue-900"
+                    />
+                )}
 
                 {/* This Week Widget */}
-                <StatWidget
-                    title="Cette semaine"
+                {isWidgetVisible('week-hours') && (
+                    <StatWidget
+                    title={t('dashboard.stats.thisWeek')}
                     value={formatDuration((stats.week.hours || 0) * 3600)}
-                    subtitle={`${stats.week.entries || 0} entrées`}
+                    subtitle={`${stats.week.entries || 0} ${t('dashboard.stats.entries')}`}
                     icon={TrendingUp}
                     iconColor="text-green-600 dark:text-green-400"
                     iconBgColor="bg-green-100 dark:bg-green-900"
                     trend={stats.week.trend}
-                    trendLabel="vs semaine dernière"
+                    trendLabel={t('dashboard.stats.vsLastWeek')}
                 />
 
                 {/* Pending Invoices Widget */}
                 <StatWidget
-                    title="En attente"
+                    title={t('dashboard.stats.pending')}
                     value={formatCurrency(stats.invoices.pending_amount || 0)}
-                    subtitle={`${stats.invoices.pending || 0} factures`}
+                    subtitle={`${stats.invoices.pending || 0} ${t('dashboard.stats.invoices')}`}
                     icon={FileText}
                     iconColor="text-yellow-600 dark:text-yellow-400"
                     iconBgColor="bg-yellow-100 dark:bg-yellow-900"
                     badge={
                         stats.invoices.overdue && stats.invoices.overdue > 0
-                            ? `${stats.invoices.overdue} en retard`
+                            ? `${stats.invoices.overdue} ${t('dashboard.stats.overdue')}`
                             : undefined
                     }
                     badgeColor="bg-red-500"
@@ -268,9 +320,9 @@ const Dashboard: React.FC = () => {
 
                 {/* Active Projects Widget */}
                 <StatWidget
-                    title="Projets"
+                    title={t('projects.title')}
                     value={stats?.projects.active || 0}
-                    subtitle="Projets actifs"
+                    subtitle={t('dashboard.stats.activeProjects')}
                     icon={Briefcase}
                     iconColor="text-purple-600 dark:text-purple-400"
                     iconBgColor="bg-purple-100 dark:bg-purple-900"

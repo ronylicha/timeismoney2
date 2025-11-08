@@ -64,7 +64,7 @@ const EditClient: React.FC = () => {
     const { data: client, isLoading, error } = useQuery({
         queryKey: ['client', id],
         queryFn: async () => {
-            const response = await axios.get(`/api/clients/${id}`);
+            const response = await axios.get(`/clients/${id}`);
             return response.data;
         },
         enabled: !!id,
@@ -98,7 +98,7 @@ const EditClient: React.FC = () => {
     // Update client mutation
     const updateClientMutation = useMutation({
         mutationFn: async (data: ClientFormData) => {
-            const response = await axios.put(`/api/clients/${id}`, data);
+            const response = await axios.put(`/clients/${id}`, data);
             return response.data;
         },
         onSuccess: () => {
