@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -23,6 +24,7 @@ interface RegisterFormData {
 }
 
 const Register: React.FC = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [showPassword, setShowPassword] = useState(false);
     const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
@@ -66,11 +68,11 @@ const Register: React.FC = () => {
                 localStorage.setItem('user', JSON.stringify(data.user));
             }
 
-            toast.success('Inscription réussie ! Bienvenue !');
+            toast.success(t('auth.registerSuccess'));
             navigate('/dashboard');
         },
         onError: (error: any) => {
-            const message = error.response?.data?.message || 'Erreur lors de l\'inscription';
+            const message = error.response?.data?.message || t('auth.registerError');
             const errors = error.response?.data?.errors;
 
             if (errors) {
@@ -88,22 +90,22 @@ const Register: React.FC = () => {
 
         // Validation
         if (!formData.name || !formData.email || !formData.password || !formData.tenant_name) {
-            toast.error('Veuillez remplir tous les champs obligatoires');
+            toast.error(t('auth.fillAllFields'));
             return;
         }
 
         if (formData.password !== formData.password_confirmation) {
-            toast.error('Les mots de passe ne correspondent pas');
+            toast.error(t('auth.passwordsDoNotMatch'));
             return;
         }
 
         if (formData.password.length < 8) {
-            toast.error('Le mot de passe doit contenir au moins 8 caractères');
+            toast.error(t('auth.passwordTooShort'));
             return;
         }
 
         if (!formData.agree_terms) {
-            toast.error('Veuillez accepter les conditions d\'utilisation');
+            toast.error(t('auth.mustAcceptTerms'));
             return;
         }
 
@@ -123,10 +125,10 @@ const Register: React.FC = () => {
                         </div>
                     </div>
                     <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-                        Créer un compte
+                        {t('auth.createAccount')}
                     </h2>
                     <p className="mt-2 text-sm text-gray-600">
-                        Commencez votre essai gratuit de 14 jours
+                        {t('auth.freeTrialMessage')}
                     </p>
                 </div>
 
@@ -136,7 +138,7 @@ const Register: React.FC = () => {
                         {/* Name Field */}
                         <div>
                             <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                                Nom complet *
+                                {t('auth.fullName')} *
                             </label>
                             <div className="mt-1 relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -150,7 +152,7 @@ const Register: React.FC = () => {
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                     className="appearance-none block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                                    placeholder="Jean Dupont"
+                                    placeholder={t('auth.fullNamePlaceholder')}
                                 />
                             </div>
                         </div>
@@ -158,7 +160,7 @@ const Register: React.FC = () => {
                         {/* Email Field */}
                         <div>
                             <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                                Adresse email *
+                                {t('auth.emailAddress')} *
                             </label>
                             <div className="mt-1 relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -173,7 +175,7 @@ const Register: React.FC = () => {
                                     value={formData.email}
                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                     className="appearance-none block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                                    placeholder="vous@exemple.com"
+                                    placeholder={t('auth.emailPlaceholder')}
                                 />
                             </div>
                         </div>
@@ -181,7 +183,7 @@ const Register: React.FC = () => {
                         {/* Tenant Name */}
                         <div>
                             <label htmlFor="tenant_name" className="block text-sm font-medium text-gray-700">
-                                Nom de l'organisation *
+                                {t('auth.organizationName')} *
                             </label>
                             <div className="mt-1 relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -195,7 +197,7 @@ const Register: React.FC = () => {
                                     value={formData.tenant_name}
                                     onChange={(e) => setFormData({ ...formData, tenant_name: e.target.value })}
                                     className="appearance-none block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                                    placeholder="Mon Entreprise SARL"
+                                    placeholder={t('auth.organizationPlaceholder')}
                                 />
                             </div>
                         </div>
@@ -203,7 +205,7 @@ const Register: React.FC = () => {
                         {/* Password Field */}
                         <div>
                             <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                                Mot de passe *
+                                {t('auth.password')} *
                             </label>
                             <div className="mt-1 relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -218,7 +220,7 @@ const Register: React.FC = () => {
                                     value={formData.password}
                                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                                     className="appearance-none block w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                                    placeholder="••••••••"
+                                    placeholder={t('auth.passwordPlaceholder')}
                                 />
                                 <button
                                     type="button"
@@ -233,14 +235,14 @@ const Register: React.FC = () => {
                                 </button>
                             </div>
                             <p className="mt-1 text-xs text-gray-500">
-                                Minimum 8 caractères
+                                {t('auth.passwordMinLength')}
                             </p>
                         </div>
 
                         {/* Password Confirmation */}
                         <div>
                             <label htmlFor="password_confirmation" className="block text-sm font-medium text-gray-700">
-                                Confirmer le mot de passe *
+                                {t('auth.confirmPassword')} *
                             </label>
                             <div className="mt-1 relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -255,7 +257,7 @@ const Register: React.FC = () => {
                                     value={formData.password_confirmation}
                                     onChange={(e) => setFormData({ ...formData, password_confirmation: e.target.value })}
                                     className="appearance-none block w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                                    placeholder="••••••••"
+                                    placeholder={t('auth.passwordPlaceholder')}
                                 />
                                 <button
                                     type="button"
@@ -285,13 +287,13 @@ const Register: React.FC = () => {
                             </div>
                             <div className="ml-2 text-sm">
                                 <label htmlFor="agree_terms" className="text-gray-700">
-                                    J'accepte les{' '}
+                                    {t('auth.agreeToTerms')}{' '}
                                     <a href="#" className="text-blue-600 hover:text-blue-500">
-                                        conditions d'utilisation
+                                        {t('auth.termsOfService')}
                                     </a>{' '}
-                                    et la{' '}
+                                    {t('auth.and')}{' '}
                                     <a href="#" className="text-blue-600 hover:text-blue-500">
-                                        politique de confidentialité
+                                        {t('auth.privacyPolicy')}
                                     </a>
                                 </label>
                             </div>
@@ -309,11 +311,11 @@ const Register: React.FC = () => {
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                     </svg>
-                                    Création du compte...
+                                    {t('auth.creatingAccount')}
                                 </>
                             ) : (
                                 <>
-                                    Créer mon compte
+                                    {t('auth.createAccountButton')}
                                     <ArrowRightIcon className="ml-2 h-5 w-5" />
                                 </>
                             )}
@@ -323,12 +325,12 @@ const Register: React.FC = () => {
                     {/* Login Link */}
                     <div className="mt-6 text-center">
                         <p className="text-sm text-gray-600">
-                            Vous avez déjà un compte ?{' '}
+                            {t('auth.alreadyHaveAccount')}{' '}
                             <Link
                                 to="/login"
                                 className="font-medium text-blue-600 hover:text-blue-500 transition"
                             >
-                                Se connecter
+                                {t('auth.loginLink')}
                             </Link>
                         </p>
                     </div>

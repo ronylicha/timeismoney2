@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { ShieldCheckIcon } from '@heroicons/react/24/outline';
 
 const TwoFactorAuth: React.FC = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [code, setCode] = useState('');
     const [useRecoveryCode, setUseRecoveryCode] = useState(false);
@@ -20,11 +22,11 @@ const TwoFactorAuth: React.FC = () => {
             if (data.token) {
                 localStorage.setItem('auth_token', data.token);
             }
-            toast.success('Authentification réussie !');
+            toast.success(t('auth.twoFactorSuccess'));
             navigate('/dashboard');
         },
         onError: (error: any) => {
-            const message = error.response?.data?.message || 'Code invalide';
+            const message = error.response?.data?.message || t('auth.invalidCode');
             toast.error(message);
         }
     });
@@ -33,7 +35,7 @@ const TwoFactorAuth: React.FC = () => {
         e.preventDefault();
 
         if (!code) {
-            toast.error('Veuillez entrer le code');
+            toast.error(t('auth.enterCode'));
             return;
         }
 
@@ -50,12 +52,12 @@ const TwoFactorAuth: React.FC = () => {
                         </div>
                     </div>
                     <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-                        Authentification à deux facteurs
+                        {t('auth.twoFactorTitle')}
                     </h2>
                     <p className="mt-2 text-sm text-gray-600">
                         {useRecoveryCode
-                            ? 'Entrez l\'un de vos codes de récupération'
-                            : 'Entrez le code à 6 chiffres de votre application d\'authentification'}
+                            ? t('auth.recoveryCodeDescription')
+                            : t('auth.twoFactorDescription')}
                     </p>
                 </div>
 

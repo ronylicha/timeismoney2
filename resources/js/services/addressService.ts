@@ -63,8 +63,7 @@ class AddressService {
         params: {
           q: query.trim(),
           limit,
-          autocomplete: autocomplete ? '1' : '0',
-          type: 'housenumber,street,locality,municipality'
+          autocomplete: autocomplete ? '1' : '0'
         },
         timeout: 5000
       });
@@ -152,8 +151,7 @@ class AddressService {
       const response = await axios.get(`${this.baseUrl}/reverse/`, {
         params: {
           lat,
-          lon,
-          type: 'housenumber,street,locality,municipality'
+          lon
         },
         timeout: 5000
       });

@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { EnvelopeIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 
 const ForgotPassword: React.FC = () => {
+    const { t } = useTranslation();
     const [email, setEmail] = useState('');
     const [emailSent, setEmailSent] = useState(false);
 
@@ -16,10 +18,10 @@ const ForgotPassword: React.FC = () => {
         },
         onSuccess: () => {
             setEmailSent(true);
-            toast.success('Email de réinitialisation envoyé !');
+            toast.success(t('auth.resetEmailSuccess'));
         },
         onError: (error: any) => {
-            const message = error.response?.data?.message || 'Erreur lors de l\'envoi';
+            const message = error.response?.data?.message || t('auth.resetEmailError');
             toast.error(message);
         }
     });
@@ -28,7 +30,7 @@ const ForgotPassword: React.FC = () => {
         e.preventDefault();
 
         if (!email) {
-            toast.error('Veuillez entrer votre adresse email');
+            toast.error(t('auth.enterEmail'));
             return;
         }
 
@@ -47,10 +49,10 @@ const ForgotPassword: React.FC = () => {
                         </div>
                     </div>
                     <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-                        Mot de passe oublié ?
+                        {t('auth.resetPasswordTitle')}
                     </h2>
                     <p className="mt-2 text-sm text-gray-600">
-                        Pas de problème. Entrez votre email et nous vous enverrons un lien de réinitialisation.
+                        {t('auth.resetPasswordDescription')}
                     </p>
                 </div>
 
@@ -62,23 +64,23 @@ const ForgotPassword: React.FC = () => {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                 </svg>
                             </div>
-                            <h3 className="mt-4 text-lg font-medium text-gray-900">Email envoyé !</h3>
+                            <h3 className="mt-4 text-lg font-medium text-gray-900">{t('auth.emailSent')}</h3>
                             <p className="mt-2 text-sm text-gray-600">
-                                Vérifiez votre boîte de réception et suivez les instructions pour réinitialiser votre mot de passe.
+                                {t('auth.checkInbox')}
                             </p>
                             <Link
                                 to="/login"
                                 className="mt-6 inline-flex items-center text-blue-600 hover:text-blue-500 transition"
                             >
                                 <ArrowLeftIcon className="mr-2 h-5 w-5" />
-                                Retour à la connexion
+                                {t('auth.backToLogin')}
                             </Link>
                         </div>
                     ) : (
                         <form className="space-y-6" onSubmit={handleSubmit}>
                             <div>
                                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                                    Adresse email
+                                    {t('auth.emailAddress')}
                                 </label>
                                 <div className="mt-1 relative">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -93,7 +95,7 @@ const ForgotPassword: React.FC = () => {
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         className="appearance-none block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                                        placeholder="vous@exemple.com"
+                                        placeholder={t('auth.emailPlaceholder')}
                                     />
                                 </div>
                             </div>
@@ -103,7 +105,7 @@ const ForgotPassword: React.FC = () => {
                                 disabled={resetMutation.isPending}
                                 className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                             >
-                                {resetMutation.isPending ? 'Envoi en cours...' : 'Envoyer le lien'}
+                                {resetMutation.isPending ? t('auth.sendingResetLink') : t('auth.sendResetLink')}
                             </button>
 
                             <div className="text-center">
@@ -112,7 +114,7 @@ const ForgotPassword: React.FC = () => {
                                     className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition"
                                 >
                                     <ArrowLeftIcon className="mr-2 h-4 w-4" />
-                                    Retour à la connexion
+                                    {t('auth.backToLogin')}
                                 </Link>
                             </div>
                         </form>

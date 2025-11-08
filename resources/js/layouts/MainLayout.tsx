@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
     HomeIcon,
     ClockIcon,
@@ -31,25 +32,26 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { user, logout } = useAuth();
+    const { t } = useTranslation();
 
     const navigation = isAdmin ? [
-        { name: 'Tableau de bord', href: '/admin', icon: HomeIcon },
-        { name: 'Dashboard utilisateur', href: '/dashboard', icon: UserCircleIcon },
-        { name: 'Utilisateurs', href: '/admin/users', icon: UserGroupIcon },
-        { name: 'Organisations', href: '/admin/tenants', icon: FolderIcon },
-        { name: 'Journaux d\'audit', href: '/admin/audit-logs', icon: ClipboardDocumentListIcon },
-        { name: 'Paramètres', href: '/admin/settings', icon: Cog6ToothIcon },
+        { name: t('nav.adminDashboard'), href: '/admin', icon: HomeIcon },
+        { name: t('nav.userDashboard'), href: '/dashboard', icon: UserCircleIcon },
+        { name: t('nav.users'), href: '/admin/users', icon: UserGroupIcon },
+        { name: t('nav.organizations'), href: '/admin/tenants', icon: FolderIcon },
+        { name: t('nav.auditLogs'), href: '/admin/audit-logs', icon: ClipboardDocumentListIcon },
+        { name: t('nav.settings'), href: '/admin/settings', icon: Cog6ToothIcon },
     ] : [
-        { name: 'Tableau de bord', href: '/dashboard', icon: HomeIcon },
-        { name: 'Suivi du temps', href: '/time', icon: ClockIcon },
-        { name: 'Feuille de temps', href: '/timesheet', icon: ClipboardDocumentListIcon },
-        { name: 'Projets', href: '/projects', icon: FolderIcon },
-        { name: 'Clients', href: '/clients', icon: UserGroupIcon },
-        { name: 'Factures', href: '/invoices', icon: DocumentTextIcon },
-        { name: 'Devis', href: '/quotes', icon: DocumentTextIcon },
-        { name: 'Dépenses', href: '/expenses', icon: BanknotesIcon },
-        { name: 'Rapports', href: '/reports', icon: ChartBarIcon },
-        { name: 'Paramètres', href: '/settings', icon: Cog6ToothIcon },
+        { name: t('nav.dashboard'), href: '/dashboard', icon: HomeIcon },
+        { name: t('nav.time'), href: '/time', icon: ClockIcon },
+        { name: t('nav.timesheet'), href: '/timesheet', icon: ClipboardDocumentListIcon },
+        { name: t('nav.projects'), href: '/projects', icon: FolderIcon },
+        { name: t('nav.clients'), href: '/clients', icon: UserGroupIcon },
+        { name: t('nav.invoices'), href: '/invoices', icon: DocumentTextIcon },
+        { name: t('nav.quotes'), href: '/quotes', icon: DocumentTextIcon },
+        { name: t('nav.expenses'), href: '/expenses', icon: BanknotesIcon },
+        { name: t('nav.reports'), href: '/reports', icon: ChartBarIcon },
+        { name: t('nav.settings'), href: '/settings', icon: Cog6ToothIcon },
     ];
 
     const handleLogout = () => {
@@ -188,7 +190,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
                                                 <div className="mr-3">
                                                     <UserAvatar avatar={user?.avatar} name={user?.name} size="xs" />
                                                 </div>
-                                                Mon profil
+                                                {t('userMenu.profile')}
                                             </Link>
                                             <Link
                                                 to="/settings"
@@ -196,7 +198,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
                                                 onClick={() => setUserMenuOpen(false)}
                                             >
                                                 <Cog6ToothIcon className="mr-3 h-5 w-5 text-gray-400" />
-                                                Paramètres
+                                                {t('userMenu.settings')}
                                             </Link>
                                             {(user?.role === 'admin' || user?.role === 'super-admin') && (
                                                 location.pathname.startsWith('/admin') ? (
@@ -206,7 +208,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
                                                         onClick={() => setUserMenuOpen(false)}
                                                     >
                                                         <HomeIcon className="mr-3 h-5 w-5 text-gray-400" />
-                                                        Tableau de bord
+                                                        {t('userMenu.dashboard')}
                                                     </Link>
                                                 ) : (
                                                     <Link
@@ -215,7 +217,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
                                                         onClick={() => setUserMenuOpen(false)}
                                                     >
                                                         <ShieldCheckIcon className="mr-3 h-5 w-5 text-gray-400" />
-                                                        Administration
+                                                        {t('userMenu.administration')}
                                                     </Link>
                                                 )
                                             )}
@@ -228,7 +230,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
                                                 className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                                             >
                                                 <ArrowRightOnRectangleIcon className="mr-3 h-5 w-5" />
-                                                Déconnexion
+                                                {t('userMenu.logout')}
                                             </button>
                                         </div>
                                     </div>
