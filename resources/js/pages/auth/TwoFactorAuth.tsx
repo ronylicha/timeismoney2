@@ -1,0 +1,110 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import { ShieldCheckIcon } from '@heroicons/react/24/outline';
+
+const TwoFactorAuth: React.FC = () => {
+    const navigate = useNavigate();
+    const [code, setCode] = useState('');
+    const [useRecoveryCode, setUseRecoveryCode] = useState(false);
+
+    const verifyMutation = useMutation({
+        mutationFn: async (data: { code: string; recovery?: boolean }) => {
+            const endpoint = data.recovery ? '/2fa/recovery' : '/2fa/verify';
+            const response = await axios.post(endpoint, { code: data.code });
+            return response.data;
+        },
+        onSuccess: (data) => {
+            if (data.token) {
+                localStorage.setItem('auth_token', data.token);
+            }
+            toast.success('Authentification réussie !');
+            navigate('/dashboard');
+        },
+        onError: (error: any) => {
+            const message = error.response?.data?.message || 'Code invalide';
+            toast.error(message);
+        }
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!code) {
+            toast.error('Veuillez entrer le code');
+            return;
+        }
+
+        verifyMutation.mutate({ code, recovery: useRecoveryCode });
+    };
+
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-md w-full space-y-8">
+                <div className="text-center">
+                    <div className="flex justify-center">
+                        <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                            <ShieldCheckIcon className="w-10 h-10 text-white" />
+                        </div>
+                    </div>
+                    <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+                        Authentification à deux facteurs
+                    </h2>
+                    <p className="mt-2 text-sm text-gray-600">
+                        {useRecoveryCode
+                            ? 'Entrez l\'un de vos codes de récupération'
+                            : 'Entrez le code à 6 chiffres de votre application d\'authentification'}
+                    </p>
+                </div>
+
+                <div className="bg-white rounded-2xl shadow-xl p-8">
+                    <form className="space-y-6" onSubmit={handleSubmit}>
+                        <div>
+                            <label htmlFor="code" className="block text-sm font-medium text-gray-700">
+                                {useRecoveryCode ? 'Code de récupération' : 'Code de vérification'}
+                            </label>
+                            <input
+                                id="code"
+                                name="code"
+                                type="text"
+                                required
+                                value={code}
+                                onChange={(e) => setCode(e.target.value)}
+                                className="mt-1 appearance-none block w-full px-3 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-center text-2xl tracking-widest"
+                                placeholder={useRecoveryCode ? '' : '000000'}
+                                maxLength={useRecoveryCode ? 16 : 6}
+                            />
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={verifyMutation.isPending}
+                            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        >
+                            {verifyMutation.isPending ? 'Vérification...' : 'Vérifier'}
+                        </button>
+
+                        <div className="text-center">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setUseRecoveryCode(!useRecoveryCode);
+                                    setCode('');
+                                }}
+                                className="text-sm text-blue-600 hover:text-blue-500 transition"
+                            >
+                                {useRecoveryCode
+                                    ? 'Utiliser un code d\'authentification'
+                                    : 'Utiliser un code de récupération'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default TwoFactorAuth;

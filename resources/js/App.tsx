@@ -1,0 +1,250 @@
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+// Layout Components
+import MainLayout from './layouts/MainLayout';
+import AuthLayout from './layouts/AuthLayout';
+
+// Auth Components
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import TwoFactorAuth from './pages/auth/TwoFactorAuth';
+
+// Dashboard
+import Dashboard from './pages/Dashboard';
+
+// Time Tracking
+import TimeTracking from './pages/TimeTracking';
+import TimeSheet from './pages/TimeSheet';
+
+// Projects & Tasks
+import Projects from './pages/Projects';
+import ProjectDetail from './pages/ProjectDetail';
+import Tasks from './pages/Tasks';
+import KanbanBoard from './pages/KanbanBoard';
+
+// Clients
+import Clients from './pages/Clients';
+import ClientDetail from './pages/ClientDetail';
+
+// Invoicing
+import Invoices from './pages/Invoices';
+import InvoiceDetail from './pages/InvoiceDetail';
+import CreateInvoice from './pages/CreateInvoice';
+import Quotes from './pages/Quotes';
+import QuoteDetail from './pages/QuoteDetail';
+
+// Expenses
+import Expenses from './pages/Expenses';
+import ExpenseCategories from './pages/ExpenseCategories';
+
+// Reports & Analytics
+import Reports from './pages/Reports';
+import Analytics from './pages/Analytics';
+
+// Settings
+import Settings from './pages/Settings';
+import Profile from './pages/Profile';
+import TeamManagement from './pages/TeamManagement';
+import Integrations from './pages/Integrations';
+
+// Admin
+import AdminDashboard from './pages/Admin/AdminDashboard';
+import AdminUsers from './pages/Admin/UserManagement';
+import AdminTenants from './pages/Admin/TenantManagement';
+import AdminSettings from './pages/Admin/SystemSettings';
+
+// Contexts
+import { AuthProvider } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { OfflineProvider } from './contexts/OfflineContext';
+
+// Guards
+import PrivateRoute from './components/PrivateRoute';
+import AdminRoute from './components/AdminRoute';
+
+// PWA
+import { registerServiceWorker } from './utils/serviceWorker';
+
+// Create QueryClient instance
+const queryClient = new QueryClient({
+    defaultOptions: {
+        queries: {
+            staleTime: 1000 * 60 * 5, // 5 minutes
+            cacheTime: 1000 * 60 * 10, // 10 minutes
+            retry: 3,
+            retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+        },
+    },
+});
+
+// Configure axios defaults
+import axios from 'axios';
+
+axios.defaults.baseURL = import.meta.env.VITE_API_URL || '/api';
+axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+axios.defaults.withCredentials = true;
+
+// Add auth token to requests
+axios.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
+
+// Handle auth errors globally
+axios.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            // Only redirect if not already on login/register pages
+            const currentPath = window.location.pathname;
+            const authPaths = ['/login', '/register', '/forgot-password'];
+
+            if (!authPaths.includes(currentPath)) {
+                // Clear auth data and redirect to login
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
+            }
+        }
+        return Promise.reject(error);
+    }
+);
+
+function App() {
+    useEffect(() => {
+        // Register service worker for PWA functionality
+        if ('serviceWorker' in navigator && import.meta.env.PROD) {
+            registerServiceWorker();
+        }
+
+        // Setup offline detection
+        const handleOnline = () => {
+            console.log('Application is online');
+            queryClient.refetchQueries();
+        };
+
+        const handleOffline = () => {
+            console.log('Application is offline');
+        };
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
+
+    return (
+        <QueryClientProvider client={queryClient}>
+            <Router>
+                <ThemeProvider>
+                    <OfflineProvider>
+                        <AuthProvider>
+                            <Routes>
+                                {/* Public Auth Routes */}
+                                <Route element={<AuthLayout />}>
+                                    <Route path="/login" element={<Login />} />
+                                    <Route path="/register" element={<Register />} />
+                                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                                    <Route path="/2fa" element={<TwoFactorAuth />} />
+                                </Route>
+
+                                {/* Private Routes */}
+                                <Route element={<PrivateRoute />}>
+                                    <Route element={<MainLayout />}>
+                                        {/* Dashboard */}
+                                        <Route path="/" element={<Dashboard />} />
+                                        <Route path="/dashboard" element={<Dashboard />} />
+
+                                        {/* Time Tracking */}
+                                        <Route path="/time" element={<TimeTracking />} />
+                                        <Route path="/timesheet" element={<TimeSheet />} />
+
+                                        {/* Projects & Tasks */}
+                                        <Route path="/projects" element={<Projects />} />
+                                        <Route path="/projects/:id" element={<ProjectDetail />} />
+                                        <Route path="/projects/:id/kanban" element={<KanbanBoard />} />
+                                        <Route path="/tasks" element={<Tasks />} />
+
+                                        {/* Clients */}
+                                        <Route path="/clients" element={<Clients />} />
+                                        <Route path="/clients/:id" element={<ClientDetail />} />
+
+                                        {/* Invoicing */}
+                                        <Route path="/invoices" element={<Invoices />} />
+                                        <Route path="/invoices/new" element={<CreateInvoice />} />
+                                        <Route path="/invoices/:id" element={<InvoiceDetail />} />
+                                        <Route path="/quotes" element={<Quotes />} />
+                                        <Route path="/quotes/:id" element={<QuoteDetail />} />
+
+                                        {/* Expenses */}
+                                        <Route path="/expenses" element={<Expenses />} />
+                                        <Route path="/expense-categories" element={<ExpenseCategories />} />
+
+                                        {/* Reports & Analytics */}
+                                        <Route path="/reports" element={<Reports />} />
+                                        <Route path="/analytics" element={<Analytics />} />
+
+                                        {/* Settings */}
+                                        <Route path="/settings" element={<Settings />} />
+                                        <Route path="/profile" element={<Profile />} />
+                                        <Route path="/team" element={<TeamManagement />} />
+                                        <Route path="/integrations" element={<Integrations />} />
+                                    </Route>
+                                </Route>
+
+                                {/* Admin Routes */}
+                                <Route element={<AdminRoute />}>
+                                    <Route element={<MainLayout isAdmin />}>
+                                        <Route path="/admin" element={<AdminDashboard />} />
+                                        <Route path="/admin/users" element={<AdminUsers />} />
+                                        <Route path="/admin/tenants" element={<AdminTenants />} />
+                                        <Route path="/admin/settings" element={<AdminSettings />} />
+                                    </Route>
+                                </Route>
+
+                                {/* Redirect unknown routes */}
+                                <Route path="*" element={<Navigate to="/" replace />} />
+                            </Routes>
+
+                            {/* Toast Notifications */}
+                            <ToastContainer
+                                position="top-right"
+                                autoClose={5000}
+                                hideProgressBar={false}
+                                newestOnTop
+                                closeOnClick
+                                rtl={false}
+                                pauseOnFocusLoss
+                                draggable
+                                pauseOnHover
+                                theme="light"
+                            />
+                        </AuthProvider>
+                    </OfflineProvider>
+                </ThemeProvider>
+
+                {/* React Query Dev Tools - Only in development */}
+                {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+            </Router>
+        </QueryClientProvider>
+    );
+}
+
+export default App;

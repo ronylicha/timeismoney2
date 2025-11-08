@@ -1,0 +1,66 @@
+{
+    "$schema": "https://json.schemastore.org/package.json",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "vite build",
+        "dev": "vite"
+    },
+    "devDependencies": {
+        "@headlessui/react": "^2.2.9",
+        "@heroicons/react": "^2.2.0",
+        "@hookform/resolvers": "^5.2.2",
+        "@reduxjs/toolkit": "^2.10.1",
+        "@tailwindcss/postcss": "^4.1.17",
+        "@tailwindcss/vite": "^4.1.17",
+        "@tanstack/react-query": "^5.90.7",
+        "@tanstack/react-query-devtools": "^5.90.2",
+        "@vitejs/plugin-react": "^5.1.0",
+        "autoprefixer": "^10.4.21",
+        "axios": "^1.13.2",
+        "concurrently": "^9.2.1",
+        "date-fns": "^4.1.0",
+        "laravel-vite-plugin": "^2.0.0",
+        "patch-package": "^8.0.1",
+        "postcss": "^8.5.6",
+        "react-hook-form": "^7.66.0",
+        "react-redux": "^9.2.0",
+        "recharts": "^3.3.0",
+        "tailwindcss": "^4.1.17",
+        "typescript": "^5.9.3",
+        "vite": "^7.0.7",
+        "vite-plugin-pwa": "^1.1.0",
+        "workbox-window": "^7.3.0",
+        "zod": "^4.1.12"
+    },
+    "name": "timeismoney2",
+    "version": "1.0.0",
+    "description": "<p align=\"center\"><a href=\"https://laravel.com\" target=\"_blank\"><img src=\"https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg\" width=\"400\" alt=\"Laravel Logo\"></a></p>",
+    "main": "vite.config.js",
+    "directories": {
+        "test": "tests"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ronylicha/timeismoney2.git"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/ronylicha/timeismoney2/issues"
+    },
+    "homepage": "https://github.com/ronylicha/timeismoney2#readme",
+    "dependencies": {
+        "@types/react": "^19.2.2",
+        "@types/react-dom": "^19.2.2",
+        "chart.js": "^4.5.1",
+        "lucide-react": "^0.553.0",
+        "react": "^19.2.0",
+        "react-chartjs-2": "^5.3.1",
+        "react-dom": "^19.2.0",
+        "react-router-dom": "^7.9.5",
+        "react-toastify": "^11.0.5",
+        "sql.js": "^1.13.0"
+    }
+}
