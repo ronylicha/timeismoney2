@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import {
     ChartBarIcon,
     DocumentChartBarIcon,
@@ -28,6 +29,7 @@ interface ReportType {
 }
 
 const Reports: React.FC = () => {
+    const { t } = useTranslation();
     const [selectedReport, setSelectedReport] = useState<string | null>(null);
     const [filters, setFilters] = useState({
         start_date: format(new Date(new Date().setMonth(new Date().getMonth() - 1)), 'yyyy-MM-dd'),
@@ -42,40 +44,40 @@ const Reports: React.FC = () => {
     const reportTypes: ReportType[] = [
         {
             id: 'time_summary',
-            name: 'Rapport de temps',
-            description: 'Résumé du temps suivi par utilisateurs, projets et clients',
+            name: t('reports.timeSummary'),
+            description: t('reports.timeSummaryDescription'),
             type: 'time',
             icon: ClockIcon,
             color: 'blue',
         },
         {
             id: 'invoice_summary',
-            name: 'Rapport de facturation',
-            description: 'Résumé des factures par statut et période',
+            name: t('reports.invoiceSummary'),
+            description: t('reports.invoiceSummaryDescription'),
             type: 'financial',
             icon: DocumentChartBarIcon,
             color: 'green',
         },
         {
             id: 'expense_summary',
-            name: 'Rapport de dépenses',
-            description: 'Résumé des dépenses par catégorie et projet',
+            name: t('reports.expenseSummary'),
+            description: t('reports.expenseSummaryDescription'),
             type: 'financial',
             icon: CurrencyEuroIcon,
             color: 'red',
         },
         {
             id: 'project_profitability',
-            name: 'Rentabilité des projets',
-            description: 'Analyse des revenus vs coûts par projet',
+            name: t('reports.projectProfitability'),
+            description: t('reports.projectProfitabilityDescription'),
             type: 'analytics',
             icon: FolderIcon,
             color: 'purple',
         },
         {
             id: 'user_productivity',
-            name: 'Productivité des utilisateurs',
-            description: 'Métriques de temps et productivité par utilisateur',
+            name: t('reports.userProductivity'),
+            description: t('reports.userProductivityDescription'),
             type: 'productivity',
             icon: UserGroupIcon,
             color: 'orange',
@@ -120,10 +122,10 @@ const Reports: React.FC = () => {
         },
         onSuccess: (data) => {
             setReportData(data);
-            toast.success('Rapport généré avec succès');
+            toast.success(t('reports.reportGeneratedSuccess'));
         },
         onError: (error: any) => {
-            toast.error(error.response?.data?.message || 'Erreur lors de la génération du rapport');
+            toast.error(error.response?.data?.message || t('reports.reportGenerateError'));
         },
     });
 
@@ -143,10 +145,10 @@ const Reports: React.FC = () => {
             link.remove();
         },
         onSuccess: () => {
-            toast.success('Export FEC téléchargé');
+            toast.success(t('reports.fecExported'));
         },
         onError: () => {
-            toast.error('Erreur lors de l\'export FEC');
+            toast.error(t('reports.fecExportError'));
         },
     });
 
@@ -192,8 +194,8 @@ const Reports: React.FC = () => {
             {/* Header */}
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Rapports</h1>
-                    <p className="mt-2 text-gray-600">Générez et consultez vos rapports d'activité</p>
+                    <h1 className="text-3xl font-bold text-gray-900">{t('reports.title')}</h1>
+                    <p className="mt-2 text-gray-600">{t('reports.subtitle')}</p>
                 </div>
                 <div className="flex gap-2">
                     <button
@@ -201,7 +203,7 @@ const Reports: React.FC = () => {
                         className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
                     >
                         <ArrowDownTrayIcon className="h-5 w-5" />
-                        Export FEC {new Date().getFullYear()}
+                        {t('reports.exportFEC')} {new Date().getFullYear()}
                     </button>
                 </div>
             </div>
@@ -242,7 +244,7 @@ const Reports: React.FC = () => {
                                     setSelectedReport(null);
                                 }}
                                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                title="Retour aux rapports"
+                                title={t('reports.backToReports')}
                             >
                                 <ArrowLeftIcon className="h-5 w-5 text-gray-600" />
                             </button>
@@ -258,14 +260,14 @@ const Reports: React.FC = () => {
                             }}
                             className="text-gray-600 hover:text-gray-900"
                         >
-                            ✕ Fermer
+                            ✕ {t('common.close')}
                         </button>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Date de début
+                                {t('reports.startDate')}
                             </label>
                             <input
                                 type="date"
@@ -276,7 +278,7 @@ const Reports: React.FC = () => {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Date de fin
+                                {t('reports.endDate')}
                             </label>
                             <input
                                 type="date"
@@ -287,14 +289,14 @@ const Reports: React.FC = () => {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Projet (optionnel)
+                                {t('reports.projectOptional')}
                             </label>
                             <select
                                 value={filters.project_id}
                                 onChange={(e) => setFilters({ ...filters, project_id: e.target.value })}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             >
-                                <option value="">Tous les projets</option>
+                                <option value="">{t('reports.allProjects')}</option>
                                 {projects?.map((project: any) => (
                                     <option key={project.id} value={project.id}>
                                         {project.name}
@@ -304,14 +306,14 @@ const Reports: React.FC = () => {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Utilisateur (optionnel)
+                                {t('reports.userOptional')}
                             </label>
                             <select
                                 value={filters.user_id}
                                 onChange={(e) => setFilters({ ...filters, user_id: e.target.value })}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             >
-                                <option value="">Tous les utilisateurs</option>
+                                <option value="">{t('reports.allUsers')}</option>
                                 {users?.map((user: any) => (
                                     <option key={user.id} value={user.id}>
                                         {user.name}
@@ -321,14 +323,14 @@ const Reports: React.FC = () => {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Client (optionnel)
+                                {t('reports.clientOptional')}
                             </label>
                             <select
                                 value={filters.client_id}
                                 onChange={(e) => setFilters({ ...filters, client_id: e.target.value })}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             >
-                                <option value="">Tous les clients</option>
+                                <option value="">{t('reports.allClients')}</option>
                                 {clients?.map((client: any) => (
                                     <option key={client.id} value={client.id}>
                                         {client.name}
@@ -343,7 +345,7 @@ const Reports: React.FC = () => {
                         disabled={generateReportMutation.isPending}
                         className="w-full md:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
                     >
-                        {generateReportMutation.isPending ? 'Génération...' : 'Générer le rapport'}
+                        {generateReportMutation.isPending ? t('reports.generating') : t('reports.generateReport')}
                     </button>
                 </div>
             )}
@@ -356,25 +358,25 @@ const Reports: React.FC = () => {
                         <>
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                 <div className="bg-white rounded-lg shadow p-6">
-                                    <h3 className="text-sm font-medium text-gray-600 mb-2">Heures totales</h3>
+                                    <h3 className="text-sm font-medium text-gray-600 mb-2">{t('reports.totalHours')}</h3>
                                     <p className="text-2xl font-bold text-gray-900">
                                         {formatHours(reportData.data.summary.total_hours)}
                                     </p>
                                 </div>
                                 <div className="bg-white rounded-lg shadow p-6">
-                                    <h3 className="text-sm font-medium text-gray-600 mb-2">Heures facturables</h3>
+                                    <h3 className="text-sm font-medium text-gray-600 mb-2">{t('reports.billableHours')}</h3>
                                     <p className="text-2xl font-bold text-green-600">
                                         {formatHours(reportData.data.summary.billable_hours)}
                                     </p>
                                 </div>
                                 <div className="bg-white rounded-lg shadow p-6">
-                                    <h3 className="text-sm font-medium text-gray-600 mb-2">Heures non facturables</h3>
+                                    <h3 className="text-sm font-medium text-gray-600 mb-2">{t('reports.nonBillableHours')}</h3>
                                     <p className="text-2xl font-bold text-red-600">
                                         {formatHours(reportData.data.summary.non_billable_hours)}
                                     </p>
                                 </div>
                                 <div className="bg-white rounded-lg shadow p-6">
-                                    <h3 className="text-sm font-medium text-gray-600 mb-2">% Facturable</h3>
+                                    <h3 className="text-sm font-medium text-gray-600 mb-2">{t('reports.billablePercentage')}</h3>
                                     <p className="text-2xl font-bold text-blue-600">
                                         {reportData.data.summary.billable_percentage}%
                                     </p>
@@ -384,7 +386,7 @@ const Reports: React.FC = () => {
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 {/* By User */}
                                 <div className="bg-white rounded-lg shadow p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Par utilisateur</h3>
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('reports.byUser')}</h3>
                                     <ResponsiveContainer width="100%" height={300}>
                                         <BarChart data={reportData.data.by_user}>
                                             <CartesianGrid strokeDasharray="3 3" />
@@ -392,15 +394,15 @@ const Reports: React.FC = () => {
                                             <YAxis />
                                             <Tooltip formatter={(value: number) => formatHours(value)} />
                                             <Legend />
-                                            <Bar dataKey="total_hours" fill="#3B82F6" name="Heures totales" />
-                                            <Bar dataKey="billable_hours" fill="#10B981" name="Heures facturables" />
+                                            <Bar dataKey="total_hours" fill="#3B82F6" name={t('reports.totalHours')} />
+                                            <Bar dataKey="billable_hours" fill="#10B981" name={t('reports.billableHours')} />
                                         </BarChart>
                                     </ResponsiveContainer>
                                 </div>
 
                                 {/* By Project */}
                                 <div className="bg-white rounded-lg shadow p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Par projet</h3>
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('reports.byProject')}</h3>
                                     <ResponsiveContainer width="100%" height={300}>
                                         <PieChart>
                                             <Pie
@@ -431,25 +433,25 @@ const Reports: React.FC = () => {
                         <>
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                 <div className="bg-white rounded-lg shadow p-6">
-                                    <h3 className="text-sm font-medium text-gray-600 mb-2">Total factures</h3>
+                                    <h3 className="text-sm font-medium text-gray-600 mb-2">{t('reports.totalInvoices')}</h3>
                                     <p className="text-2xl font-bold text-gray-900">
                                         {reportData.data.summary.total_invoices}
                                     </p>
                                 </div>
                                 <div className="bg-white rounded-lg shadow p-6">
-                                    <h3 className="text-sm font-medium text-gray-600 mb-2">Montant total</h3>
+                                    <h3 className="text-sm font-medium text-gray-600 mb-2">{t('reports.totalAmount')}</h3>
                                     <p className="text-2xl font-bold text-blue-600">
                                         {formatCurrency(reportData.data.summary.total_amount)}
                                     </p>
                                 </div>
                                 <div className="bg-white rounded-lg shadow p-6">
-                                    <h3 className="text-sm font-medium text-gray-600 mb-2">Montant payé</h3>
+                                    <h3 className="text-sm font-medium text-gray-600 mb-2">{t('reports.paidAmount')}</h3>
                                     <p className="text-2xl font-bold text-green-600">
                                         {formatCurrency(reportData.data.summary.paid_amount)}
                                     </p>
                                 </div>
                                 <div className="bg-white rounded-lg shadow p-6">
-                                    <h3 className="text-sm font-medium text-gray-600 mb-2">En attente</h3>
+                                    <h3 className="text-sm font-medium text-gray-600 mb-2">{t('reports.pendingAmount')}</h3>
                                     <p className="text-2xl font-bold text-orange-600">
                                         {formatCurrency(reportData.data.summary.pending_amount)}
                                     </p>
@@ -457,7 +459,7 @@ const Reports: React.FC = () => {
                             </div>
 
                             <div className="bg-white rounded-lg shadow p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Par statut</h3>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('reports.byStatus')}</h3>
                                 <ResponsiveContainer width="100%" height={300}>
                                     <BarChart data={reportData.data.by_status}>
                                         <CartesianGrid strokeDasharray="3 3" />
@@ -465,7 +467,7 @@ const Reports: React.FC = () => {
                                         <YAxis />
                                         <Tooltip formatter={(value: number) => formatCurrency(value)} />
                                         <Legend />
-                                        <Bar dataKey="total_amount" fill="#3B82F6" name="Montant total" />
+                                        <Bar dataKey="total_amount" fill="#3B82F6" name={t('reports.totalAmount')} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
@@ -477,19 +479,19 @@ const Reports: React.FC = () => {
                         <>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="bg-white rounded-lg shadow p-6">
-                                    <h3 className="text-sm font-medium text-gray-600 mb-2">Total dépenses</h3>
+                                    <h3 className="text-sm font-medium text-gray-600 mb-2">{t('reports.totalExpenses')}</h3>
                                     <p className="text-2xl font-bold text-gray-900">
                                         {reportData.data.summary.total_expenses}
                                     </p>
                                 </div>
                                 <div className="bg-white rounded-lg shadow p-6">
-                                    <h3 className="text-sm font-medium text-gray-600 mb-2">Montant total</h3>
+                                    <h3 className="text-sm font-medium text-gray-600 mb-2">{t('reports.totalAmount')}</h3>
                                     <p className="text-2xl font-bold text-red-600">
                                         {formatCurrency(reportData.data.summary.total_amount)}
                                     </p>
                                 </div>
                                 <div className="bg-white rounded-lg shadow p-6">
-                                    <h3 className="text-sm font-medium text-gray-600 mb-2">Montant facturable</h3>
+                                    <h3 className="text-sm font-medium text-gray-600 mb-2">{t('reports.billableAmount')}</h3>
                                     <p className="text-2xl font-bold text-green-600">
                                         {formatCurrency(reportData.data.summary.billable_amount)}
                                     </p>
@@ -497,7 +499,7 @@ const Reports: React.FC = () => {
                             </div>
 
                             <div className="bg-white rounded-lg shadow p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Par catégorie</h3>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('reports.byCategory')}</h3>
                                 <ResponsiveContainer width="100%" height={300}>
                                     <PieChart>
                                         <Pie
@@ -529,12 +531,12 @@ const Reports: React.FC = () => {
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-gray-50">
                                         <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Projet</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Revenus</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Coûts</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Profit</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Marge</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Heures</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('reports.project')}</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('reports.revenue')}</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('reports.costs')}</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('reports.profit')}</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('reports.margin')}</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('reports.hours')}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
@@ -575,12 +577,12 @@ const Reports: React.FC = () => {
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-gray-50">
                                         <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Utilisateur</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Heures totales</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Heures facturables</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">% Facturable</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Projets</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tâches</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('reports.user')}</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('reports.totalHours')}</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('reports.billableHours')}</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('reports.billablePercentage')}</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('reports.projects')}</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('reports.tasks')}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
@@ -616,12 +618,12 @@ const Reports: React.FC = () => {
                     {reportData.metadata && (
                         <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-600">
                             <p>
-                                Rapport généré le {format(new Date(reportData.metadata.generated_at), 'dd/MM/yyyy à HH:mm', { locale: fr })}
-                                {' '}par {reportData.metadata.generated_by}
+                                {t('reports.reportGenerated')} {format(new Date(reportData.metadata.generated_at), 'dd/MM/yyyy à HH:mm', { locale: fr })}
+                                {' '}{t('reports.by')} {reportData.metadata.generated_by}
                             </p>
                             <p>
-                                Période: du {format(new Date(reportData.metadata.period.start), 'dd/MM/yyyy', { locale: fr })}
-                                {' '}au {format(new Date(reportData.metadata.period.end), 'dd/MM/yyyy', { locale: fr })}
+                                {t('reports.period')}: {t('reports.from')} {format(new Date(reportData.metadata.period.start), 'dd/MM/yyyy', { locale: fr })}
+                                {' '}{t('reports.to')} {format(new Date(reportData.metadata.period.end), 'dd/MM/yyyy', { locale: fr })}
                             </p>
                         </div>
                     )}

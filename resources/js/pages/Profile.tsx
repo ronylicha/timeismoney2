@@ -73,10 +73,10 @@ const Profile: React.FC = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['user-profile'] });
-            toast.success('Avatar uploaded successfully');
+            toast.success(t('profile.avatarUploadSuccess'));
         },
         onError: (error: any) => {
-            toast.error(error.response?.data?.message || 'Failed to upload avatar');
+            toast.error(error.response?.data?.message || t('profile.avatarUploadError'));
         },
     });
 
@@ -90,7 +90,7 @@ const Profile: React.FC = () => {
         if (file) {
             // Validate file size (max 2MB)
             if (file.size > 2 * 1024 * 1024) {
-                toast.error('File size must be less than 2MB');
+                toast.error(t('profile.avatarSizeError'));
                 return;
             }
             uploadAvatarMutation.mutate(file);
@@ -162,7 +162,7 @@ const Profile: React.FC = () => {
                         </h2>
                         <p className="text-gray-600">{user?.email}</p>
                         {uploadAvatarMutation.isPending && (
-                            <p className="text-sm text-blue-600 mt-2">Uploading...</p>
+                            <p className="text-sm text-blue-600 mt-2">{t('profile.uploading')}</p>
                         )}
                     </div>
                 </div>
@@ -264,7 +264,7 @@ const Profile: React.FC = () => {
 
                     <div className="mt-6">
                         <p className="text-sm text-gray-500">
-                            <span className="text-red-500">*</span> {t('profile.requiredFields') || 'Champs obligatoires'}
+                            <span className="text-red-500">*</span> {t('profile.requiredFields')}
                         </p>
                     </div>
 

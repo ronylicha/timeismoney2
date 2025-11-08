@@ -26,6 +26,7 @@ const TimeSheet = lazy(() => import('./pages/TimeSheet'));
 const Projects = lazy(() => import('./pages/Projects'));
 const ProjectDetail = lazy(() => import('./pages/ProjectDetail'));
 const CreateProject = lazy(() => import('./pages/CreateProject'));
+const EditProject = lazy(() => import('./pages/EditProject'));
 const Tasks = lazy(() => import('./pages/Tasks'));
 const KanbanBoard = lazy(() => import('./pages/KanbanBoard'));
 const Clients = lazy(() => import('./pages/Clients'));
@@ -38,6 +39,7 @@ const CreateInvoice = lazy(() => import('./pages/CreateInvoice'));
 const Quotes = lazy(() => import('./pages/Quotes'));
 const QuoteDetail = lazy(() => import('./pages/QuoteDetail'));
 const CreateQuote = lazy(() => import('./pages/CreateQuote'));
+const EditQuote = lazy(() => import('./pages/EditQuote'));
 const Expenses = lazy(() => import('./pages/Expenses'));
 const CreateExpense = lazy(() => import('./pages/CreateExpense'));
 const ExpenseCategories = lazy(() => import('./pages/ExpenseCategories'));
@@ -232,6 +234,7 @@ function App() {
                                         <Route path="/projects" element={<Projects />} />
                                         <Route path="/projects/new" element={<CreateProject />} />
                                         <Route path="/projects/:id" element={<ProjectDetail />} />
+                                        <Route path="/projects/:id/edit" element={<EditProject />} />
                                         <Route path="/projects/:id/kanban" element={<KanbanBoard />} />
                                         <Route path="/tasks" element={<Tasks />} />
                                         <Route path="/tasks/new" element={<Tasks />} />
@@ -249,6 +252,7 @@ function App() {
                                         <Route path="/quotes" element={<Quotes />} />
                                         <Route path="/quotes/new" element={<CreateQuote />} />
                                         <Route path="/quotes/:id" element={<QuoteDetail />} />
+                                        <Route path="/quotes/:id/edit" element={<EditQuote />} />
 
                                         {/* Expenses */}
                                         <Route path="/expenses" element={<Expenses />} />

@@ -160,14 +160,10 @@ const Dashboard: React.FC = () => {
         }).format(amount);
     };
 
-    // Handle layout change - prevent infinite loops by comparing layouts
+    // Handle layout change - DashboardGrid handles the anti-loop logic
     const handleLayoutChange = useCallback((newLayout: Layout[]) => {
-        // Only update if layout actually changed
-        const hasChanged = JSON.stringify(newLayout) !== JSON.stringify(currentLayout);
-        if (hasChanged && editMode) {
-            setCustomLayout(newLayout);
-        }
-    }, [currentLayout, setCustomLayout, editMode]);
+        setCustomLayout(newLayout);
+    }, [setCustomLayout]);
 
     // Toggle edit mode
     const toggleEditMode = () => {

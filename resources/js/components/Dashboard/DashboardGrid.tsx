@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import GridLayout, { Layout } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
@@ -25,9 +25,18 @@ const DashboardGrid: React.FC<DashboardGridProps> = ({
     const [isDraggable, setIsDraggable] = useState(editable);
     const [isResizable, setIsResizable] = useState(editable);
 
+    // Track if we're in the middle of a user drag/resize operation
+    const isUserInteractingRef = useRef(false);
+    const layoutStringRef = useRef(JSON.stringify(layouts));
+
     // Sync internal state with external layouts prop
+    // Only update if the external layout changed AND we're not currently dragging
     useEffect(() => {
-        setLayout(layouts);
+        const newLayoutString = JSON.stringify(layouts);
+        if (!isUserInteractingRef.current && newLayoutString !== layoutStringRef.current) {
+            setLayout(layouts);
+            layoutStringRef.current = newLayoutString;
+        }
     }, [layouts]);
 
     useEffect(() => {
@@ -37,8 +46,15 @@ const DashboardGrid: React.FC<DashboardGridProps> = ({
 
     const handleLayoutChange = (newLayout: Layout[]) => {
         setLayout(newLayout);
-        if (onLayoutChange) {
+        layoutStringRef.current = JSON.stringify(newLayout);
+
+        if (onLayoutChange && editable) {
+            isUserInteractingRef.current = true;
             onLayoutChange(newLayout);
+            // Reset the flag after a short delay to allow the prop update to settle
+            setTimeout(() => {
+                isUserInteractingRef.current = false;
+            }, 100);
         }
     };
 

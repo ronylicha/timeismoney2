@@ -6,6 +6,7 @@ use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
@@ -49,6 +50,13 @@ class Invoice extends Model
         'chorus_response',
         'stripe_payment_link',
         'stripe_checkout_session_id',
+        'type',
+        'advance_percentage',
+        'legal_mentions',
+        'payment_conditions',
+        'late_payment_penalty_rate',
+        'recovery_indemnity',
+        'early_payment_discount',
     ];
 
     protected $casts = [
@@ -66,7 +74,11 @@ class Invoice extends Model
         'cancelled_at' => 'datetime',
         'is_locked' => 'boolean',
         'chorus_sent_at' => 'datetime',
-        'chorus_response' => 'array'
+        'chorus_response' => 'array',
+        'advance_percentage' => 'decimal:2',
+        'late_payment_penalty_rate' => 'decimal:2',
+        'recovery_indemnity' => 'decimal:2',
+        'early_payment_discount' => 'decimal:2',
     ];
 
     protected static function booted()
@@ -156,6 +168,79 @@ class Invoice extends Model
     public function auditLogs(): HasMany
     {
         return $this->hasMany(InvoiceAuditLog::class);
+    }
+
+    /**
+     * Pour une facture de SOLDE: récupérer toutes les factures d'acompte liées
+     *
+     * Exemple: Facture de solde #100 → Acomptes #50, #51, #52
+     */
+    public function advances(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Invoice::class,
+            'invoice_advances',
+            'final_invoice_id',
+            'advance_invoice_id'
+        )
+        ->withPivot('advance_amount')
+        ->withTimestamps()
+        ->where('type', 'advance');
+    }
+
+    /**
+     * Pour une facture d'ACOMPTE: récupérer la facture de solde liée (si existe)
+     *
+     * Exemple: Acompte #50 → Facture de solde #100
+     */
+    public function finalInvoice(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Invoice::class,
+            'invoice_advances',
+            'advance_invoice_id',
+            'final_invoice_id'
+        )
+        ->withPivot('advance_amount')
+        ->withTimestamps()
+        ->where('type', 'final');
+    }
+
+    /**
+     * Calculate total of all advances for this final invoice
+     */
+    public function getTotalAdvancesAttribute(): float
+    {
+        if ($this->type !== 'final') {
+            return 0;
+        }
+
+        return (float) $this->advances()
+            ->sum('invoice_advances.advance_amount');
+    }
+
+    /**
+     * Calculate remaining balance after advances
+     */
+    public function getRemainingBalanceAttribute(): float
+    {
+        if ($this->type !== 'final') {
+            return (float) $this->total;
+        }
+
+        return (float) ($this->total - $this->total_advances);
+    }
+
+    /**
+     * Check if this advance invoice is already linked to a final invoice
+     */
+    public function isLinkedToFinalInvoice(): bool
+    {
+        if ($this->type !== 'advance') {
+            return false;
+        }
+
+        return $this->finalInvoice()->exists();
     }
 
     /**
