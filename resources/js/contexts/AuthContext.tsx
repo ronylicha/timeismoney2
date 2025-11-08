@@ -52,7 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
 
             console.log('Checking auth with token:', token.substring(0, 20) + '...');
-            const response = await axios.get('/api/user');
+            const response = await axios.get('/user');
             console.log('Auth check successful, user:', response.data);
             setUser(response.data);
         } catch (error: any) {
@@ -71,7 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setIsLoading(true);
 
             // No need for CSRF token since we're using Bearer tokens
-            const response = await axios.post('/api/login', credentials);
+            const response = await axios.post('/login', credentials);
             console.log('Login response:', response.data);
             const { user, token, requires_2fa } = response.data;
 
@@ -107,7 +107,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 throw new Error('No 2FA session found');
             }
 
-            const response = await axios.post('/api/2fa/verify', {
+            const response = await axios.post('/2fa/verify', {
                 code,
                 token: tempToken,
             });
@@ -134,7 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setIsLoading(true);
 
             // No need for CSRF token since we're using Bearer tokens
-            const response = await axios.post('/api/register', data);
+            const response = await axios.post('/register', data);
             const { user, token } = response.data;
 
             localStorage.setItem('auth_token', token);
@@ -163,7 +163,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const logout = useCallback(async () => {
         try {
             setIsLoading(true);
-            await axios.post('/api/logout');
+            await axios.post('/logout');
         } catch (error) {
             console.error('Logout error:', error);
         } finally {
@@ -183,7 +183,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const setup2FA = useCallback(async () => {
         try {
-            const response = await axios.post('/api/2fa/setup');
+            const response = await axios.post('/2fa/setup');
             return response.data;
         } catch (error: any) {
             const message = error.response?.data?.message || 'Failed to setup 2FA';
@@ -194,10 +194,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const disable2FA = useCallback(async (password: string) => {
         try {
-            await axios.post('/api/2fa/disable', { password });
+            await axios.post('/2fa/disable', { password });
 
             // Refresh user data
-            const response = await axios.get('/api/user');
+            const response = await axios.get('/user');
             setUser(response.data);
 
             toast.success('2FA has been disabled');
@@ -210,7 +210,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const getRecoveryCodes = useCallback(async () => {
         try {
-            const response = await axios.get('/api/2fa/recovery-codes');
+            const response = await axios.get('/2fa/recovery-codes');
             return response.data.codes;
         } catch (error: any) {
             const message = error.response?.data?.message || 'Failed to get recovery codes';

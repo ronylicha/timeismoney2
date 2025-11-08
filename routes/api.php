@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\AdminController;
+use App\Http\Controllers\Api\QuoteController;
 
 /*
 |--------------------------------------------------------------------------
@@ -95,6 +96,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf']);
     Route::post('/invoices/{invoice}/chorus', [InvoiceController::class, 'sendToChorus']);
     Route::get('/invoices/{invoice}/audit-log', [InvoiceController::class, 'auditLog']);
+
+    // Quotes
+    Route::apiResource('quotes', QuoteController::class);
+    Route::post('/quotes/{quote}/send', [QuoteController::class, 'send']);
+    Route::post('/quotes/{quote}/accept', [QuoteController::class, 'accept']);
+    Route::post('/quotes/{quote}/reject', [QuoteController::class, 'reject']);
+    Route::post('/quotes/{quote}/convert', [QuoteController::class, 'convertToInvoice']);
+    Route::get('/quotes/{quote}/pdf', [QuoteController::class, 'downloadPdf']);
 
     // Expenses
     Route::apiResource('expenses', ExpenseController::class);

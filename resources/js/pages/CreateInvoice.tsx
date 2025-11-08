@@ -326,7 +326,7 @@ const CreateInvoice: React.FC = () => {
                                         required
                                     >
                                         <option value="">Select a client...</option>
-                                        {clientsData?.data.map(client => (
+                                        {clientsData?.data?.map(client => (
                                             <option key={client.id} value={client.id}>
                                                 {client.name}
                                                 {client.client_type === 'government' && ' (Chorus Pro)'}
@@ -346,7 +346,7 @@ const CreateInvoice: React.FC = () => {
                                         disabled={!formData.client_id}
                                     >
                                         <option value="">All projects</option>
-                                        {projectsData?.data.map(project => (
+                                        {projectsData?.data?.map(project => (
                                             <option key={project.id} value={project.id}>
                                                 {project.name}
                                             </option>

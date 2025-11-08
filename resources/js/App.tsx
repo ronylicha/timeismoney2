@@ -58,6 +58,11 @@ import AdminDashboard from './pages/Admin/AdminDashboard';
 import AdminUsers from './pages/Admin/UserManagement';
 import AdminTenants from './pages/Admin/TenantManagement';
 import AdminSettings from './pages/Admin/SystemSettings';
+import AdminAuditLogs from './pages/Admin/AuditLogs';
+import AdminBilling from './pages/Admin/Billing';
+import AdminMonitoring from './pages/Admin/Monitoring';
+import AdminNotifications from './pages/Admin/Notifications';
+import AdminReports from './pages/Admin/Reports';
 
 // Contexts
 import { AuthProvider } from './contexts/AuthContext';
@@ -113,8 +118,8 @@ axios.interceptors.response.use(
             // Only redirect if not already on login/register pages AND not during login request
             const currentPath = window.location.pathname;
             const authPaths = ['/login', '/register', '/forgot-password', '/2fa'];
-            const isLoginRequest = error.config?.url?.includes('/api/login') ||
-                                   error.config?.url?.includes('/api/register');
+            const isLoginRequest = error.config?.url?.includes('/login') ||
+                                   error.config?.url?.includes('/register');
 
             // Don't redirect if we're on an auth page or making an auth request
             if (!authPaths.includes(currentPath) && !isLoginRequest) {
@@ -234,6 +239,11 @@ function App() {
                                         <Route path="/admin/users" element={<AdminUsers />} />
                                         <Route path="/admin/tenants" element={<AdminTenants />} />
                                         <Route path="/admin/settings" element={<AdminSettings />} />
+                                        <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
+                                        <Route path="/admin/billing" element={<AdminBilling />} />
+                                        <Route path="/admin/monitoring" element={<AdminMonitoring />} />
+                                        <Route path="/admin/notifications" element={<AdminNotifications />} />
+                                        <Route path="/admin/reports" element={<AdminReports />} />
                                     </Route>
                                 </Route>
 
