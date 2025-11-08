@@ -71,7 +71,7 @@ const TenantManagement: React.FC = () => {
     const { data: tenantsData, isLoading } = useQuery({
         queryKey: ['admin-tenants', searchTerm, filterPlan, filterStatus, currentPage],
         queryFn: async () => {
-            const response = await axios.get('/api/admin/tenants', {
+            const response = await axios.get('/admin/tenants', {
                 params: {
                     search: searchTerm,
                     plan: filterPlan,
@@ -87,7 +87,7 @@ const TenantManagement: React.FC = () => {
     // Suspend tenant mutation
     const suspendTenantMutation = useMutation({
         mutationFn: async (tenantId: number) => {
-            await axios.post(`/api/admin/tenants/${tenantId}/suspend`);
+            await axios.post(`/admin/tenants/${tenantId}/suspend`);
         },
         onSuccess: () => {
             toast.success('Organisation suspendue');
@@ -98,7 +98,7 @@ const TenantManagement: React.FC = () => {
     // Activate tenant mutation
     const activateTenantMutation = useMutation({
         mutationFn: async (tenantId: number) => {
-            await axios.post(`/api/admin/tenants/${tenantId}/activate`);
+            await axios.post(`/admin/tenants/${tenantId}/activate`);
         },
         onSuccess: () => {
             toast.success('Organisation activée');
@@ -109,7 +109,7 @@ const TenantManagement: React.FC = () => {
     // Update plan mutation
     const updatePlanMutation = useMutation({
         mutationFn: async ({ tenantId, plan }: { tenantId: number; plan: string }) => {
-            await axios.put(`/api/admin/tenants/${tenantId}/plan`, { plan });
+            await axios.put(`/admin/tenants/${tenantId}/plan`, { plan });
         },
         onSuccess: () => {
             toast.success('Plan mis à jour');
@@ -121,7 +121,7 @@ const TenantManagement: React.FC = () => {
     // Delete tenant mutation
     const deleteTenantMutation = useMutation({
         mutationFn: async (tenantId: number) => {
-            await axios.delete(`/api/admin/tenants/${tenantId}`);
+            await axios.delete(`/admin/tenants/${tenantId}`);
         },
         onSuccess: () => {
             toast.success('Organisation supprimée');

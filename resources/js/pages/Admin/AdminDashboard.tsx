@@ -91,7 +91,7 @@ const AdminDashboard: React.FC = () => {
     const { data: stats, isLoading: loadingStats } = useQuery<SystemStats>({
         queryKey: ['admin-stats', timeRange],
         queryFn: async () => {
-            const response = await axios.get('/api/admin/stats', {
+            const response = await axios.get('/admin/stats', {
                 params: { range: timeRange }
             });
             return response.data;
@@ -103,7 +103,7 @@ const AdminDashboard: React.FC = () => {
     const { data: recentActivity = [] } = useQuery({
         queryKey: ['admin-activity'],
         queryFn: async () => {
-            const response = await axios.get('/api/admin/activity');
+            const response = await axios.get('/admin/activity');
             return response.data;
         }
     });
@@ -112,7 +112,7 @@ const AdminDashboard: React.FC = () => {
     const { data: revenueData } = useQuery({
         queryKey: ['admin-revenue', timeRange],
         queryFn: async () => {
-            const response = await axios.get('/api/admin/revenue-chart', {
+            const response = await axios.get('/admin/revenue-chart', {
                 params: { range: timeRange }
             });
             return response.data;
@@ -123,7 +123,7 @@ const AdminDashboard: React.FC = () => {
     const { data: userGrowthData } = useQuery({
         queryKey: ['admin-user-growth', timeRange],
         queryFn: async () => {
-            const response = await axios.get('/api/admin/user-growth-chart', {
+            const response = await axios.get('/admin/user-growth-chart', {
                 params: { range: timeRange }
             });
             return response.data;

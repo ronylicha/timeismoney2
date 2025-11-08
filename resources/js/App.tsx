@@ -95,7 +95,26 @@ const queryClient = new QueryClient({
 // Configure axios defaults
 import axios from 'axios';
 
-axios.defaults.baseURL = import.meta.env.VITE_API_URL || '/api';
+// Configure axios baseURL based on environment
+const configureAxiosBaseURL = () => {
+    const apiUrl = import.meta.env.VITE_API_URL;
+    const currentHost = window.location.hostname;
+
+    // If we have a custom API URL from env, use it
+    if (apiUrl) {
+        return apiUrl;
+    }
+
+    // If we're on production domain
+    if (currentHost === 'timeismoney.fr' || currentHost === 'www.timeismoney.fr') {
+        return 'https://timeismoney.fr/api';
+    }
+
+    // Default for local development
+    return '/api';
+};
+
+axios.defaults.baseURL = configureAxiosBaseURL();
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 // Don't use withCredentials since we're using Bearer tokens, not cookies
 // axios.defaults.withCredentials = true;

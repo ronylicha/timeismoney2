@@ -39,7 +39,7 @@ class ExpenseController extends Controller
         if ($request->has('search')) {
             $query->where(function($q) use ($request) {
                 $q->where('description', 'like', '%' . $request->search . '%')
-                  ->orWhere('merchant', 'like', '%' . $request->search . '%');
+                  ->orWhere('vendor', 'like', '%' . $request->search . '%');
             });
         }
 
@@ -58,7 +58,7 @@ class ExpenseController extends Controller
             'amount' => 'required|numeric|min:0',
             'expense_date' => 'required|date',
             'category' => 'required|string',
-            'merchant' => 'nullable|string|max:255',
+            'vendor' => 'nullable|string|max:255',
             'project_id' => 'nullable|exists:projects,id',
             'billable' => 'boolean',
             'notes' => 'nullable|string|max:1000',
@@ -121,7 +121,7 @@ class ExpenseController extends Controller
             'amount' => 'sometimes|numeric|min:0',
             'expense_date' => 'sometimes|date',
             'category' => 'sometimes|string',
-            'merchant' => 'nullable|string|max:255',
+            'vendor' => 'nullable|string|max:255',
             'project_id' => 'nullable|exists:projects,id',
             'billable' => 'boolean',
             'notes' => 'nullable|string|max:1000',

@@ -95,7 +95,7 @@ const AuditLogs: React.FC = () => {
             if (dateFrom) params.date_from = startOfDay(parseISO(dateFrom)).toISOString();
             if (dateTo) params.date_to = endOfDay(parseISO(dateTo)).toISOString();
 
-            const response = await axios.get('/api/admin/audit-logs', { params });
+            const response = await axios.get('/admin/audit-logs', { params });
             return response.data;
         }
     });
@@ -104,7 +104,7 @@ const AuditLogs: React.FC = () => {
     const { data: users } = useQuery({
         queryKey: ['admin-users-list'],
         queryFn: async () => {
-            const response = await axios.get('/api/admin/users', { params: { per_page: 100 } });
+            const response = await axios.get('/admin/users', { params: { per_page: 100 } });
             return response.data.data;
         }
     });
@@ -113,7 +113,7 @@ const AuditLogs: React.FC = () => {
     const { data: tenants } = useQuery({
         queryKey: ['admin-tenants-list'],
         queryFn: async () => {
-            const response = await axios.get('/api/admin/tenants', { params: { per_page: 100 } });
+            const response = await axios.get('/admin/tenants', { params: { per_page: 100 } });
             return response.data.data;
         }
     });
@@ -138,7 +138,7 @@ const AuditLogs: React.FC = () => {
             if (dateFrom) params.date_from = startOfDay(parseISO(dateFrom)).toISOString();
             if (dateTo) params.date_to = endOfDay(parseISO(dateTo)).toISOString();
 
-            const response = await axios.get('/api/admin/audit-logs/export', {
+            const response = await axios.get('/admin/audit-logs/export', {
                 params,
                 responseType: 'blob'
             });

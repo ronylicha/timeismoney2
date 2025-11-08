@@ -69,7 +69,7 @@ const UserManagement: React.FC = () => {
     const { data: usersData, isLoading, error, refetch } = useQuery({
         queryKey: ['admin-users', searchTerm, filterRole, filterStatus, currentPage, refreshKey],
         queryFn: async () => {
-            const response = await axios.get('/api/admin/users', {
+            const response = await axios.get('/admin/users', {
                 params: {
                     search: searchTerm,
                     role: filterRole,
@@ -91,7 +91,7 @@ const UserManagement: React.FC = () => {
     // Suspend user mutation
     const suspendUserMutation = useMutation({
         mutationFn: async (userId: number) => {
-            await axios.post(`/api/admin/users/${userId}/suspend`);
+            await axios.post(`/admin/users/${userId}/suspend`);
         },
         onSuccess: () => {
             toast.success('Utilisateur suspendu');
@@ -105,7 +105,7 @@ const UserManagement: React.FC = () => {
     // Activate user mutation
     const activateUserMutation = useMutation({
         mutationFn: async (userId: number) => {
-            await axios.post(`/api/admin/users/${userId}/activate`);
+            await axios.post(`/admin/users/${userId}/activate`);
         },
         onSuccess: () => {
             toast.success('Utilisateur activé');
@@ -119,7 +119,7 @@ const UserManagement: React.FC = () => {
     // Delete user mutation
     const deleteUserMutation = useMutation({
         mutationFn: async (userId: number) => {
-            await axios.delete(`/api/admin/users/${userId}`);
+            await axios.delete(`/admin/users/${userId}`);
         },
         onSuccess: () => {
             toast.success('Utilisateur supprimé');
@@ -133,7 +133,7 @@ const UserManagement: React.FC = () => {
     // Reset password mutation
     const resetPasswordMutation = useMutation({
         mutationFn: async (userId: number) => {
-            await axios.post(`/api/admin/users/${userId}/reset-password`);
+            await axios.post(`/admin/users/${userId}/reset-password`);
         },
         onSuccess: () => {
             toast.success('Email de réinitialisation envoyé');
@@ -146,7 +146,7 @@ const UserManagement: React.FC = () => {
     // Create user mutation
     const createUserMutation = useMutation({
         mutationFn: async (data: any) => {
-            const response = await axios.post('/api/admin/users', data);
+            const response = await axios.post('/admin/users', data);
             return response.data;
         },
         onSuccess: () => {
@@ -164,7 +164,7 @@ const UserManagement: React.FC = () => {
     // Update user mutation
     const updateUserMutation = useMutation({
         mutationFn: async ({ id, data }: { id: number; data: any }) => {
-            const response = await axios.put(`/api/admin/users/${id}`, data);
+            const response = await axios.put(`/admin/users/${id}`, data);
             return response.data;
         },
         onSuccess: () => {
@@ -183,7 +183,7 @@ const UserManagement: React.FC = () => {
     // Impersonate user
     const impersonateUser = async (userId: number) => {
         try {
-            const response = await axios.post(`/api/admin/users/${userId}/impersonate`);
+            const response = await axios.post(`/admin/users/${userId}/impersonate`);
             // Redirect to user's dashboard with impersonation token
             window.location.href = `/dashboard?impersonate_token=${response.data.token}`;
         } catch (error) {
@@ -194,7 +194,7 @@ const UserManagement: React.FC = () => {
     // Export users
     const exportUsers = async () => {
         try {
-            const response = await axios.get('/api/admin/users/export', {
+            const response = await axios.get('/admin/users/export', {
                 responseType: 'blob',
                 params: {
                     search: searchTerm,

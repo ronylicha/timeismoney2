@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Cog6ToothIcon, BellIcon, ShieldCheckIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
+import { Cog6ToothIcon, BellIcon, ShieldCheckIcon, GlobeAltIcon, CreditCardIcon, CalendarIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 
 const Settings: React.FC = () => {
@@ -93,6 +93,47 @@ const Settings: React.FC = () => {
 
     const [showPasswordForm, setShowPasswordForm] = useState(false);
 
+    // Google Calendar state
+    const [showGoogleCalendarForm, setShowGoogleCalendarForm] = useState(false);
+
+    // Stripe state
+    const [showStripeForm, setShowStripeForm] = useState(false);
+    const [stripeForm, setStripeForm] = useState({
+        stripe_publishable_key: '',
+        stripe_secret_key: '',
+        stripe_webhook_secret: '',
+        stripe_enabled: true,
+    });
+
+    // Fetch Google Calendar status
+    const { data: googleCalendarStatus, refetch: refetchGoogleCalendar } = useQuery({
+        queryKey: ['google-calendar-status'],
+        queryFn: async () => {
+            const response = await axios.get('/google-calendar/status');
+            return response.data;
+        },
+    });
+
+    // Fetch Stripe settings
+    const { data: stripeSettings, refetch: refetchStripe } = useQuery({
+        queryKey: ['stripe-settings'],
+        queryFn: async () => {
+            const response = await axios.get('/settings/stripe');
+            return response.data.data;
+        },
+    });
+
+    React.useEffect(() => {
+        if (stripeSettings) {
+            setStripeForm({
+                stripe_publishable_key: stripeSettings.stripe_publishable_key || '',
+                stripe_secret_key: '', // Don't populate secret key for security
+                stripe_webhook_secret: '',
+                stripe_enabled: stripeSettings.stripe_enabled,
+            });
+        }
+    }, [stripeSettings]);
+
     const handleSavePreferences = () => {
         updatePreferencesMutation.mutate(preferences);
 
@@ -119,6 +160,98 @@ const Settings: React.FC = () => {
             return;
         }
         updatePasswordMutation.mutate(passwordForm);
+    };
+
+    // Google Calendar mutations
+    const connectGoogleCalendarMutation = useMutation({
+        mutationFn: async () => {
+            const response = await axios.get('/google-calendar/connect');
+            return response.data;
+        },
+        onSuccess: (data) => {
+            // Open authorization URL in new window
+            window.open(data.authorization_url, '_blank', 'width=600,height=700');
+            toast.info('Please authorize in the opened window. Refresh this page after completing authorization.');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Failed to connect Google Calendar');
+        },
+    });
+
+    const disconnectGoogleCalendarMutation = useMutation({
+        mutationFn: async () => {
+            const response = await axios.post('/google-calendar/disconnect');
+            return response.data;
+        },
+        onSuccess: () => {
+            refetchGoogleCalendar();
+            toast.success('Google Calendar disconnected successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Failed to disconnect Google Calendar');
+        },
+    });
+
+    const toggleGoogleCalendarSyncMutation = useMutation({
+        mutationFn: async (enabled: boolean) => {
+            const response = await axios.post('/google-calendar/toggle-sync', { enabled });
+            return response.data;
+        },
+        onSuccess: () => {
+            refetchGoogleCalendar();
+            toast.success('Calendar sync settings updated');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Failed to update sync settings');
+        },
+    });
+
+    // Stripe mutations
+    const updateStripeMutation = useMutation({
+        mutationFn: async (data: typeof stripeForm) => {
+            const response = await axios.post('/settings/stripe', data);
+            return response.data;
+        },
+        onSuccess: () => {
+            refetchStripe();
+            setShowStripeForm(false);
+            toast.success('Stripe settings updated successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Failed to update Stripe settings');
+        },
+    });
+
+    const testStripeConnectionMutation = useMutation({
+        mutationFn: async () => {
+            const response = await axios.post('/settings/stripe/test');
+            return response.data;
+        },
+        onSuccess: () => {
+            toast.success('Stripe connection test successful');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Stripe connection test failed');
+        },
+    });
+
+    const disableStripeMutation = useMutation({
+        mutationFn: async () => {
+            const response = await axios.post('/settings/stripe/disable');
+            return response.data;
+        },
+        onSuccess: () => {
+            refetchStripe();
+            toast.success('Stripe disabled successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Failed to disable Stripe');
+        },
+    });
+
+    const handleStripeSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        updateStripeMutation.mutate(stripeForm);
     };
 
     if (isLoading) {
@@ -281,6 +414,246 @@ const Settings: React.FC = () => {
                             />
                             <span className="ml-3 text-gray-700">{t('settings.taskReminders')}</span>
                         </label>
+                    </div>
+                </div>
+
+                {/* Google Calendar Integration */}
+                <div className="bg-white rounded-lg shadow p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-3">
+                            <CalendarIcon className="h-6 w-6 text-gray-600" />
+                            <h2 className="text-lg font-semibold text-gray-900">Google Calendar Integration</h2>
+                        </div>
+                        {googleCalendarStatus?.connected ? (
+                            <div className="flex items-center space-x-2 text-green-600">
+                                <CheckCircleIcon className="h-5 w-5" />
+                                <span className="text-sm font-medium">Connected</span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center space-x-2 text-gray-400">
+                                <XCircleIcon className="h-5 w-5" />
+                                <span className="text-sm font-medium">Not Connected</span>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="space-y-4">
+                        {googleCalendarStatus?.connected ? (
+                            <>
+                                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                                    <p className="text-sm text-green-800">
+                                        <strong>Calendar ID:</strong> {googleCalendarStatus.calendar_id || 'primary'}
+                                    </p>
+                                    {googleCalendarStatus.token_expires_at && (
+                                        <p className="text-sm text-green-800 mt-1">
+                                            <strong>Token Expires:</strong> {new Date(googleCalendarStatus.token_expires_at).toLocaleString()}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                    <div>
+                                        <p className="font-medium text-gray-900">Enable Calendar Sync</p>
+                                        <p className="text-sm text-gray-600">Automatically sync time entries to Google Calendar</p>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={googleCalendarStatus.enabled}
+                                            onChange={(e) => toggleGoogleCalendarSyncMutation.mutate(e.target.checked)}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    </label>
+                                </div>
+
+                                <button
+                                    onClick={() => disconnectGoogleCalendarMutation.mutate()}
+                                    disabled={disconnectGoogleCalendarMutation.isPending}
+                                    className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:bg-gray-400"
+                                >
+                                    {disconnectGoogleCalendarMutation.isPending ? 'Disconnecting...' : 'Disconnect Google Calendar'}
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <p className="text-sm text-blue-800">
+                                        Connect your Google Calendar to automatically sync time entries as calendar events.
+                                        Billable entries will appear in green, non-billable in gray.
+                                    </p>
+                                </div>
+
+                                <button
+                                    onClick={() => connectGoogleCalendarMutation.mutate()}
+                                    disabled={connectGoogleCalendarMutation.isPending}
+                                    className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400 flex items-center justify-center space-x-2"
+                                >
+                                    <CalendarIcon className="h-5 w-5" />
+                                    <span>{connectGoogleCalendarMutation.isPending ? 'Connecting...' : 'Connect Google Calendar'}</span>
+                                </button>
+                            </>
+                        )}
+                    </div>
+                </div>
+
+                {/* Stripe Payment Integration */}
+                <div className="bg-white rounded-lg shadow p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-3">
+                            <CreditCardIcon className="h-6 w-6 text-gray-600" />
+                            <h2 className="text-lg font-semibold text-gray-900">Stripe Payment Integration</h2>
+                        </div>
+                        {stripeSettings?.stripe_enabled ? (
+                            <div className="flex items-center space-x-2 text-green-600">
+                                <CheckCircleIcon className="h-5 w-5" />
+                                <span className="text-sm font-medium">Enabled</span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center space-x-2 text-gray-400">
+                                <XCircleIcon className="h-5 w-5" />
+                                <span className="text-sm font-medium">Disabled</span>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="space-y-4">
+                        {stripeSettings?.stripe_enabled && !showStripeForm ? (
+                            <>
+                                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                                    <p className="text-sm text-green-800 mb-2">
+                                        <strong>Status:</strong> Stripe is configured and active
+                                    </p>
+                                    {stripeSettings.stripe_publishable_key && (
+                                        <p className="text-sm text-green-800 font-mono">
+                                            <strong>Public Key:</strong> {stripeSettings.stripe_publishable_key.substring(0, 20)}...
+                                        </p>
+                                    )}
+                                </div>
+
+                                {stripeSettings.webhook_instructions && (
+                                    <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                                        <p className="text-sm font-semibold text-purple-900 mb-2">Webhook Configuration</p>
+                                        <p className="text-sm text-purple-800 mb-2">
+                                            <strong>Webhook URL:</strong>
+                                        </p>
+                                        <code className="block px-3 py-2 bg-white border border-purple-300 rounded text-xs font-mono mb-3 overflow-x-auto">
+                                            {stripeSettings.webhook_instructions.url}
+                                        </code>
+                                        <p className="text-sm text-purple-800 mb-2">
+                                            <strong>Required Events:</strong>
+                                        </p>
+                                        <ul className="list-disc list-inside text-xs text-purple-700 space-y-1 ml-2">
+                                            {stripeSettings.webhook_instructions.events.map((event: string) => (
+                                                <li key={event} className="font-mono">{event}</li>
+                                            ))}
+                                        </ul>
+                                        <p className="text-xs text-purple-600 mt-2 italic">
+                                            {stripeSettings.webhook_instructions.description}
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div className="flex space-x-3">
+                                    <button
+                                        onClick={() => testStripeConnectionMutation.mutate()}
+                                        disabled={testStripeConnectionMutation.isPending}
+                                        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400"
+                                    >
+                                        {testStripeConnectionMutation.isPending ? 'Testing...' : 'Test Connection'}
+                                    </button>
+                                    <button
+                                        onClick={() => setShowStripeForm(true)}
+                                        className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
+                                    >
+                                        Update Settings
+                                    </button>
+                                </div>
+
+                                <button
+                                    onClick={() => {
+                                        if (confirm('Are you sure you want to disable Stripe? Payment links will no longer be generated.')) {
+                                            disableStripeMutation.mutate();
+                                        }
+                                    }}
+                                    disabled={disableStripeMutation.isPending}
+                                    className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:bg-gray-400"
+                                >
+                                    {disableStripeMutation.isPending ? 'Disabling...' : 'Disable Stripe'}
+                                </button>
+                            </>
+                        ) : (
+                            <form onSubmit={handleStripeSubmit} className="space-y-4">
+                                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <p className="text-sm text-blue-800">
+                                        Configure Stripe to automatically generate payment links for invoices.
+                                        Get your API keys from the <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noopener noreferrer" className="underline font-semibold">Stripe Dashboard</a>.
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Publishable Key <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={stripeForm.stripe_publishable_key}
+                                        onChange={(e) => setStripeForm({ ...stripeForm, stripe_publishable_key: e.target.value })}
+                                        placeholder="pk_test_..."
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Secret Key <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="password"
+                                        value={stripeForm.stripe_secret_key}
+                                        onChange={(e) => setStripeForm({ ...stripeForm, stripe_secret_key: e.target.value })}
+                                        placeholder="sk_test_..."
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                                        required
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">Keep this secret and never share it publicly</p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Webhook Secret (Optional)
+                                    </label>
+                                    <input
+                                        type="password"
+                                        value={stripeForm.stripe_webhook_secret}
+                                        onChange={(e) => setStripeForm({ ...stripeForm, stripe_webhook_secret: e.target.value })}
+                                        placeholder="whsec_..."
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">Get this from your Stripe webhook settings after configuring the webhook URL</p>
+                                </div>
+
+                                <div className="flex space-x-3">
+                                    {showStripeForm && stripeSettings?.stripe_enabled && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowStripeForm(false)}
+                                            className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                                        >
+                                            Cancel
+                                        </button>
+                                    )}
+                                    <button
+                                        type="submit"
+                                        disabled={updateStripeMutation.isPending}
+                                        className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:bg-gray-400"
+                                    >
+                                        {updateStripeMutation.isPending ? 'Saving...' : 'Save Stripe Settings'}
+                                    </button>
+                                </div>
+                            </form>
+                        )}
                     </div>
                 </div>
 

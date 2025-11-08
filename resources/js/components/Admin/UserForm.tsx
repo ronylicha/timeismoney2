@@ -48,7 +48,7 @@ const UserForm: React.FC<UserFormProps> = ({ user, onSubmit, onClose, isLoading 
     const { data: tenantsData } = useQuery({
         queryKey: ['admin-tenants'],
         queryFn: async () => {
-            const response = await axios.get('/api/admin/tenants');
+            const response = await axios.get('/admin/tenants');
             return response.data;
         },
         enabled: isSuperAdmin
