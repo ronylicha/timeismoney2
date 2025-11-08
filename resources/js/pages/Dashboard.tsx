@@ -143,10 +143,24 @@ const Dashboard: React.FC = () => {
     const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
     // Show loading state
-    if (statsLoading || !stats) {
+    if (statsLoading) {
         return (
             <div className="flex items-center justify-center h-screen">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+        );
+    }
+
+    // Show error state if no data
+    if (!stats || !stats.today || !stats.week || !stats.month) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <div className="text-center">
+                    <AlertCircle className="mx-auto text-red-500 mb-4" size={48} />
+                    <p className="text-gray-600 dark:text-gray-400">
+                        Unable to load dashboard data
+                    </p>
+                </div>
             </div>
         );
     }

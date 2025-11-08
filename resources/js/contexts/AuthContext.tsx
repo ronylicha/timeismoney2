@@ -45,15 +45,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const token = localStorage.getItem('auth_token');
 
             if (!token) {
+                console.log('No auth token found');
                 setUser(null);
                 setIsLoading(false);
                 return;
             }
 
+            console.log('Checking auth with token:', token.substring(0, 20) + '...');
             const response = await axios.get('/api/user');
+            console.log('Auth check successful, user:', response.data);
             setUser(response.data);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Auth check failed:', error);
+            console.error('Error response:', error.response?.data);
+            console.error('Error status:', error.response?.status);
             localStorage.removeItem('auth_token');
             setUser(null);
         } finally {
@@ -65,10 +70,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
             setIsLoading(true);
 
-            // Get CSRF token first
-            await axios.get('/sanctum/csrf-cookie');
-
+            // No need for CSRF token since we're using Bearer tokens
             const response = await axios.post('/api/login', credentials);
+            console.log('Login response:', response.data);
             const { user, token, requires_2fa } = response.data;
 
             if (requires_2fa) {
@@ -78,12 +82,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 return;
             }
 
+            console.log('Storing auth token:', token.substring(0, 20) + '...');
             localStorage.setItem('auth_token', token);
             setUser(user);
 
             toast.success('Successfully logged in!');
             navigate('/dashboard');
         } catch (error: any) {
+            console.error('Login error:', error);
             const message = error.response?.data?.message || 'Login failed';
             toast.error(message);
             throw error;
@@ -127,9 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
             setIsLoading(true);
 
-            // Get CSRF token first
-            await axios.get('/sanctum/csrf-cookie');
-
+            // No need for CSRF token since we're using Bearer tokens
             const response = await axios.post('/api/register', data);
             const { user, token } = response.data;
 

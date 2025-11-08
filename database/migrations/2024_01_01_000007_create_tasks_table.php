@@ -29,6 +29,7 @@ return new class extends Migration
             $table->json('custom_fields')->nullable();
             $table->foreignId('created_by')->constrained('users');
             $table->timestamps();
+            $table->softDeletes();
             $table->timestamp('completed_at')->nullable();
 
             $table->index(['project_id', 'status']);

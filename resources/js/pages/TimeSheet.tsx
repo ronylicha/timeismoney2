@@ -291,7 +291,7 @@ const TimeSheet: React.FC = () => {
         for (let i = 0; i < 7; i++) {
             const date = new Date(current);
             const dateStr = formatDateForApi(date);
-            const entries = data?.by_date[dateStr] || [];
+            const entries = data?.by_date?.[dateStr] || [];
             const totalDuration = entries.reduce((sum, e) => sum + (e.duration_seconds || 0), 0);
 
             days.push({
@@ -487,30 +487,30 @@ const TimeSheet: React.FC = () => {
                 </div>
 
                 {/* Summary stats */}
-                {data && (
+                {data && data.totals && (
                     <div className="grid grid-cols-4 gap-4 mt-6">
                         <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                             <div className="text-sm text-gray-600 dark:text-gray-400">Total Time</div>
                             <div className="text-xl font-semibold text-gray-900 dark:text-white">
-                                {formatDuration(data.totals.total_duration)}
+                                {formatDuration(data.totals?.total_duration || 0)}
                             </div>
                         </div>
                         <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
                             <div className="text-sm text-green-600 dark:text-green-400">Billable</div>
                             <div className="text-xl font-semibold text-green-700 dark:text-green-300">
-                                {formatDuration(data.totals.billable_duration)}
+                                {formatDuration(data.totals?.billable_duration || 0)}
                             </div>
                         </div>
                         <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                             <div className="text-sm text-gray-600 dark:text-gray-400">Non-Billable</div>
                             <div className="text-xl font-semibold text-gray-900 dark:text-white">
-                                {formatDuration(data.totals.non_billable_duration)}
+                                {formatDuration(data.totals?.non_billable_duration || 0)}
                             </div>
                         </div>
                         <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
                             <div className="text-sm text-blue-600 dark:text-blue-400">Total Amount</div>
                             <div className="text-xl font-semibold text-blue-700 dark:text-blue-300">
-                                €{data.totals.total_amount.toFixed(2)}
+                                €{(data.totals?.total_amount || 0).toFixed(2)}
                             </div>
                         </div>
                     </div>

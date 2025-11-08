@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useMutation } from '@tanstack/react-query';
-import axios from 'axios';
-import { toast } from 'react-toastify';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import {
     EnvelopeIcon,
     LockClosedIcon,
@@ -18,7 +16,7 @@ interface LoginFormData {
 }
 
 const Login: React.FC = () => {
-    const navigate = useNavigate();
+    const { login, isLoading } = useAuth();
     const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState<LoginFormData>({
         email: '',
@@ -26,46 +24,18 @@ const Login: React.FC = () => {
         remember: false
     });
 
-    const loginMutation = useMutation({
-        mutationFn: async (data: LoginFormData) => {
-            const response = await axios.post('/login', data);
-            return response.data;
-        },
-        onSuccess: (data) => {
-            // Store auth token
-            if (data.token) {
-                localStorage.setItem('auth_token', data.token);
-            }
-
-            // Store user data
-            if (data.user) {
-                localStorage.setItem('user', JSON.stringify(data.user));
-            }
-
-            // Check if 2FA is required
-            if (data.requires_2fa) {
-                navigate('/2fa');
-                return;
-            }
-
-            toast.success('Connexion réussie !');
-            navigate('/dashboard');
-        },
-        onError: (error: any) => {
-            const message = error.response?.data?.message || 'Erreur de connexion';
-            toast.error(message);
-        }
-    });
-
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!formData.email || !formData.password) {
-            toast.error('Veuillez remplir tous les champs');
             return;
         }
 
-        loginMutation.mutate(formData);
+        try {
+            await login(formData);
+        } catch (error) {
+            // Error is already handled in the login function
+        }
     };
 
     return (

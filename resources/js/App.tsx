@@ -88,7 +88,8 @@ import axios from 'axios';
 
 axios.defaults.baseURL = import.meta.env.VITE_API_URL || '/api';
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
-axios.defaults.withCredentials = true;
+// Don't use withCredentials since we're using Bearer tokens, not cookies
+// axios.defaults.withCredentials = true;
 
 // Add auth token to requests
 axios.interceptors.request.use(
@@ -109,15 +110,27 @@ axios.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            // Only redirect if not already on login/register pages
+            // Only redirect if not already on login/register pages AND not during login request
             const currentPath = window.location.pathname;
-            const authPaths = ['/login', '/register', '/forgot-password'];
+            const authPaths = ['/login', '/register', '/forgot-password', '/2fa'];
+            const isLoginRequest = error.config?.url?.includes('/api/login') ||
+                                   error.config?.url?.includes('/api/register');
 
-            if (!authPaths.includes(currentPath)) {
-                // Clear auth data and redirect to login
-                localStorage.removeItem('auth_token');
-                localStorage.removeItem('user');
-                window.location.href = '/login';
+            // Don't redirect if we're on an auth page or making an auth request
+            if (!authPaths.includes(currentPath) && !isLoginRequest) {
+                // Only clear and redirect if we actually have an invalid token
+                const hasToken = localStorage.getItem('auth_token');
+
+                if (hasToken) {
+                    console.error('Authentication failed - clearing session');
+                    localStorage.removeItem('auth_token');
+                    localStorage.removeItem('user');
+
+                    // Use a small delay to avoid race conditions
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 100);
+                }
             }
         }
         return Promise.reject(error);
@@ -178,12 +191,15 @@ function App() {
 
                                         {/* Projects & Tasks */}
                                         <Route path="/projects" element={<Projects />} />
+                                        <Route path="/projects/new" element={<ProjectDetail />} />
                                         <Route path="/projects/:id" element={<ProjectDetail />} />
                                         <Route path="/projects/:id/kanban" element={<KanbanBoard />} />
                                         <Route path="/tasks" element={<Tasks />} />
+                                        <Route path="/tasks/new" element={<Tasks />} />
 
                                         {/* Clients */}
                                         <Route path="/clients" element={<Clients />} />
+                                        <Route path="/clients/new" element={<ClientDetail />} />
                                         <Route path="/clients/:id" element={<ClientDetail />} />
 
                                         {/* Invoicing */}
@@ -191,10 +207,12 @@ function App() {
                                         <Route path="/invoices/new" element={<CreateInvoice />} />
                                         <Route path="/invoices/:id" element={<InvoiceDetail />} />
                                         <Route path="/quotes" element={<Quotes />} />
+                                        <Route path="/quotes/new" element={<QuoteDetail />} />
                                         <Route path="/quotes/:id" element={<QuoteDetail />} />
 
                                         {/* Expenses */}
                                         <Route path="/expenses" element={<Expenses />} />
+                                        <Route path="/expenses/new" element={<Expenses />} />
                                         <Route path="/expense-categories" element={<ExpenseCategories />} />
 
                                         {/* Reports & Analytics */}

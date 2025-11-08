@@ -34,6 +34,7 @@ return new class extends Migration
             $table->json('custom_fields')->nullable();
             $table->foreignId('created_by')->constrained('users');
             $table->timestamps();
+            $table->softDeletes();
 
             $table->index(['tenant_id', 'status']);
             $table->index('company_name');
