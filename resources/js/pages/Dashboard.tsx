@@ -292,72 +292,97 @@ const Dashboard: React.FC = () => {
                 {/* This Week Widget */}
                 {isWidgetVisible('week-hours') && (
                     <StatWidget
-                    title={t('dashboard.stats.thisWeek')}
-                    value={formatDuration((stats.week.hours || 0) * 3600)}
-                    subtitle={`${stats.week.entries || 0} ${t('dashboard.stats.entries')}`}
-                    icon={TrendingUp}
-                    iconColor="text-green-600 dark:text-green-400"
-                    iconBgColor="bg-green-100 dark:bg-green-900"
-                    trend={stats.week.trend}
-                    trendLabel={t('dashboard.stats.vsLastWeek')}
-                />
+                        title={t('dashboard.stats.thisWeek')}
+                        value={formatDuration((stats.week.hours || 0) * 3600)}
+                        subtitle={`${stats.week.entries || 0} ${t('dashboard.stats.entries')}`}
+                        icon={TrendingUp}
+                        iconColor="text-green-600 dark:text-green-400"
+                        iconBgColor="bg-green-100 dark:bg-green-900"
+                        trend={stats.week.trend}
+                        trendLabel={t('dashboard.stats.vsLastWeek')}
+                    />
+                )}
 
                 {/* Pending Invoices Widget */}
-                <StatWidget
-                    title={t('dashboard.stats.pending')}
-                    value={formatCurrency(stats.invoices.pending_amount || 0)}
-                    subtitle={`${stats.invoices.pending || 0} ${t('dashboard.stats.invoices')}`}
-                    icon={FileText}
-                    iconColor="text-yellow-600 dark:text-yellow-400"
-                    iconBgColor="bg-yellow-100 dark:bg-yellow-900"
-                    badge={
-                        stats.invoices.overdue && stats.invoices.overdue > 0
-                            ? `${stats.invoices.overdue} ${t('dashboard.stats.overdue')}`
-                            : undefined
-                    }
-                    badgeColor="bg-red-500"
-                />
+                {isWidgetVisible('pending-invoices') && (
+                    <StatWidget
+                        title={t('dashboard.stats.pending')}
+                        value={formatCurrency(stats.invoices.pending_amount || 0)}
+                        subtitle={`${stats.invoices.pending || 0} ${t('dashboard.stats.invoices')}`}
+                        icon={FileText}
+                        iconColor="text-yellow-600 dark:text-yellow-400"
+                        iconBgColor="bg-yellow-100 dark:bg-yellow-900"
+                        badge={
+                            stats.invoices.overdue && stats.invoices.overdue > 0
+                                ? `${stats.invoices.overdue} ${t('dashboard.stats.overdue')}`
+                                : undefined
+                        }
+                        badgeColor="bg-red-500"
+                    />
+                )}
 
                 {/* Active Projects Widget */}
-                <StatWidget
-                    title={t('projects.title')}
-                    value={stats?.projects.active || 0}
-                    subtitle={t('dashboard.stats.activeProjects')}
-                    icon={Briefcase}
-                    iconColor="text-purple-600 dark:text-purple-400"
-                    iconBgColor="bg-purple-100 dark:bg-purple-900"
-                />
+                {isWidgetVisible('active-projects') && (
+                    <StatWidget
+                        title={t('projects.title')}
+                        value={stats?.projects.active || 0}
+                        subtitle={t('dashboard.stats.activeProjects')}
+                        icon={Briefcase}
+                        iconColor="text-purple-600 dark:text-purple-400"
+                        iconBgColor="bg-purple-100 dark:bg-purple-900"
+                    />
+                )}
 
                 {/* Time Tracking Chart */}
-                <TimeTrackingChart
-                    data={chartData?.daily_hours || []}
-                    isLoading={chartsLoading}
-                />
+                {isWidgetVisible('time-tracking-chart') && (
+                    <TimeTrackingChart
+                        data={chartData?.daily_hours || []}
+                        isLoading={chartsLoading}
+                    />
+                )}
 
                 {/* Project Distribution Chart */}
-                <ProjectDistributionChart
-                    data={chartData?.project_distribution || []}
-                    isLoading={chartsLoading}
-                />
+                {isWidgetVisible('project-distribution') && (
+                    <ProjectDistributionChart
+                        data={chartData?.project_distribution || []}
+                        isLoading={chartsLoading}
+                    />
+                )}
 
                 {/* Monthly Revenue Chart */}
-                <MonthlyRevenueChart
-                    data={chartData?.monthly_revenue || []}
-                    isLoading={chartsLoading}
-                />
+                {isWidgetVisible('monthly-revenue') && (
+                    <MonthlyRevenueChart
+                        data={chartData?.monthly_revenue || []}
+                        isLoading={chartsLoading}
+                    />
+                )}
 
                 {/* Recent Activity Widget */}
-                <RecentActivityWidget
-                    activities={activities || []}
-                    isLoading={activitiesLoading}
-                />
+                {isWidgetVisible('recent-activity') && (
+                    <RecentActivityWidget
+                        activities={activities || []}
+                        isLoading={activitiesLoading}
+                    />
+                )}
 
                 {/* Quick Actions Widget */}
-                <QuickActionsWidget />
+                {isWidgetVisible('quick-actions') && <QuickActionsWidget />}
 
                 {/* Tasks Summary Widget */}
-                <TasksSummaryWidget tasks={stats?.tasks} isLoading={statsLoading} />
+                {isWidgetVisible('tasks-summary') && (
+                    <TasksSummaryWidget tasks={stats?.tasks} isLoading={statsLoading} />
+                )}
             </DashboardGrid>
+
+            {/* Dashboard Settings Modal */}
+            <DashboardSettings
+                isOpen={showSettings}
+                onClose={() => setShowSettings(false)}
+                preferences={preferences}
+                onSave={handleSettingsSave}
+                onReset={handleReset}
+                userRole={(user?.role as UserRole) || 'employee'}
+            />
         </div>
     );
 };

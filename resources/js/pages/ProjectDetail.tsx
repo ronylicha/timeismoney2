@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import {
     ArrowLeftIcon,
     PencilIcon,
@@ -73,6 +74,7 @@ interface TeamMember {
 }
 
 const ProjectDetail: React.FC = () => {
+    const { t } = useTranslation();
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
@@ -96,11 +98,11 @@ const ProjectDetail: React.FC = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['projects'] });
-            toast.success('Projet supprimé avec succès');
+            toast.success(t('projects.deleteSuccess'));
             navigate('/projects');
         },
         onError: () => {
-            toast.error('Erreur lors de la suppression du projet');
+            toast.error(t('projects.deleteError'));
         },
     });
 
@@ -113,10 +115,10 @@ const ProjectDetail: React.FC = () => {
         };
 
         const labels = {
-            active: 'Actif',
-            completed: 'Terminé',
-            on_hold: 'En pause',
-            cancelled: 'Annulé',
+            active: t('projects.active'),
+            completed: t('projects.completed'),
+            on_hold: t('projects.onHold'),
+            cancelled: t('projects.cancelled'),
         };
 
         return (
@@ -136,11 +138,11 @@ const ProjectDetail: React.FC = () => {
         };
 
         const labels = {
-            todo: 'À faire',
-            in_progress: 'En cours',
-            in_review: 'En révision',
-            completed: 'Terminé',
-            cancelled: 'Annulé',
+            todo: t('tasks.todo'),
+            in_progress: t('tasks.inProgress'),
+            in_review: t('tasks.inReview'),
+            completed: t('tasks.completed'),
+            cancelled: t('tasks.cancelled'),
         };
 
         return (
@@ -159,10 +161,10 @@ const ProjectDetail: React.FC = () => {
         };
 
         const labels = {
-            low: 'Basse',
-            medium: 'Moyenne',
-            high: 'Haute',
-            urgent: 'Urgente',
+            low: t('tasks.low'),
+            medium: t('tasks.medium'),
+            high: t('tasks.high'),
+            urgent: t('tasks.urgent'),
         };
 
         return (
@@ -207,14 +209,14 @@ const ProjectDetail: React.FC = () => {
         return (
             <div className="p-6">
                 <div className="bg-white rounded-lg shadow p-12 text-center">
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Projet non trouvé</h3>
-                    <p className="text-gray-600 mb-6">Le projet demandé n'existe pas ou a été supprimé</p>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">{t('projects.notFound')}</h3>
+                    <p className="text-gray-600 mb-6">{t('projects.notFoundDescription')}</p>
                     <Link
                         to="/projects"
                         className="inline-flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
                     >
                         <ArrowLeftIcon className="h-5 w-5" />
-                        <span>Retour aux projets</span>
+                        <span>{t('projects.backToProjects')}</span>
                     </Link>
                 </div>
             </div>
@@ -231,7 +233,7 @@ const ProjectDetail: React.FC = () => {
                         className="flex items-center text-gray-600 hover:text-gray-900 transition mr-4"
                     >
                         <ArrowLeftIcon className="h-5 w-5 mr-1" />
-                        <span>Retour</span>
+                        <span>{t('common.back')}</span>
                     </Link>
                 </div>
 
@@ -242,7 +244,7 @@ const ProjectDetail: React.FC = () => {
                             {getStatusBadge(project.status)}
                         </div>
                         {project.client && (
-                            <p className="text-gray-600">Client: {project.client.name}</p>
+                            <p className="text-gray-600">{t('projects.client')}: {project.client.name}</p>
                         )}
                     </div>
 
@@ -252,21 +254,21 @@ const ProjectDetail: React.FC = () => {
                             className="flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition"
                         >
                             <ViewColumnsIcon className="h-5 w-5" />
-                            <span>Kanban</span>
+                            <span>{t('projects.kanban')}</span>
                         </Link>
                         <Link
                             to={`/projects/${id}/edit`}
                             className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
                         >
                             <PencilIcon className="h-5 w-5" />
-                            <span>Modifier</span>
+                            <span>{t('common.edit')}</span>
                         </Link>
                         <button
                             onClick={() => setShowDeleteConfirm(true)}
                             className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
                         >
                             <TrashIcon className="h-5 w-5" />
-                            <span>Supprimer</span>
+                            <span>{t('common.delete')}</span>
                         </button>
                     </div>
                 </div>
@@ -276,7 +278,7 @@ const ProjectDetail: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 <div className="bg-white rounded-lg shadow p-6">
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-medium text-gray-600">Temps total</h3>
+                        <h3 className="text-sm font-medium text-gray-600">{t('projects.totalTime')}</h3>
                         <ClockIcon className="h-5 w-5 text-blue-600" />
                     </div>
                     <p className="text-2xl font-bold text-gray-900">{formatDuration(getTotalTime())}</p>
@@ -284,7 +286,7 @@ const ProjectDetail: React.FC = () => {
 
                 <div className="bg-white rounded-lg shadow p-6">
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-medium text-gray-600">Tâches</h3>
+                        <h3 className="text-sm font-medium text-gray-600">{t('projects.tasks')}</h3>
                         <ChartBarIcon className="h-5 w-5 text-green-600" />
                     </div>
                     <p className="text-2xl font-bold text-gray-900">
@@ -294,7 +296,7 @@ const ProjectDetail: React.FC = () => {
 
                 <div className="bg-white rounded-lg shadow p-6">
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-medium text-gray-600">Équipe</h3>
+                        <h3 className="text-sm font-medium text-gray-600">{t('projects.team')}</h3>
                         <UserGroupIcon className="h-5 w-5 text-purple-600" />
                     </div>
                     <p className="text-2xl font-bold text-gray-900">{project.team_members?.length || 0}</p>
@@ -302,7 +304,7 @@ const ProjectDetail: React.FC = () => {
 
                 <div className="bg-white rounded-lg shadow p-6">
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-medium text-gray-600">Budget utilisé</h3>
+                        <h3 className="text-sm font-medium text-gray-600">{t('projects.budgetUsed')}</h3>
                         <CurrencyEuroIcon className="h-5 w-5 text-orange-600" />
                     </div>
                     <p className="text-2xl font-bold text-gray-900">{Math.round(getBudgetUsed())}%</p>
@@ -311,32 +313,32 @@ const ProjectDetail: React.FC = () => {
 
             {/* Project Details */}
             <div className="bg-white rounded-lg shadow p-6 mb-8">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Détails du projet</h2>
+                <h2 className="text-xl font-bold text-gray-900 mb-4">{t('projects.details')}</h2>
                 <div className="space-y-4">
                     {project.description && (
                         <div>
-                            <h3 className="text-sm font-medium text-gray-600 mb-1">Description</h3>
+                            <h3 className="text-sm font-medium text-gray-600 mb-1">{t('projects.description')}</h3>
                             <p className="text-gray-900">{project.description}</p>
                         </div>
                     )}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <h3 className="text-sm font-medium text-gray-600 mb-1">Date de début</h3>
+                            <h3 className="text-sm font-medium text-gray-600 mb-1">{t('projects.startDate')}</h3>
                             <p className="text-gray-900">
-                                {project.start_date ? format(new Date(project.start_date), 'dd MMMM yyyy', { locale: fr }) : 'Non définie'}
+                                {project.start_date ? format(new Date(project.start_date), 'dd MMMM yyyy', { locale: fr }) : t('projects.notDefined')}
                             </p>
                         </div>
 
                         <div>
-                            <h3 className="text-sm font-medium text-gray-600 mb-1">Date de fin</h3>
+                            <h3 className="text-sm font-medium text-gray-600 mb-1">{t('projects.endDate')}</h3>
                             <p className="text-gray-900">
-                                {project.end_date ? format(new Date(project.end_date), 'dd MMMM yyyy', { locale: fr }) : 'Non définie'}
+                                {project.end_date ? format(new Date(project.end_date), 'dd MMMM yyyy', { locale: fr }) : t('projects.notDefined')}
                             </p>
                         </div>
 
                         <div>
-                            <h3 className="text-sm font-medium text-gray-600 mb-1">Budget</h3>
+                            <h3 className="text-sm font-medium text-gray-600 mb-1">{t('projects.budget')}</h3>
                             <p className="text-gray-900">
                                 {new Intl.NumberFormat('fr-FR', {
                                     style: 'currency',
@@ -346,12 +348,12 @@ const ProjectDetail: React.FC = () => {
                         </div>
 
                         <div>
-                            <h3 className="text-sm font-medium text-gray-600 mb-1">Taux horaire</h3>
+                            <h3 className="text-sm font-medium text-gray-600 mb-1">{t('projects.hourlyRate')}</h3>
                             <p className="text-gray-900">
                                 {new Intl.NumberFormat('fr-FR', {
                                     style: 'currency',
                                     currency: 'EUR',
-                                }).format(project.hourly_rate)} / heure
+                                }).format(project.hourly_rate)} / {t('projects.hour')}
                             </p>
                         </div>
                     </div>
@@ -361,13 +363,13 @@ const ProjectDetail: React.FC = () => {
             {/* Tasks Section */}
             <div className="bg-white rounded-lg shadow mb-8">
                 <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-gray-900">Tâches</h2>
+                    <h2 className="text-lg font-semibold text-gray-900">{t('projects.tasks')}</h2>
                     <Link
                         to={`/tasks/new?project_id=${id}`}
                         className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm"
                     >
                         <PlusIcon className="h-4 w-4" />
-                        <span>Nouvelle tâche</span>
+                        <span>{t('tasks.newTask')}</span>
                     </Link>
                 </div>
 
@@ -375,7 +377,7 @@ const ProjectDetail: React.FC = () => {
                     {project.tasks?.length === 0 ? (
                         <div className="p-8 text-center text-gray-500">
                             <ChartBarIcon className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                            <p>Aucune tâche pour ce projet</p>
+                            <p>{t('projects.noTasks')}</p>
                         </div>
                     ) : (
                         project.tasks?.map((task) => (
@@ -392,11 +394,11 @@ const ProjectDetail: React.FC = () => {
                                         )}
                                         <div className="flex items-center space-x-4 text-sm text-gray-500">
                                             {task.assigned_to && (
-                                                <span>Assigné à: {task.assigned_to.name}</span>
+                                                <span>{t('tasks.assignedTo')}: {task.assigned_to.name}</span>
                                             )}
                                             {task.due_date && (
                                                 <span>
-                                                    Échéance: {format(new Date(task.due_date), 'dd MMM yyyy', { locale: fr })}
+                                                    {t('tasks.dueDate')}: {format(new Date(task.due_date), 'dd MMM yyyy', { locale: fr })}
                                                 </span>
                                             )}
                                         </div>
@@ -412,7 +414,7 @@ const ProjectDetail: React.FC = () => {
             {project.team_members && project.team_members.length > 0 && (
                 <div className="bg-white rounded-lg shadow mb-8">
                     <div className="px-6 py-4 border-b border-gray-200">
-                        <h2 className="text-lg font-semibold text-gray-900">Équipe</h2>
+                        <h2 className="text-lg font-semibold text-gray-900">{t('projects.team')}</h2>
                     </div>
 
                     <div className="divide-y divide-gray-200">
@@ -434,14 +436,14 @@ const ProjectDetail: React.FC = () => {
             {/* Recent Time Entries */}
             <div className="bg-white rounded-lg shadow">
                 <div className="px-6 py-4 border-b border-gray-200">
-                    <h2 className="text-lg font-semibold text-gray-900">Entrées de temps récentes</h2>
+                    <h2 className="text-lg font-semibold text-gray-900">{t('projects.recentTimeEntries')}</h2>
                 </div>
 
                 <div className="divide-y divide-gray-200">
                     {project.time_entries?.length === 0 ? (
                         <div className="p-8 text-center text-gray-500">
                             <ClockIcon className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                            <p>Aucune entrée de temps pour ce projet</p>
+                            <p>{t('projects.noTimeEntries')}</p>
                         </div>
                     ) : (
                         project.time_entries?.slice(0, 5).map((entry) => (
@@ -472,16 +474,16 @@ const ProjectDetail: React.FC = () => {
             {showDeleteConfirm && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-                        <h3 className="text-lg font-bold text-gray-900 mb-2">Confirmer la suppression</h3>
+                        <h3 className="text-lg font-bold text-gray-900 mb-2">{t('projects.confirmDelete')}</h3>
                         <p className="text-gray-600 mb-6">
-                            Êtes-vous sûr de vouloir supprimer ce projet ? Cette action est irréversible et supprimera également toutes les tâches et entrées de temps associées.
+                            {t('projects.deleteWarning')}
                         </p>
                         <div className="flex justify-end space-x-3">
                             <button
                                 onClick={() => setShowDeleteConfirm(false)}
                                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
                             >
-                                Annuler
+                                {t('common.cancel')}
                             </button>
                             <button
                                 onClick={() => {
@@ -491,7 +493,7 @@ const ProjectDetail: React.FC = () => {
                                 disabled={deleteProjectMutation.isPending}
                                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50"
                             >
-                                {deleteProjectMutation.isPending ? 'Suppression...' : 'Supprimer'}
+                                {deleteProjectMutation.isPending ? t('projects.deleting') : t('common.delete')}
                             </button>
                         </div>
                     </div>
