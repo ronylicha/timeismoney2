@@ -33,6 +33,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
 
     const navigation = isAdmin ? [
         { name: 'Tableau de bord', href: '/admin', icon: HomeIcon },
+        { name: 'Dashboard utilisateur', href: '/dashboard', icon: UserCircleIcon },
         { name: 'Utilisateurs', href: '/admin/users', icon: UserGroupIcon },
         { name: 'Organisations', href: '/admin/tenants', icon: FolderIcon },
         { name: 'Journaux d\'audit', href: '/admin/audit-logs', icon: ClipboardDocumentListIcon },
@@ -197,14 +198,25 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
                                                 Paramètres
                                             </Link>
                                             {(user?.role === 'admin' || user?.role === 'super-admin') && (
-                                                <Link
-                                                    to="/admin"
-                                                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                                    onClick={() => setUserMenuOpen(false)}
-                                                >
-                                                    <ShieldCheckIcon className="mr-3 h-5 w-5 text-gray-400" />
-                                                    Administration
-                                                </Link>
+                                                location.pathname.startsWith('/admin') ? (
+                                                    <Link
+                                                        to="/dashboard"
+                                                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                        onClick={() => setUserMenuOpen(false)}
+                                                    >
+                                                        <HomeIcon className="mr-3 h-5 w-5 text-gray-400" />
+                                                        Dashboard
+                                                    </Link>
+                                                ) : (
+                                                    <Link
+                                                        to="/admin"
+                                                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                        onClick={() => setUserMenuOpen(false)}
+                                                    >
+                                                        <ShieldCheckIcon className="mr-3 h-5 w-5 text-gray-400" />
+                                                        Administration
+                                                    </Link>
+                                                )
                                             )}
                                             <div className="border-t border-gray-100"></div>
                                             <button

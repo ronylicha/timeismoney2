@@ -402,6 +402,30 @@
                 }
             });
         });
+
+        // Check if user is authenticated and update login buttons to dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            const authToken = localStorage.getItem('auth_token');
+
+            if (authToken) {
+                // Get all links that point to /login
+                const loginLinks = document.querySelectorAll('a[href="/login"]');
+
+                loginLinks.forEach(link => {
+                    // Update href to dashboard
+                    link.href = '/dashboard';
+
+                    // Update text content if it contains "Se connecter" or "démo"
+                    if (link.textContent.includes('Se connecter')) {
+                        link.textContent = 'Dashboard';
+                    } else if (link.textContent.includes('Essayer la démo')) {
+                        link.innerHTML = '<span>Dashboard</span>' + link.querySelector('svg').outerHTML;
+                    } else if (link.textContent.includes('Accéder à la démo')) {
+                        link.innerHTML = '<span>Accéder au Dashboard</span>' + link.querySelector('svg').outerHTML;
+                    }
+                });
+            }
+        });
     </script>
 </body>
 </html>

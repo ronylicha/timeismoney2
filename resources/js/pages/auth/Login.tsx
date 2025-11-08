@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import {
     EnvelopeIcon,
@@ -16,13 +16,21 @@ interface LoginFormData {
 }
 
 const Login: React.FC = () => {
-    const { login, isLoading } = useAuth();
+    const { login, isLoading, isAuthenticated } = useAuth();
+    const navigate = useNavigate();
     const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState<LoginFormData>({
         email: '',
         password: '',
         remember: false
     });
+
+    // Redirect to dashboard if already authenticated
+    useEffect(() => {
+        if (isAuthenticated) {
+            navigate('/dashboard', { replace: true });
+        }
+    }, [isAuthenticated, navigate]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
