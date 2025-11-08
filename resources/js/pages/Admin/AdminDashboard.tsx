@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import {
     UsersIcon,
     BuildingOfficeIcon,
@@ -85,6 +86,7 @@ interface SystemStats {
 }
 
 const AdminDashboard: React.FC = () => {
+    const { t } = useTranslation();
     const [timeRange, setTimeRange] = useState('7d');
 
     // Fetch system stats
@@ -157,8 +159,8 @@ const AdminDashboard: React.FC = () => {
             {/* Header */}
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Administration</h1>
-                    <p className="text-gray-600 mt-1">Vue d'ensemble du système</p>
+                    <h1 className="text-2xl font-bold text-gray-900">{t('admin.dashboard.title')}</h1>
+                    <p className="text-gray-600 mt-1">{t('admin.dashboard.subtitle')}</p>
                 </div>
 
                 <div className="flex items-center space-x-4">
@@ -166,7 +168,7 @@ const AdminDashboard: React.FC = () => {
                     <div className="flex items-center space-x-2 px-4 py-2 bg-white rounded-lg shadow">
                         {getHealthIcon()}
                         <span className="text-sm font-medium capitalize">
-                            {stats?.health?.status || 'unknown'}
+                            {stats?.health?.status || t('admin.dashboard.health.unknown')}
                         </span>
                     </div>
 
@@ -176,10 +178,10 @@ const AdminDashboard: React.FC = () => {
                         onChange={(e) => setTimeRange(e.target.value)}
                         className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                     >
-                        <option value="24h">24 heures</option>
-                        <option value="7d">7 jours</option>
-                        <option value="30d">30 jours</option>
-                        <option value="90d">90 jours</option>
+                        <option value="24h">{t('admin.dashboard.timeRange.24h')}</option>
+                        <option value="7d">{t('admin.dashboard.timeRange.7d')}</option>
+                        <option value="30d">{t('admin.dashboard.timeRange.30d')}</option>
+                        <option value="90d">{t('admin.dashboard.timeRange.90d')}</option>
                     </select>
                 </div>
             </div>

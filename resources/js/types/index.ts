@@ -161,7 +161,27 @@ export interface TimeEntry {
     updated_at: string;
 }
 
-// Invoice Types
+// Invoice Types - Conformité française avec multi-acomptes
+export type InvoiceType = 'invoice' | 'advance' | 'final' | 'credit_note' | 'quote' | 'recurring';
+
+export interface FrenchLegalMentions {
+    payment_conditions?: string;
+    late_payment_penalty_rate: number;
+    recovery_indemnity: number;
+    early_payment_discount?: number;
+    vat_exemption_reason?: string;
+}
+
+export interface InvoiceAdvanceLink {
+    id: number;
+    final_invoice_id: number;
+    advance_invoice_id: number;
+    advance_amount: number;
+    created_at: string;
+    updated_at: string;
+    advance_invoice?: Invoice;
+}
+
 export interface Invoice {
     id: string;
     tenant_id: string;
@@ -173,6 +193,23 @@ export interface Invoice {
     due_date: string;
     status: 'draft' | 'pending' | 'sent' | 'viewed' | 'paid' | 'overdue' | 'cancelled';
     payment_status: 'unpaid' | 'partial' | 'paid';
+
+    // Type de facture française
+    type: InvoiceType;
+
+    // Champs acompte
+    advance_percentage?: number;
+
+    // Relations multi-acomptes (pour facture de SOLDE)
+    advances?: Invoice[];
+    total_advances?: number;
+    remaining_balance?: number;
+
+    // Relation solde (pour facture d'ACOMPTE)
+    final_invoice?: Invoice[];
+    is_linked_to_final?: boolean;
+
+    // Montants
     subtotal: number;
     tax_rate?: number;
     tax_amount: number;
@@ -182,18 +219,31 @@ export interface Invoice {
     paid_amount?: number;
     currency: string;
     payment_terms?: number;
+
+    // Mentions légales françaises (Article 441-3 Code de commerce)
+    legal_mentions?: string;
+    payment_conditions?: string;
+    late_payment_penalty_rate?: number; // 19.59% (3× taux légal 2025)
+    recovery_indemnity?: number; // 40€ obligatoire
+    early_payment_discount?: number;
+
     notes?: string;
     footer?: string;
     is_locked: boolean;
     sent_at?: string;
     viewed_at?: string;
     paid_at?: string;
+
+    // NF525 compliance
     hash?: string;
     previous_hash?: string;
+
+    // Relations
     client?: Client;
     project?: Project;
     items?: InvoiceItem[];
     payments?: Payment[];
+
     created_at: string;
     updated_at: string;
 }
