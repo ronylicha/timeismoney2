@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import {
     ArrowLeftIcon,
     UserGroupIcon,
@@ -36,6 +37,7 @@ interface ClientFormData {
 }
 
 const CreateClient: React.FC = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [formData, setFormData] = useState<ClientFormData>({
         name: '',
@@ -64,11 +66,11 @@ const CreateClient: React.FC = () => {
             return response.data;
         },
         onSuccess: (client) => {
-            toast.success('Client créé avec succès');
+            toast.success(t('clients.clientCreatedSuccess'));
             navigate(`/clients/${client.id}`);
         },
         onError: (error: any) => {
-            const message = error.response?.data?.message || 'Erreur lors de la création du client';
+            const message = error.response?.data?.message || t('clients.clientCreatedError');
             toast.error(message);
         }
     });
@@ -95,27 +97,27 @@ const CreateClient: React.FC = () => {
             address: address,
             city: components.city || '',
             postal_code: components.postal_code || '',
-            country: components.country || 'France'
+            country: components.country || 'FR'
         }));
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (!formData.name.trim()) {
-            toast.error('Le nom du client est obligatoire');
+            toast.error(t('clients.nameRequired'));
             return;
         }
-        
+
         if (!formData.email.trim()) {
-            toast.error('L\'email du client est obligatoire');
+            toast.error(t('clients.emailRequired'));
             return;
         }
 
         // Basic email validation
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(formData.email)) {
-            toast.error('Veuillez entrer une adresse email valide');
+            toast.error(t('clients.emailInvalid'));
             return;
         }
 
@@ -138,14 +140,14 @@ const CreateClient: React.FC = () => {
                         className="flex items-center text-gray-600 hover:text-gray-900 transition mr-4"
                     >
                         <ArrowLeftIcon className="h-5 w-5 mr-1" />
-                        <span>Retour aux clients</span>
+                        <span>{t('clients.backToClients')}</span>
                     </Link>
                 </div>
                 <div className="flex items-center">
                     <UserGroupIcon className="h-8 w-8 text-blue-600 mr-3" />
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Nouveau client</h1>
-                        <p className="text-gray-600">Ajoutez un nouveau client à votre portefeuille</p>
+                        <h1 className="text-3xl font-bold text-gray-900">{t('clients.newClient')}</h1>
+                        <p className="text-gray-600">{t('clients.addNewClientDescription')}</p>
                     </div>
                 </div>
             </div>
@@ -154,12 +156,12 @@ const CreateClient: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Basic Information */}
                 <div className="bg-white rounded-lg shadow p-6">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Informations générales</h2>
-                    
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('clients.generalInfo')}</h2>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Type de client
+                                {t('clients.clientType')}
                             </label>
                             <select
                                 name="is_company"
@@ -167,14 +169,14 @@ const CreateClient: React.FC = () => {
                                 onChange={(e) => setFormData(prev => ({ ...prev, is_company: e.target.value === 'true' }))}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             >
-                                <option value="false">Particulier</option>
-                                <option value="true">Entreprise</option>
+                                <option value="false">{t('clients.individual')}</option>
+                                <option value="true">{t('clients.company')}</option>
                             </select>
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Nom du client *
+                                {t('clients.name')} *
                             </label>
                             <input
                                 type="text"
@@ -182,7 +184,7 @@ const CreateClient: React.FC = () => {
                                 value={formData.name}
                                 onChange={handleInputChange}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="Entrez le nom du client"
+                                placeholder={t('clients.namePlaceholder')}
                                 required
                             />
                         </div>
@@ -190,7 +192,7 @@ const CreateClient: React.FC = () => {
                         {formData.is_company && (
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Forme juridique
+                                    {t('clients.legalForm')}
                                 </label>
                                 <input
                                     type="text"
@@ -198,14 +200,14 @@ const CreateClient: React.FC = () => {
                                     value={formData.legal_form}
                                     onChange={handleInputChange}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    placeholder="SAS, SARL, EURL..."
+                                    placeholder={t('clients.legalFormPlaceholder')}
                                 />
                             </div>
                         )}
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Email *
+                                {t('clients.email')} *
                             </label>
                             <input
                                 type="email"
@@ -213,14 +215,14 @@ const CreateClient: React.FC = () => {
                                 value={formData.email}
                                 onChange={handleInputChange}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="email@exemple.com"
+                                placeholder={t('clients.emailPlaceholder')}
                                 required
                             />
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Téléphone
+                                {t('clients.phone')}
                             </label>
                             <input
                                 type="tel"
@@ -228,13 +230,13 @@ const CreateClient: React.FC = () => {
                                 value={formData.phone}
                                 onChange={handleInputChange}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="+33 1 23 45 67 89"
+                                placeholder={t('clients.phonePlaceholder')}
                             />
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Site web
+                                {t('clients.website')}
                             </label>
                             <input
                                 type="url"
@@ -242,7 +244,7 @@ const CreateClient: React.FC = () => {
                                 value={formData.website}
                                 onChange={handleInputChange}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="https://www.exemple.com"
+                                placeholder={t('clients.websitePlaceholder')}
                             />
                         </div>
                     </div>
@@ -252,19 +254,19 @@ const CreateClient: React.FC = () => {
                 <div className="bg-white rounded-lg shadow p-6">
                     <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                         <MapPinIcon className="h-5 w-5 mr-2" />
-                        Adresse
+                        {t('clients.address')}
                     </h2>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="md:col-span-2">
                             <AddressAutocomplete
                                 value={formData.address}
                                 onChange={handleAddressChange}
-                                placeholder="Rechercher une adresse..."
+                                placeholder={t('clients.searchAddress')}
                                 className="w-full"
                                 name="address"
                                 id="client-address"
-                                label="Adresse"
+                                label={t('clients.address')}
                                 showLabel={true}
                                 required={false}
                             />
@@ -272,7 +274,7 @@ const CreateClient: React.FC = () => {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Code postal
+                                {t('clients.postalCode')}
                             </label>
                             <input
                                 type="text"
@@ -280,13 +282,13 @@ const CreateClient: React.FC = () => {
                                 value={formData.postal_code}
                                 onChange={handleInputChange}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="75001"
+                                placeholder={t('clients.postalCodePlaceholder')}
                             />
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Ville
+                                {t('clients.city')}
                             </label>
                             <input
                                 type="text"
@@ -294,13 +296,13 @@ const CreateClient: React.FC = () => {
                                 value={formData.city}
                                 onChange={handleInputChange}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="Paris"
+                                placeholder={t('clients.cityPlaceholder')}
                             />
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Pays
+                                {t('clients.country')}
                             </label>
                             <select
                                 name="country"
@@ -308,7 +310,7 @@ const CreateClient: React.FC = () => {
                                 onChange={handleInputChange}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             >
-                                <option value="">Sélectionnez un pays...</option>
+                                <option value="">{t('clients.selectCountry')}</option>
                                 {commonCountries.map(country => (
                                     <option key={country} value={country}>
                                         {country}
@@ -324,13 +326,13 @@ const CreateClient: React.FC = () => {
                     <div className="bg-white rounded-lg shadow p-6">
                         <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                             <BuildingOfficeIcon className="h-5 w-5 mr-2" />
-                            Informations professionnelles
+                            {t('clients.businessInfo')}
                         </h2>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Numéro TVA
+                                    {t('clients.vatNumber')}
                                 </label>
                                 <input
                                     type="text"
@@ -338,14 +340,14 @@ const CreateClient: React.FC = () => {
                                     value={formData.vat_number}
                                     onChange={handleInputChange}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    placeholder="FR12345678901"
+                                    placeholder={t('clients.vatNumberPlaceholder')}
                                 />
                             </div>
 
                             {formData.is_company && (
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Numéro SIRET
+                                        {t('clients.siretNumber')}
                                     </label>
                                     <input
                                         type="text"
@@ -353,7 +355,7 @@ const CreateClient: React.FC = () => {
                                         value={formData.siret}
                                         onChange={handleInputChange}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="12345678900012"
+                                        placeholder={t('clients.siretNumberPlaceholder')}
                                     />
                                 </div>
                             )}
@@ -363,11 +365,11 @@ const CreateClient: React.FC = () => {
 
                 {/* Notes */}
                 <div className="bg-white rounded-lg shadow p-6">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Notes</h2>
-                    
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('clients.notes')}</h2>
+
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Notes internes
+                            {t('clients.internalNotes')}
                         </label>
                         <textarea
                             name="notes"
@@ -375,7 +377,7 @@ const CreateClient: React.FC = () => {
                             onChange={handleInputChange}
                             rows={4}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="Ajoutez des notes ou des informations supplémentaires sur ce client..."
+                            placeholder={t('clients.notesPlaceholder')}
                         />
                     </div>
                 </div>
@@ -386,7 +388,7 @@ const CreateClient: React.FC = () => {
                         to="/clients"
                         className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
                     >
-                        Annuler
+                        {t('common.cancel')}
                     </Link>
                     <button
                         type="submit"
@@ -396,12 +398,12 @@ const CreateClient: React.FC = () => {
                         {createClientMutation.isPending ? (
                             <>
                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                Création...
+                                {t('common.creating')}
                             </>
                         ) : (
                             <>
                                 <CheckCircleIcon className="h-5 w-5 mr-2" />
-                                Créer le client
+                                {t('clients.createClient')}
                             </>
                         )}
                     </button>

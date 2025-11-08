@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import {
     ArrowLeftIcon,
     PencilIcon,
@@ -53,6 +54,7 @@ interface Invoice {
 }
 
 const ClientDetail: React.FC = () => {
+    const { t } = useTranslation();
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
@@ -76,11 +78,11 @@ const ClientDetail: React.FC = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['clients'] });
-            toast.success('Client supprimé avec succès');
+            toast.success(t('clients.clientDeletedSuccess'));
             navigate('/clients');
         },
         onError: () => {
-            toast.error('Erreur lors de la suppression du client');
+            toast.error(t('clients.clientDeletedError'));
         },
     });
 
@@ -92,16 +94,9 @@ const ClientDetail: React.FC = () => {
             cancelled: 'bg-red-100 text-red-800',
         };
 
-        const labels = {
-            active: 'Actif',
-            completed: 'Terminé',
-            on_hold: 'En pause',
-            cancelled: 'Annulé',
-        };
-
         return (
             <span className={`px-2 py-1 text-xs font-medium rounded-full ${colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800'}`}>
-                {labels[status as keyof typeof labels] || status}
+                {t(`projects.status.${status}`)}
             </span>
         );
     };
@@ -115,17 +110,9 @@ const ClientDetail: React.FC = () => {
             cancelled: 'bg-red-100 text-red-800',
         };
 
-        const labels = {
-            draft: 'Brouillon',
-            sent: 'Envoyée',
-            paid: 'Payée',
-            overdue: 'En retard',
-            cancelled: 'Annulée',
-        };
-
         return (
             <span className={`px-2 py-1 text-xs font-medium rounded-full ${colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800'}`}>
-                {labels[status as keyof typeof labels] || status}
+                {t(`invoices.status.${status}`)}
             </span>
         );
     };
@@ -156,14 +143,14 @@ const ClientDetail: React.FC = () => {
         return (
             <div className="p-6">
                 <div className="bg-white rounded-lg shadow p-12 text-center">
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Client non trouvé</h3>
-                    <p className="text-gray-600 mb-6">Le client demandé n'existe pas ou a été supprimé</p>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">{t('clients.clientNotFound')}</h3>
+                    <p className="text-gray-600 mb-6">{t('clients.clientNotFoundDescription')}</p>
                     <Link
                         to="/clients"
                         className="inline-flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
                     >
                         <ArrowLeftIcon className="h-5 w-5" />
-                        <span>Retour aux clients</span>
+                        <span>{t('clients.backToClients')}</span>
                     </Link>
                 </div>
             </div>
@@ -180,7 +167,7 @@ const ClientDetail: React.FC = () => {
                         className="flex items-center text-gray-600 hover:text-gray-900 transition mr-4"
                     >
                         <ArrowLeftIcon className="h-5 w-5 mr-1" />
-                        <span>Retour</span>
+                        <span>{t('common.back')}</span>
                     </Link>
                 </div>
 
@@ -198,14 +185,14 @@ const ClientDetail: React.FC = () => {
                             className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
                         >
                             <PencilIcon className="h-5 w-5" />
-                            <span>Modifier</span>
+                            <span>{t('common.edit')}</span>
                         </Link>
                         <button
                             onClick={() => setShowDeleteConfirm(true)}
                             className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
                         >
                             <TrashIcon className="h-5 w-5" />
-                            <span>Supprimer</span>
+                            <span>{t('common.delete')}</span>
                         </button>
                     </div>
                 </div>
@@ -215,7 +202,7 @@ const ClientDetail: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div className="bg-white rounded-lg shadow p-6">
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-medium text-gray-600">Projets actifs</h3>
+                        <h3 className="text-sm font-medium text-gray-600">{t('clients.activeProjects')}</h3>
                         <FolderIcon className="h-5 w-5 text-blue-600" />
                     </div>
                     <p className="text-2xl font-bold text-gray-900">
@@ -225,7 +212,7 @@ const ClientDetail: React.FC = () => {
 
                 <div className="bg-white rounded-lg shadow p-6">
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-medium text-gray-600">Revenu total</h3>
+                        <h3 className="text-sm font-medium text-gray-600">{t('clients.totalRevenue')}</h3>
                         <CurrencyEuroIcon className="h-5 w-5 text-green-600" />
                     </div>
                     <p className="text-2xl font-bold text-gray-900">
@@ -238,7 +225,7 @@ const ClientDetail: React.FC = () => {
 
                 <div className="bg-white rounded-lg shadow p-6">
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-medium text-gray-600">Montant en attente</h3>
+                        <h3 className="text-sm font-medium text-gray-600">{t('clients.outstandingAmount')}</h3>
                         <DocumentTextIcon className="h-5 w-5 text-orange-600" />
                     </div>
                     <p className="text-2xl font-bold text-gray-900">
@@ -252,13 +239,13 @@ const ClientDetail: React.FC = () => {
 
             {/* Contact Information */}
             <div className="bg-white rounded-lg shadow p-6 mb-8">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Informations de contact</h2>
+                <h2 className="text-xl font-bold text-gray-900 mb-4">{t('clients.contactInfo')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-4">
                         <div className="flex items-center space-x-3">
                             <EnvelopeIcon className="h-5 w-5 text-gray-400" />
                             <div>
-                                <p className="text-sm text-gray-600">Email</p>
+                                <p className="text-sm text-gray-600">{t('clients.email')}</p>
                                 <a href={`mailto:${client.email}`} className="text-blue-600 hover:underline">
                                     {client.email}
                                 </a>
@@ -269,7 +256,7 @@ const ClientDetail: React.FC = () => {
                             <div className="flex items-center space-x-3">
                                 <PhoneIcon className="h-5 w-5 text-gray-400" />
                                 <div>
-                                    <p className="text-sm text-gray-600">Téléphone</p>
+                                    <p className="text-sm text-gray-600">{t('clients.phone')}</p>
                                     <a href={`tel:${client.phone}`} className="text-blue-600 hover:underline">
                                         {client.phone}
                                     </a>
@@ -281,7 +268,7 @@ const ClientDetail: React.FC = () => {
                             <div className="flex items-center space-x-3">
                                 <BriefcaseIcon className="h-5 w-5 text-gray-400" />
                                 <div>
-                                    <p className="text-sm text-gray-600">Entreprise</p>
+                                    <p className="text-sm text-gray-600">{t('clients.companyName')}</p>
                                     <p className="text-gray-900">{client.company}</p>
                                 </div>
                             </div>
@@ -293,7 +280,7 @@ const ClientDetail: React.FC = () => {
                             <div className="flex items-start space-x-3">
                                 <MapPinIcon className="h-5 w-5 text-gray-400 mt-1" />
                                 <div>
-                                    <p className="text-sm text-gray-600 mb-1">Adresse</p>
+                                    <p className="text-sm text-gray-600 mb-1">{t('clients.address')}</p>
                                     <div className="text-gray-900">
                                         {client.address && <p>{client.address}</p>}
                                         {(client.postal_code || client.city) && (
@@ -309,7 +296,7 @@ const ClientDetail: React.FC = () => {
 
                 {client.notes && (
                     <div className="mt-6 pt-6 border-t border-gray-200">
-                        <h3 className="text-sm font-medium text-gray-600 mb-2">Notes</h3>
+                        <h3 className="text-sm font-medium text-gray-600 mb-2">{t('clients.notes')}</h3>
                         <p className="text-gray-900 whitespace-pre-wrap">{client.notes}</p>
                     </div>
                 )}
@@ -318,13 +305,13 @@ const ClientDetail: React.FC = () => {
             {/* Projects Section */}
             <div className="bg-white rounded-lg shadow mb-8">
                 <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-gray-900">Projets</h2>
+                    <h2 className="text-lg font-semibold text-gray-900">{t('clients.projects')}</h2>
                     <Link
                         to={`/projects/new?client_id=${id}`}
                         className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm"
                     >
                         <PlusIcon className="h-4 w-4" />
-                        <span>Nouveau projet</span>
+                        <span>{t('projects.newProject')}</span>
                     </Link>
                 </div>
 
@@ -332,7 +319,7 @@ const ClientDetail: React.FC = () => {
                     {client.projects?.length === 0 ? (
                         <div className="p-8 text-center text-gray-500">
                             <FolderIcon className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                            <p>Aucun projet pour ce client</p>
+                            <p>{t('clients.noProjectsForClient')}</p>
                         </div>
                     ) : (
                         client.projects?.map((project: Project) => (
@@ -349,11 +336,11 @@ const ClientDetail: React.FC = () => {
                                         </div>
                                         <div className="flex items-center space-x-4 text-sm text-gray-500">
                                             <span>
-                                                Début: {format(new Date(project.start_date), 'dd MMM yyyy', { locale: fr })}
+                                                {t('projects.start')}: {format(new Date(project.start_date), 'dd MMM yyyy', { locale: fr })}
                                             </span>
                                             {project.end_date && (
                                                 <span>
-                                                    Fin: {format(new Date(project.end_date), 'dd MMM yyyy', { locale: fr })}
+                                                    {t('projects.end')}: {format(new Date(project.end_date), 'dd MMM yyyy', { locale: fr })}
                                                 </span>
                                             )}
                                         </div>
@@ -376,13 +363,13 @@ const ClientDetail: React.FC = () => {
             {/* Invoices Section */}
             <div className="bg-white rounded-lg shadow">
                 <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-gray-900">Factures</h2>
+                    <h2 className="text-lg font-semibold text-gray-900">{t('clients.invoices')}</h2>
                     <Link
                         to={`/invoices/new?client_id=${id}`}
                         className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm"
                     >
                         <PlusIcon className="h-4 w-4" />
-                        <span>Nouvelle facture</span>
+                        <span>{t('invoices.newInvoice')}</span>
                     </Link>
                 </div>
 
@@ -390,7 +377,7 @@ const ClientDetail: React.FC = () => {
                     {client.invoices?.length === 0 ? (
                         <div className="p-8 text-center text-gray-500">
                             <DocumentTextIcon className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                            <p>Aucune facture pour ce client</p>
+                            <p>{t('clients.noInvoicesForClient')}</p>
                         </div>
                     ) : (
                         client.invoices?.map((invoice: Invoice) => (
@@ -407,10 +394,10 @@ const ClientDetail: React.FC = () => {
                                         </div>
                                         <div className="flex items-center space-x-4 text-sm text-gray-500">
                                             <span>
-                                                Émise: {format(new Date(invoice.issue_date), 'dd MMM yyyy', { locale: fr })}
+                                                {t('invoices.issued')}: {format(new Date(invoice.issue_date), 'dd MMM yyyy', { locale: fr })}
                                             </span>
                                             <span>
-                                                Échéance: {format(new Date(invoice.due_date), 'dd MMM yyyy', { locale: fr })}
+                                                {t('invoices.dueDate')}: {format(new Date(invoice.due_date), 'dd MMM yyyy', { locale: fr })}
                                             </span>
                                         </div>
                                     </div>
@@ -433,16 +420,16 @@ const ClientDetail: React.FC = () => {
             {showDeleteConfirm && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-                        <h3 className="text-lg font-bold text-gray-900 mb-2">Confirmer la suppression</h3>
+                        <h3 className="text-lg font-bold text-gray-900 mb-2">{t('clients.confirmDelete')}</h3>
                         <p className="text-gray-600 mb-6">
-                            Êtes-vous sûr de vouloir supprimer ce client ? Cette action est irréversible et supprimera également tous les projets et factures associés.
+                            {t('clients.confirmDeleteMessage')}
                         </p>
                         <div className="flex justify-end space-x-3">
                             <button
                                 onClick={() => setShowDeleteConfirm(false)}
                                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
                             >
-                                Annuler
+                                {t('common.cancel')}
                             </button>
                             <button
                                 onClick={() => {
@@ -452,7 +439,7 @@ const ClientDetail: React.FC = () => {
                                 disabled={deleteClientMutation.isPending}
                                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50"
                             >
-                                {deleteClientMutation.isPending ? 'Suppression...' : 'Supprimer'}
+                                {deleteClientMutation.isPending ? t('common.deleting') : t('common.delete')}
                             </button>
                         </div>
                     </div>

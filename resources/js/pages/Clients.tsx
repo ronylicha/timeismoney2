@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import {
     PlusIcon,
     MagnifyingGlassIcon,
@@ -29,6 +30,7 @@ interface Client {
 }
 
 const Clients: React.FC = () => {
+    const { t } = useTranslation();
     const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -63,15 +65,15 @@ const Clients: React.FC = () => {
             <div className="mb-8">
                 <div className="flex justify-between items-center">
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
-                        <p className="mt-2 text-gray-600">Gérez votre portefeuille de clients</p>
+                        <h1 className="text-3xl font-bold text-gray-900">{t('clients.title')}</h1>
+                        <p className="mt-2 text-gray-600">{t('clients.managePortfolio')}</p>
                     </div>
                     <Link
                         to="/clients/new"
                         className="flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
                     >
                         <PlusIcon className="h-5 w-5" />
-                        <span>Nouveau client</span>
+                        <span>{t('clients.newClient')}</span>
                     </Link>
                 </div>
             </div>
@@ -81,7 +83,7 @@ const Clients: React.FC = () => {
                 <div className="bg-white rounded-lg shadow p-6">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm font-medium text-gray-600">Total clients</p>
+                            <p className="text-sm font-medium text-gray-600">{t('clients.totalClients')}</p>
                             <p className="text-2xl font-bold text-gray-900 mt-2">{getTotalClients()}</p>
                         </div>
                         <div className="p-3 bg-blue-100 rounded-lg">
@@ -93,7 +95,7 @@ const Clients: React.FC = () => {
                 <div className="bg-white rounded-lg shadow p-6">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm font-medium text-gray-600">Projets actifs</p>
+                            <p className="text-sm font-medium text-gray-600">{t('clients.activeProjects')}</p>
                             <p className="text-2xl font-bold text-gray-900 mt-2">{getActiveProjects()}</p>
                         </div>
                         <div className="p-3 bg-green-100 rounded-lg">
@@ -105,7 +107,7 @@ const Clients: React.FC = () => {
                 <div className="bg-white rounded-lg shadow p-6">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm font-medium text-gray-600">Revenu total</p>
+                            <p className="text-sm font-medium text-gray-600">{t('clients.totalRevenue')}</p>
                             <p className="text-2xl font-bold text-gray-900 mt-2">
                                 {new Intl.NumberFormat('fr-FR', {
                                     style: 'currency',
@@ -129,7 +131,7 @@ const Clients: React.FC = () => {
                         type="text"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Rechercher un client..."
+                        placeholder={t('clients.searchClients')}
                         className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                 </div>
@@ -139,19 +141,19 @@ const Clients: React.FC = () => {
             {isLoading ? (
                 <div className="text-center py-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Chargement...</p>
+                    <p className="mt-4 text-gray-600">{t('common.loading')}</p>
                 </div>
             ) : clients?.length === 0 ? (
                 <div className="bg-white rounded-lg shadow p-12 text-center">
                     <UserGroupIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun client</h3>
-                    <p className="text-gray-600 mb-6">Commencez par ajouter votre premier client</p>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">{t('clients.noClients')}</h3>
+                    <p className="text-gray-600 mb-6">{t('clients.addFirstClient')}</p>
                     <Link
                         to="/clients/new"
                         className="inline-flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
                     >
                         <PlusIcon className="h-5 w-5" />
-                        <span>Ajouter un client</span>
+                        <span>{t('clients.addClient')}</span>
                     </Link>
                 </div>
             ) : (
@@ -205,13 +207,13 @@ const Clients: React.FC = () => {
                             <div className="pt-4 border-t border-gray-200">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <p className="text-xs text-gray-600 mb-1">Projets</p>
+                                        <p className="text-xs text-gray-600 mb-1">{t('clients.projects')}</p>
                                         <p className="text-lg font-semibold text-gray-900">
                                             {client.projects_count || 0}
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-gray-600 mb-1">Revenu</p>
+                                        <p className="text-xs text-gray-600 mb-1">{t('clients.revenue')}</p>
                                         <p className="text-lg font-semibold text-gray-900">
                                             {new Intl.NumberFormat('fr-FR', {
                                                 style: 'currency',

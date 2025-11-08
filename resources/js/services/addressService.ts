@@ -194,7 +194,7 @@ class AddressService {
       housenumber: suggestion.housenumber || '',
       city: suggestion.city || '',
       postal_code: suggestion.postcode || '',
-      country: 'France', // API is for French addresses only
+      country: 'FR', // API is for French addresses only - use ISO 3166-1 alpha-2 code
       latitude: suggestion.lat || '',
       longitude: suggestion.lon || ''
     };

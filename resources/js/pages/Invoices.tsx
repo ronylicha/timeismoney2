@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import { PlusIcon, MagnifyingGlassIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -20,6 +21,7 @@ interface Invoice {
 }
 
 const Invoices: React.FC = () => {
+    const { t } = useTranslation();
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
 
@@ -45,17 +47,9 @@ const Invoices: React.FC = () => {
             cancelled: 'bg-red-100 text-red-800',
         };
 
-        const labels = {
-            draft: 'Brouillon',
-            sent: 'Envoyée',
-            paid: 'Payée',
-            overdue: 'En retard',
-            cancelled: 'Annulée',
-        };
-
         return (
             <span className={`px-2 py-1 text-xs font-medium rounded-full ${colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800'}`}>
-                {labels[status as keyof typeof labels] || status}
+                {t(`invoices.statuses.${status}`, status)}
             </span>
         );
     };
@@ -65,15 +59,15 @@ const Invoices: React.FC = () => {
             <div className="mb-8">
                 <div className="flex justify-between items-center">
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Factures</h1>
-                        <p className="mt-2 text-gray-600">Gérez vos factures clients</p>
+                        <h1 className="text-3xl font-bold text-gray-900">{t('invoices.title')}</h1>
+                        <p className="mt-2 text-gray-600">{t('invoices.subtitle')}</p>
                     </div>
                     <Link
                         to="/invoices/new"
                         className="flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
                     >
                         <PlusIcon className="h-5 w-5" />
-                        <span>Nouvelle facture</span>
+                        <span>{t('invoices.newInvoice')}</span>
                     </Link>
                 </div>
             </div>
@@ -86,7 +80,7 @@ const Invoices: React.FC = () => {
                             type="text"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="Rechercher une facture..."
+                            placeholder={t('invoices.searchPlaceholder')}
                             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
                     </div>
@@ -96,12 +90,12 @@ const Invoices: React.FC = () => {
                         onChange={(e) => setStatusFilter(e.target.value)}
                         className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                        <option value="all">Tous les statuts</option>
-                        <option value="draft">Brouillon</option>
-                        <option value="sent">Envoyée</option>
-                        <option value="paid">Payée</option>
-                        <option value="overdue">En retard</option>
-                        <option value="cancelled">Annulée</option>
+                        <option value="all">{t('invoices.allStatuses')}</option>
+                        <option value="draft">{t('invoices.statuses.draft')}</option>
+                        <option value="sent">{t('invoices.statuses.sent')}</option>
+                        <option value="paid">{t('invoices.statuses.paid')}</option>
+                        <option value="overdue">{t('invoices.statuses.overdue')}</option>
+                        <option value="cancelled">{t('invoices.statuses.cancelled')}</option>
                     </select>
                 </div>
             </div>
@@ -109,19 +103,19 @@ const Invoices: React.FC = () => {
             {isLoading ? (
                 <div className="text-center py-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Chargement...</p>
+                    <p className="mt-4 text-gray-600">{t('common.loading')}</p>
                 </div>
             ) : invoices?.length === 0 ? (
                 <div className="bg-white rounded-lg shadow p-12 text-center">
                     <DocumentTextIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Aucune facture</h3>
-                    <p className="text-gray-600 mb-6">Créez votre première facture</p>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">{t('invoices.noInvoices')}</h3>
+                    <p className="text-gray-600 mb-6">{t('invoices.createFirstInvoice')}</p>
                     <Link
                         to="/invoices/new"
                         className="inline-flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
                     >
                         <PlusIcon className="h-5 w-5" />
-                        <span>Créer une facture</span>
+                        <span>{t('invoices.createInvoice')}</span>
                     </Link>
                 </div>
             ) : (
@@ -130,22 +124,22 @@ const Invoices: React.FC = () => {
                         <thead className="bg-gray-50">
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Numéro
+                                    {t('invoices.number')}
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Client
+                                    {t('invoices.client')}
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Date d'émission
+                                    {t('invoices.issueDate')}
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Date d'échéance
+                                    {t('invoices.dueDate')}
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Montant
+                                    {t('invoices.amount')}
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Statut
+                                    {t('invoices.status')}
                                 </th>
                             </tr>
                         </thead>
