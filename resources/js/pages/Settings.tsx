@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Cog6ToothIcon, BellIcon, ShieldCheckIcon, GlobeAltIcon, CreditCardIcon, CalendarIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
+import { Cog6ToothIcon, BellIcon, ShieldCheckIcon, GlobeAltIcon, CreditCardIcon, CalendarIcon, CheckCircleIcon, XCircleIcon, BuildingOfficeIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 
 const Settings: React.FC = () => {
     const { t } = useTranslation();
     const { language, changeLanguage, languages } = useLanguage();
     const queryClient = useQueryClient();
+    const navigate = useNavigate();
 
     // Fetch current user settings
     const { data: user, isLoading } = useQuery({
@@ -589,6 +591,47 @@ const Settings: React.FC = () => {
                                     </p>
                                 </div>
 
+                                {/* Webhook Configuration Instructions */}
+                                <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                                    <p className="text-sm font-semibold text-purple-900 mb-2">
+                                        📡 {t('settings.webhookConfiguration')}
+                                    </p>
+                                    <p className="text-sm text-purple-800 mb-3">
+                                        {t('settings.webhookInstructions')}
+                                    </p>
+
+                                    <div className="mb-3">
+                                        <p className="text-xs font-semibold text-purple-900 mb-1">
+                                            {t('settings.webhookUrl')}:
+                                        </p>
+                                        <code className="block px-3 py-2 bg-white border border-purple-300 rounded text-xs font-mono overflow-x-auto">
+                                            {window.location.origin}/api/webhooks/stripe
+                                        </code>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs font-semibold text-purple-900 mb-2">
+                                            {t('settings.requiredEvents')}:
+                                        </p>
+                                        <ul className="list-disc list-inside text-xs text-purple-700 space-y-1 ml-2">
+                                            <li className="font-mono">payment_intent.succeeded</li>
+                                            <li className="font-mono">payment_intent.payment_failed</li>
+                                            <li className="font-mono">charge.succeeded</li>
+                                            <li className="font-mono">charge.failed</li>
+                                            <li className="font-mono">charge.refunded</li>
+                                            <li className="font-mono">customer.subscription.created</li>
+                                            <li className="font-mono">customer.subscription.updated</li>
+                                            <li className="font-mono">customer.subscription.deleted</li>
+                                            <li className="font-mono">invoice.paid</li>
+                                            <li className="font-mono">invoice.payment_failed</li>
+                                        </ul>
+                                    </div>
+
+                                    <p className="text-xs text-purple-600 mt-3 italic">
+                                        💡 {t('settings.webhookSetupHint')}
+                                    </p>
+                                </div>
+
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         {t('settings.publishableKey')} <span className="text-red-500">*</span>
@@ -653,6 +696,24 @@ const Settings: React.FC = () => {
                             </form>
                         )}
                     </div>
+                </div>
+
+                {/* Tenant Billing Settings */}
+                <div className="bg-white rounded-lg shadow p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-3">
+                            <BuildingOfficeIcon className="h-6 w-6 text-gray-600" />
+                            <h2 className="text-lg font-semibold text-gray-900">{t('settings.billingSettings')}</h2>
+                        </div>
+                    </div>
+                    <p className="text-gray-600 mb-4">{t('settings.billingSettingsDescription')}</p>
+                    <button
+                        onClick={() => navigate('/settings/billing')}
+                        className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition space-x-2"
+                    >
+                        <span>{t('settings.billingSettings')}</span>
+                        <ArrowRightIcon className="h-4 w-4" />
+                    </button>
                 </div>
 
                 {/* Security */}

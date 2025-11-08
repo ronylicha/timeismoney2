@@ -46,6 +46,7 @@ const ExpenseCategories = lazy(() => import('./pages/ExpenseCategories'));
 const Reports = lazy(() => import('./pages/Reports'));
 const Analytics = lazy(() => import('./pages/Analytics'));
 const Settings = lazy(() => import('./pages/Settings'));
+const TenantBillingSettings = lazy(() => import('./pages/TenantBillingSettings'));
 const Profile = lazy(() => import('./pages/Profile'));
 const TeamManagement = lazy(() => import('./pages/TeamManagement'));
 const Integrations = lazy(() => import('./pages/Integrations'));
@@ -265,6 +266,7 @@ function App() {
 
                                         {/* Settings */}
                                         <Route path="/settings" element={<Settings />} />
+                                        <Route path="/settings/billing" element={<TenantBillingSettings />} />
                                         <Route path="/profile" element={<Profile />} />
                                         <Route path="/team" element={<TeamManagement />} />
                                         <Route path="/integrations" element={<Integrations />} />

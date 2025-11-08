@@ -216,6 +216,34 @@ class ProjectController extends Controller
     }
 
     /**
+     * Get kanban tasks for project
+     */
+    public function kanbanTasks(Project $project)
+    {
+        $tasks = $project->tasks()
+            ->with(['assignees', 'project'])
+            ->get()
+            ->groupBy('status');
+
+        // Organize tasks by kanban columns
+        $kanbanData = [
+            'todo' => $tasks->get('pending', collect()),
+            'in_progress' => $tasks->get('in_progress', collect()),
+            'review' => $tasks->get('review', collect()),
+            'done' => $tasks->get('completed', collect())
+        ];
+
+        return response()->json([
+            'columns' => $kanbanData,
+            'stats' => [
+                'total' => $project->tasks()->count(),
+                'completed' => $project->tasks()->where('status', 'completed')->count(),
+                'in_progress' => $project->tasks()->where('status', 'in_progress')->count()
+            ]
+        ]);
+    }
+
+    /**
      * Assign users to project
      */
     public function assignUsers(Request $request, Project $project)

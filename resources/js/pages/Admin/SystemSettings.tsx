@@ -96,7 +96,7 @@ const SystemSettings: React.FC = () => {
     const { data: originalSettings, isLoading } = useQuery({
         queryKey: ['admin-settings'],
         queryFn: async () => {
-            const response = await axios.get('/api/admin/system-settings');
+            const response = await axios.get('/admin/system-settings');
             setSettings(response.data);
             return response.data;
         }
@@ -105,7 +105,7 @@ const SystemSettings: React.FC = () => {
     // Save settings mutation
     const saveSettingsMutation = useMutation({
         mutationFn: async (updatedSettings: SystemSettings) => {
-            await axios.put('/api/admin/system-settings', updatedSettings);
+            await axios.post('/admin/system-settings', updatedSettings);
         },
         onSuccess: () => {
             toast.success(t('admin.settings.saved'));
@@ -120,7 +120,7 @@ const SystemSettings: React.FC = () => {
     // Test email mutation
     const testEmailMutation = useMutation({
         mutationFn: async () => {
-            await axios.post('/api/admin/test-email');
+            await axios.post('/admin/test-email');
         },
         onSuccess: () => {
             toast.success(t('admin.settings.testEmailSent'));
@@ -133,7 +133,7 @@ const SystemSettings: React.FC = () => {
     // Clear cache mutation
     const clearCacheMutation = useMutation({
         mutationFn: async () => {
-            await axios.post('/api/admin/clear-cache');
+            await axios.post('/admin/clear-cache');
         },
         onSuccess: () => {
             toast.success(t('admin.settings.cacheCleared'));
@@ -143,7 +143,7 @@ const SystemSettings: React.FC = () => {
     // Run backup mutation
     const runBackupMutation = useMutation({
         mutationFn: async () => {
-            await axios.post('/api/admin/run-backup');
+            await axios.post('/admin/run-backup');
         },
         onSuccess: () => {
             toast.success(t('admin.settings.backupStarted'));

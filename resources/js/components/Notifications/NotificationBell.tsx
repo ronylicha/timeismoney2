@@ -31,22 +31,34 @@ const NotificationBell: React.FC = () => {
     const { data: unreadCount = 0 } = useQuery({
         queryKey: ['notification-unread-count'],
         queryFn: async () => {
-            const response = await axios.get('/api/notifications/unread-count');
-            return response.data.unread_count;
+            try {
+                const response = await axios.get('/api/notifications/unread-count');
+                return response.data?.unread_count ?? 0;
+            } catch (error) {
+                console.error('Failed to fetch unread count:', error);
+                return 0;
+            }
         },
         refetchInterval: 30000, // Refetch every 30 seconds
+        retry: 1,
     });
 
     // Fetch recent notifications
     const { data: notifications = [], refetch: refetchNotifications } = useQuery({
         queryKey: ['recent-notifications'],
         queryFn: async () => {
-            const response = await axios.get('/api/notifications/history', {
-                params: { per_page: 10, unread_only: false }
-            });
-            return response.data.data;
+            try {
+                const response = await axios.get('/api/notifications/history', {
+                    params: { per_page: 10, unread_only: false }
+                });
+                return response.data?.data ?? [];
+            } catch (error) {
+                console.error('Failed to fetch notifications:', error);
+                return [];
+            }
         },
         enabled: isOpen, // Only fetch when menu is open
+        retry: 1,
     });
 
     // Mark as read mutation

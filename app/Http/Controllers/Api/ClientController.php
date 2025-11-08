@@ -64,9 +64,9 @@ class ClientController extends Controller
             'address_line2' => 'nullable|string|max:255',
             'postal_code' => 'nullable|string|max:20',
             'city' => 'nullable|string|max:100',
-            'country' => 'nullable|string|max:2',
+            'country' => 'required|string|max:2',
             'phone' => 'nullable|string|max:50',
-            'email' => 'required|email|max:255',
+            'email' => 'nullable|email|max:255',
             'website' => 'nullable|url|max:255',
             'billing_email' => 'nullable|email|max:255',
             'payment_terms' => 'nullable|integer|min:0',
@@ -89,7 +89,28 @@ class ClientController extends Controller
         // Generate client code
         $validated['code'] = $this->generateClientCode($validated['name']);
         $validated['tenant_id'] = auth()->user()->tenant_id;
+        $validated['created_by'] = auth()->id();
         $validated['is_active'] = true;
+
+        // Set defaults for fields with DB defaults
+        if (!isset($validated['country'])) {
+            $validated['country'] = 'FR';
+        }
+        if (!isset($validated['payment_terms'])) {
+            $validated['payment_terms'] = 30;
+        }
+        if (!isset($validated['payment_method'])) {
+            $validated['payment_method'] = 'bank_transfer';
+        }
+        if (!isset($validated['discount_percentage'])) {
+            $validated['discount_percentage'] = 0;
+        }
+        if (!isset($validated['vat_exempt'])) {
+            $validated['vat_exempt'] = false;
+        }
+        if (!isset($validated['status'])) {
+            $validated['status'] = 'active';
+        }
 
         // Create client
         $client = Client::create($validated);
@@ -114,7 +135,9 @@ class ClientController extends Controller
      */
     public function show(Client $client)
     {
-        return $client->load(['contacts', 'projects', 'invoices']);
+        return response()->json([
+            'data' => $client->load(['contacts', 'projects', 'invoices'])
+        ]);
     }
 
     /**
@@ -134,9 +157,9 @@ class ClientController extends Controller
             'address_line2' => 'nullable|string|max:255',
             'postal_code' => 'nullable|string|max:20',
             'city' => 'nullable|string|max:100',
-            'country' => 'nullable|string|max:2',
+            'country' => 'required|string|max:2',
             'phone' => 'nullable|string|max:50',
-            'email' => 'email|max:255',
+            'email' => 'nullable|email|max:255',
             'website' => 'nullable|url|max:255',
             'billing_email' => 'nullable|email|max:255',
             'payment_terms' => 'nullable|integer|min:0',

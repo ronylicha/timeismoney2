@@ -14,14 +14,16 @@ class GoogleCalendarController extends Controller
     public function __construct(GoogleCalendarService $googleCalendarService)
     {
         $this->googleCalendarService = $googleCalendarService;
+    }
 
-        // Set user after authentication
-        $this->middleware(function ($request, $next) {
-            if (auth()->check()) {
-                $this->googleCalendarService->setUser(auth()->user());
-            }
-            return $next($request);
-        });
+    /**
+     * Initialize the service with the current user
+     */
+    protected function initService()
+    {
+        if (auth()->check()) {
+            $this->googleCalendarService->setUser(auth()->user());
+        }
     }
 
     /**
@@ -29,6 +31,7 @@ class GoogleCalendarController extends Controller
      */
     public function status()
     {
+        $this->initService();
         $user = auth()->user();
 
         return response()->json([
@@ -44,6 +47,7 @@ class GoogleCalendarController extends Controller
      */
     public function connect()
     {
+        $this->initService();
         try {
             $authUrl = $this->googleCalendarService->getAuthorizationUrl();
 
@@ -69,6 +73,7 @@ class GoogleCalendarController extends Controller
      */
     public function callback(Request $request)
     {
+        $this->initService();
         $validated = $request->validate([
             'code' => 'required|string',
         ]);
@@ -78,9 +83,6 @@ class GoogleCalendarController extends Controller
 
             // Exchange code for tokens
             $token = $this->googleCalendarService->handleCallback($validated['code']);
-
-            // Get primary calendar
-            $this->googleCalendarService->setUser($user);
             $primaryCalendar = $this->googleCalendarService->getPrimaryCalendar();
 
             // Update user with Google credentials
@@ -122,6 +124,7 @@ class GoogleCalendarController extends Controller
      */
     public function disconnect()
     {
+        $this->initService();
         try {
             $this->googleCalendarService->disconnect();
 
@@ -147,6 +150,7 @@ class GoogleCalendarController extends Controller
      */
     public function calendars()
     {
+        $this->initService();
         if (!$this->googleCalendarService->isConnected()) {
             return response()->json([
                 'message' => 'Google Calendar is not connected',
@@ -178,6 +182,7 @@ class GoogleCalendarController extends Controller
      */
     public function updateSettings(Request $request)
     {
+        $this->initService();
         $validated = $request->validate([
             'calendar_id' => 'required|string',
             'enabled' => 'required|boolean',
@@ -216,6 +221,7 @@ class GoogleCalendarController extends Controller
      */
     public function toggleSync(Request $request)
     {
+        $this->initService();
         $validated = $request->validate([
             'enabled' => 'required|boolean',
         ]);

@@ -505,6 +505,40 @@ class InvoiceController extends Controller
     /**
      * Get audit log for NF525 compliance
      */
+    /**
+     * Send invoice to Chorus Pro (French government invoicing platform)
+     */
+    public function sendToChorus(Invoice $invoice)
+    {
+        // Check if invoice is finalized
+        if ($invoice->status === 'draft') {
+            return response()->json([
+                'message' => 'Cannot send draft invoice to Chorus Pro'
+            ], 422);
+        }
+
+        // Check if client is a French public entity
+        $client = $invoice->client;
+        if (!$client->is_public_entity || $client->country !== 'FR') {
+            return response()->json([
+                'message' => 'Client must be a French public entity to use Chorus Pro'
+            ], 422);
+        }
+
+        // TODO: Implement Chorus Pro integration
+        // This would typically involve:
+        // 1. Convert invoice to Chorus Pro format (XML/UBL)
+        // 2. Submit to Chorus Pro API
+        // 3. Store Chorus Pro reference number
+        // 4. Update invoice status
+
+        return response()->json([
+            'message' => 'Chorus Pro integration not yet implemented',
+            'invoice_id' => $invoice->id,
+            'status' => 'pending'
+        ], 501); // 501 Not Implemented
+    }
+
     public function auditLog(Invoice $invoice)
     {
         return $invoice->auditLogs()->with('user')->get();

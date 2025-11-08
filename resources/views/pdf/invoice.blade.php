@@ -7,10 +7,29 @@
     <div class="header">
         <div class="header-content">
             <div class="header-left">
-                <div class="company-name">{{ $tenant->name }}</div>
+                @if($tenant->logo)
+                    <div style="margin-bottom: 10px;">
+                        @php
+                            $logoPath = storage_path('app/public/' . $tenant->logo);
+                            if (file_exists($logoPath)) {
+                                $imageData = base64_encode(file_get_contents($logoPath));
+                                $extension = pathinfo($logoPath, PATHINFO_EXTENSION);
+                                $mimeType = $extension === 'svg' ? 'image/svg+xml' : 'image/' . $extension;
+                                echo '<img src="data:' . $mimeType . ';base64,' . $imageData . '" alt="Logo" style="max-height: 60px; max-width: 200px;">';
+                            }
+                        @endphp
+                    </div>
+                @endif
+                <div class="company-name">{{ $tenant->company_name ?? $tenant->name }}</div>
                 <div class="company-info">
-                    @if($tenant->address)
-                        {{ $tenant->address }}<br>
+                    @if($tenant->legal_form)
+                        {{ $tenant->legal_form }}<br>
+                    @endif
+                    @if($tenant->address_line1)
+                        {{ $tenant->address_line1 }}<br>
+                    @endif
+                    @if($tenant->address_line2)
+                        {{ $tenant->address_line2 }}<br>
                     @endif
                     @if($tenant->city || $tenant->postal_code)
                         {{ $tenant->postal_code }} {{ $tenant->city }}<br>
@@ -24,11 +43,26 @@
                     @if($tenant->email)
                         Email: {{ $tenant->email }}<br>
                     @endif
+                    @if($tenant->website)
+                        Web: {{ $tenant->website }}<br>
+                    @endif
+                    <br>
                     @if($tenant->siret)
                         SIRET: {{ $tenant->siret }}<br>
                     @endif
-                    @if($tenant->vat_number)
+                    @if($tenant->rcs_number && $tenant->rcs_city)
+                        RCS {{ $tenant->rcs_city }} {{ $tenant->rcs_number }}<br>
+                    @endif
+                    @if($tenant->capital)
+                        Capital social: {{ number_format($tenant->capital, 2, ',', ' ') }} €<br>
+                    @endif
+                    @if($tenant->ape_code)
+                        APE: {{ $tenant->ape_code }}<br>
+                    @endif
+                    @if($tenant->vat_subject && $tenant->vat_number)
                         TVA: {{ $tenant->vat_number }}
+                    @elseif(!$tenant->vat_subject && $tenant->vat_exemption_reason)
+                        {{ $tenant->vat_exemption_reason }}
                     @endif
                 </div>
             </div>
@@ -185,8 +219,16 @@
                 @endif
             @endif
             <br>
-            <em>En cas de retard de paiement, une pénalité de 3 fois le taux d'intérêt légal sera exigible,
-            ainsi qu'une indemnité forfaitaire de 40 € pour frais de recouvrement.</em>
+            @if($tenant->late_payment_penalty_text)
+                <em>{{ $tenant->late_payment_penalty_text }}</em><br>
+            @else
+                <em>En cas de retard de paiement, une pénalité de 3 fois le taux d'intérêt légal sera exigible.</em><br>
+            @endif
+            @if($tenant->recovery_indemnity_text)
+                <em>{{ $tenant->recovery_indemnity_text }}</em>
+            @else
+                <em>Indemnité forfaitaire de 40 € pour frais de recouvrement.</em>
+            @endif
         </div>
     </div>
 
@@ -203,11 +245,25 @@
 @endsection
 
 @section('footer')
-    {{ $tenant->name }} - {{ $tenant->address }} - {{ $tenant->city }}<br>
-    @if($tenant->siret)
-        SIRET: {{ $tenant->siret }} -
-    @endif
-    @if($tenant->vat_number)
-        TVA: {{ $tenant->vat_number }}
+    @if($tenant->footer_legal_text)
+        {{ $tenant->footer_legal_text }}
+    @else
+        {{ $tenant->company_name ?? $tenant->name }}
+        @if($tenant->address_line1)
+            - {{ $tenant->address_line1 }}
+        @endif
+        @if($tenant->city)
+            - {{ $tenant->city }}
+        @endif
+        <br>
+        @if($tenant->siret)
+            SIRET: {{ $tenant->siret }} -
+        @endif
+        @if($tenant->rcs_number && $tenant->rcs_city)
+            RCS {{ $tenant->rcs_city }} {{ $tenant->rcs_number }} -
+        @endif
+        @if($tenant->vat_subject && $tenant->vat_number)
+            TVA: {{ $tenant->vat_number }}
+        @endif
     @endif
 @endsection

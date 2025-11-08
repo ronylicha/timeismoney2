@@ -187,7 +187,7 @@ export class PWAInstallPrompt {
     /**
      * Show install prompt
      */
-    async prompt(): Promise<boolean> {
+    async install(): Promise<boolean> {
         if (!this.deferredPrompt) {
             return false;
         }

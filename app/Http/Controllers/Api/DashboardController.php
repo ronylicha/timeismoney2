@@ -15,6 +15,18 @@ use Carbon\Carbon;
 class DashboardController extends Controller
 {
     /**
+     * Get dashboard overview (combines stats, activity, and charts)
+     */
+    public function index(Request $request)
+    {
+        return response()->json([
+            'stats' => $this->stats($request)->getData(),
+            'recent_activity' => $this->activity($request)->getData(),
+            'charts' => $this->charts($request)->getData()
+        ]);
+    }
+
+    /**
      * Get dashboard statistics
      */
     public function stats(Request $request)
@@ -375,6 +387,58 @@ class DashboardController extends Controller
             'daily_hours' => $dailyHours,
             'project_distribution' => $projectDistribution,
             'monthly_revenue' => $monthlyRevenue,
+        ]);
+    }
+
+    /**
+     * Get user's dashboard widgets configuration
+     */
+    public function widgets(Request $request)
+    {
+        $user = auth()->user();
+
+        // Get user preferences for dashboard widgets
+        $preferences = $user->preferences ?? [];
+        $widgets = $preferences['dashboard_widgets'] ?? [
+            'stats' => true,
+            'recent_activity' => true,
+            'time_tracker' => true,
+            'upcoming_invoices' => true,
+            'project_overview' => true,
+            'revenue_chart' => true
+        ];
+
+        return response()->json([
+            'widgets' => $widgets,
+            'layout' => $preferences['dashboard_layout'] ?? 'grid'
+        ]);
+    }
+
+    /**
+     * Save user's dashboard widget configuration
+     */
+    public function saveWidget(Request $request)
+    {
+        $validated = $request->validate([
+            'widgets' => 'required|array',
+            'widgets.*' => 'boolean',
+            'layout' => 'nullable|in:grid,list,compact'
+        ]);
+
+        $user = auth()->user();
+        $preferences = $user->preferences ?? [];
+
+        $preferences['dashboard_widgets'] = $validated['widgets'];
+        if (isset($validated['layout'])) {
+            $preferences['dashboard_layout'] = $validated['layout'];
+        }
+
+        $user->update(['preferences' => $preferences]);
+
+        return response()->json([
+            'message' => 'Dashboard widgets updated successfully',
+            'widgets' => $preferences['dashboard_widgets'],
+            'layout' => $preferences['dashboard_layout'] ?? 'grid'
         ]);
     }
 }

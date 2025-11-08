@@ -55,7 +55,7 @@ const CreateClient: React.FC = () => {
         address: '',
         city: '',
         postal_code: '',
-        country: '',
+        country: 'FR', // Default to France as per DB default
         phone: '',
         email: '',
         website: '',
@@ -149,16 +149,18 @@ const CreateClient: React.FC = () => {
             return;
         }
 
-        if (!formData.email.trim()) {
-            toast.error(t('clients.emailRequired'));
+        if (!formData.country.trim()) {
+            toast.error(t('clients.countryRequired') || 'Le pays est requis');
             return;
         }
 
-        // Basic email validation
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(formData.email)) {
-            toast.error(t('clients.emailInvalid'));
-            return;
+        // Basic email validation (only if email is provided)
+        if (formData.email.trim()) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(formData.email)) {
+                toast.error(t('clients.emailInvalid'));
+                return;
+            }
         }
 
         createClientMutation.mutate(formData);
@@ -301,7 +303,7 @@ const CreateClient: React.FC = () => {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                {t('clients.email')} <span className="text-red-500">*</span>
+                                {t('clients.email')}
                             </label>
                             <input
                                 type="email"
@@ -310,7 +312,6 @@ const CreateClient: React.FC = () => {
                                 onChange={handleInputChange}
                                 className={getFieldClass('email')}
                                 placeholder={t('clients.emailPlaceholder')}
-                                required
                             />
                             {getFieldError('email') && (
                                 <p className="mt-1 text-sm text-red-600">{getFieldError('email')}</p>
@@ -441,13 +442,14 @@ const CreateClient: React.FC = () => {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                {t('clients.country')}
+                                {t('clients.country')} <span className="text-red-500">*</span>
                             </label>
                             <select
                                 name="country"
                                 value={formData.country}
                                 onChange={handleInputChange}
                                 className={getFieldClass('country')}
+                                required
                             >
                                 <option value="">{t('clients.selectCountry')}</option>
                                 {sortedCountries.map(country => (

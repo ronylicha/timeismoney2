@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\CreditNoteController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\StripeWebhookController;
 use App\Http\Controllers\Api\GoogleCalendarController;
+use App\Http\Controllers\Api\TenantSettingsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -84,8 +85,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/tasks/{task}/assign', [TaskController::class, 'assignUsers']);
     Route::get('/tasks/kanban', [TaskController::class, 'kanban']);
 
-    // Time Tracking
-    Route::apiResource('time-entries', TimeEntryController::class);
+    // Time Tracking - Specific routes MUST come before apiResource
     Route::post('/time-entries/start', [TimeEntryController::class, 'startTimer']);
     Route::post('/time-entries/stop', [TimeEntryController::class, 'stopTimer']);
     Route::post('/time-entries/pause', [TimeEntryController::class, 'pauseTimer']);
@@ -93,11 +93,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/time-entries/current', [TimeEntryController::class, 'current']);
     Route::get('/time-entries/timesheet', [TimeEntryController::class, 'timesheet']);
     Route::get('/time-entries/export', [TimeEntryController::class, 'export']);
+    Route::post('/time-entries/bulk-approve', [TimeEntryController::class, 'bulkApprove']);
+    Route::post('/time-entries/{timeEntry}/approve', [TimeEntryController::class, 'approve']);
+    Route::apiResource('time-entries', TimeEntryController::class);
+
+    // Timer shortcuts (legacy)
     Route::post('/timer/start', [TimeEntryController::class, 'startTimer']);
     Route::post('/timer/stop', [TimeEntryController::class, 'stopTimer']);
     Route::get('/timer/current', [TimeEntryController::class, 'currentTimer']);
-    Route::post('/time-entries/{timeEntry}/approve', [TimeEntryController::class, 'approve']);
-    Route::post('/time-entries/bulk-approve', [TimeEntryController::class, 'bulkApprove']);
 
     // Timesheet
     Route::get('/timesheet/week', [TimeEntryController::class, 'weeklyTimesheet']);
@@ -174,6 +177,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/settings/stripe', [SettingsController::class, 'updateStripeSettings']);
     Route::post('/settings/stripe/test', [SettingsController::class, 'testStripeConnection']);
     Route::post('/settings/stripe/disable', [SettingsController::class, 'disableStripe']);
+
+    // Tenant Billing Settings
+    Route::get('/settings/billing', [TenantSettingsController::class, 'getBillingSettings']);
+    Route::post('/settings/billing', [TenantSettingsController::class, 'updateBillingSettings']);
+    Route::post('/settings/billing/logo', [TenantSettingsController::class, 'uploadLogo']);
+    Route::delete('/settings/billing/logo', [TenantSettingsController::class, 'deleteLogo']);
 
     // Google Calendar Integration
     Route::get('/google-calendar/status', [GoogleCalendarController::class, 'status']);

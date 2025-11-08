@@ -41,6 +41,7 @@ class Client extends Model
         'notes',
         'custom_fields',
         'is_active',
+        'created_by',
         'chorus_structure_id',
         'chorus_service_id',
         'chorus_engagement_id',

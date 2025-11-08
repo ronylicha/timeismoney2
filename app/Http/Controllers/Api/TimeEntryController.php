@@ -51,6 +51,21 @@ class TimeEntryController extends Controller
     }
 
     /**
+     * Display a specific time entry
+     */
+    public function show(TimeEntry $timeEntry)
+    {
+        // Check permission
+        if ($timeEntry->user_id !== auth()->id() && !auth()->user()->can('view_all_time_entries')) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        return response()->json([
+            'time_entry' => $timeEntry->load(['project', 'task', 'user'])
+        ]);
+    }
+
+    /**
      * Store a new time entry
      */
     public function store(Request $request)
@@ -164,7 +179,7 @@ class TimeEntryController extends Controller
     /**
      * Get current timer
      */
-    public function currentTimer()
+    public function current()
     {
         $timer = auth()->user()->activeTimer;
 
@@ -177,6 +192,133 @@ class TimeEntryController extends Controller
 
         return response()->json([
             'timer' => $timer->load(['project', 'task'])
+        ]);
+    }
+
+    /**
+     * Alias for current() to support legacy route
+     */
+    public function currentTimer()
+    {
+        return $this->current();
+    }
+
+    /**
+     * Pause timer
+     */
+    public function pauseTimer(Request $request)
+    {
+        $timer = auth()->user()->activeTimer;
+
+        if (!$timer) {
+            return response()->json([
+                'message' => 'No active timer found'
+            ], 404);
+        }
+
+        // Store pause time in metadata
+        $metadata = $timer->metadata ?? [];
+        $metadata['paused_at'] = now()->toISOString();
+
+        $timer->update([
+            'metadata' => $metadata
+        ]);
+
+        return response()->json([
+            'message' => 'Timer paused successfully',
+            'timer' => $timer->fresh()->load(['project', 'task'])
+        ]);
+    }
+
+    /**
+     * Resume timer
+     */
+    public function resumeTimer(Request $request)
+    {
+        $timer = auth()->user()->activeTimer;
+
+        if (!$timer) {
+            return response()->json([
+                'message' => 'No active timer found'
+            ], 404);
+        }
+
+        $metadata = $timer->metadata ?? [];
+
+        if (isset($metadata['paused_at'])) {
+            unset($metadata['paused_at']);
+
+            $timer->update([
+                'metadata' => $metadata
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Timer resumed successfully',
+            'timer' => $timer->fresh()->load(['project', 'task'])
+        ]);
+    }
+
+    /**
+     * Get timesheet
+     */
+    public function timesheet(Request $request)
+    {
+        // Default to weekly timesheet
+        return $this->weeklyTimesheet($request);
+    }
+
+    /**
+     * Export time entries
+     */
+    public function export(Request $request)
+    {
+        $query = TimeEntry::with(['project', 'task', 'user'])
+            ->where('tenant_id', auth()->user()->tenant_id);
+
+        // Apply filters
+        if ($request->user_id) {
+            $query->where('user_id', $request->user_id);
+        } elseif (!auth()->user()->can('view_all_time_entries')) {
+            $query->where('user_id', auth()->id());
+        }
+
+        if ($request->start_date) {
+            $query->where('started_at', '>=', Carbon::parse($request->start_date));
+        }
+        if ($request->end_date) {
+            $query->where('started_at', '<=', Carbon::parse($request->end_date)->endOfDay());
+        }
+
+        if ($request->project_id) {
+            $query->where('project_id', $request->project_id);
+        }
+
+        $entries = $query->orderBy('started_at', 'desc')->get();
+
+        // Format for export
+        $exportData = $entries->map(function ($entry) {
+            return [
+                'date' => $entry->started_at->format('Y-m-d'),
+                'start_time' => $entry->started_at->format('H:i'),
+                'end_time' => $entry->ended_at?->format('H:i'),
+                'duration' => round($entry->duration_seconds / 3600, 2),
+                'project' => $entry->project->name,
+                'task' => $entry->task?->name,
+                'description' => $entry->description,
+                'user' => $entry->user->name,
+                'billable' => $entry->is_billable ? 'Yes' : 'No',
+                'hourly_rate' => $entry->hourly_rate,
+                'amount' => round(($entry->duration_seconds / 3600) * $entry->hourly_rate, 2)
+            ];
+        });
+
+        return response()->json([
+            'data' => $exportData,
+            'total_hours' => round($entries->sum('duration_seconds') / 3600, 2),
+            'total_amount' => $entries->sum(function ($entry) {
+                return ($entry->duration_seconds / 3600) * $entry->hourly_rate;
+            })
         ]);
     }
 
@@ -378,6 +520,47 @@ class TimeEntryController extends Controller
             }),
             'project_summary' => $projectSummary->values(),
             'entries_count' => $entries->count()
+        ]);
+    }
+
+    /**
+     * Submit timesheet for approval
+     */
+    public function submitTimesheet(Request $request)
+    {
+        $validated = $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'notes' => 'nullable|string|max:1000'
+        ]);
+
+        // Get all time entries in the period
+        $entries = TimeEntry::where('user_id', auth()->id())
+            ->whereBetween('started_at', [
+                Carbon::parse($validated['start_date']),
+                Carbon::parse($validated['end_date'])->endOfDay()
+            ])
+            ->get();
+
+        if ($entries->isEmpty()) {
+            return response()->json([
+                'message' => 'No time entries found in this period'
+            ], 422);
+        }
+
+        // Mark entries as submitted
+        $entries->each(function ($entry) use ($validated) {
+            $entry->update([
+                'is_submitted' => true,
+                'submitted_at' => now(),
+                'submission_notes' => $validated['notes'] ?? null
+            ]);
+        });
+
+        return response()->json([
+            'message' => 'Timesheet submitted successfully',
+            'entries_count' => $entries->count(),
+            'total_hours' => round($entries->sum('duration_seconds') / 3600, 2)
         ]);
     }
 }
