@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { X, Download, Smartphone, Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { PWAInstallPrompt } from '@/utils/serviceWorker';
 
 export const InstallPromptBanner: React.FC = () => {
+    const { t } = useTranslation();
     const [prompt] = useState(() => new PWAInstallPrompt());
     const [canInstall, setCanInstall] = useState(false);
     const [isInstalling, setIsInstalling] = useState(false);
@@ -88,17 +90,17 @@ export const InstallPromptBanner: React.FC = () => {
                         </div>
                         <div>
                             <h3 className="font-semibold text-gray-900">
-                                Installer TimeIsMoney
+                                {t('pwa.install.title')}
                             </h3>
                             <p className="text-sm text-gray-600 mt-0.5">
-                                Accédez rapidement à l'application
+                                {t('pwa.install.subtitle')}
                             </p>
                         </div>
                     </div>
                     <button
                         onClick={handleDismiss}
                         className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
-                        aria-label="Fermer"
+                        aria-label={t('pwa.install.close')}
                     >
                         <X className="h-4 w-4 text-gray-400" />
                     </button>
@@ -108,15 +110,15 @@ export const InstallPromptBanner: React.FC = () => {
                 <div className="space-y-2 mb-4">
                     <div className="flex items-center text-sm text-gray-600">
                         <Check className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-                        <span>Accès hors ligne à vos données</span>
+                        <span>{t('pwa.install.benefit1')}</span>
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                         <Check className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-                        <span>Synchronisation automatique en arrière-plan</span>
+                        <span>{t('pwa.install.benefit2')}</span>
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                         <Check className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-                        <span>Notifications push en temps réel</span>
+                        <span>{t('pwa.install.benefit3')}</span>
                     </div>
                 </div>
 
@@ -135,12 +137,12 @@ export const InstallPromptBanner: React.FC = () => {
                         {isInstalling ? (
                             <>
                                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
-                                Installation...
+                                {t('pwa.install.installing')}
                             </>
                         ) : (
                             <>
                                 <Download className="h-4 w-4 mr-2" />
-                                Installer maintenant
+                                {t('pwa.install.installNow')}
                             </>
                         )}
                     </button>
@@ -148,7 +150,7 @@ export const InstallPromptBanner: React.FC = () => {
                         onClick={handleDismiss}
                         className="px-4 py-2.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg font-medium transition-colors"
                     >
-                        Plus tard
+                        {t('pwa.install.later')}
                     </button>
                 </div>
             </div>
@@ -158,6 +160,7 @@ export const InstallPromptBanner: React.FC = () => {
 
 // Compact version for settings page
 export const InstallPromptButton: React.FC = () => {
+    const { t } = useTranslation();
     const [prompt] = useState(() => new PWAInstallPrompt());
     const [canInstall, setCanInstall] = useState(false);
     const [isInstalling, setIsInstalling] = useState(false);
@@ -205,7 +208,7 @@ export const InstallPromptButton: React.FC = () => {
         return (
             <div className="flex items-center space-x-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg">
                 <Check className="h-5 w-5" />
-                <span>Application installée</span>
+                <span>{t('pwa.install.installed')}</span>
             </div>
         );
     }
@@ -213,7 +216,7 @@ export const InstallPromptButton: React.FC = () => {
     if (!canInstall) {
         return (
             <div className="text-sm text-gray-500">
-                L'installation de l'application n'est pas disponible sur ce navigateur
+                {t('pwa.install.notAvailable')}
             </div>
         );
     }
@@ -232,12 +235,12 @@ export const InstallPromptButton: React.FC = () => {
             {isInstalling ? (
                 <>
                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                    <span>Installation...</span>
+                    <span>{t('pwa.install.installing')}</span>
                 </>
             ) : (
                 <>
                     <Download className="h-4 w-4" />
-                    <span>Installer l'application</span>
+                    <span>{t('pwa.install.installButton')}</span>
                 </>
             )}
         </button>

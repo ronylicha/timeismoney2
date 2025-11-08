@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import {
     ServerIcon,
     CpuChipIcon,
@@ -16,6 +17,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 const AdminMonitoring: React.FC = () => {
+    const { t } = useTranslation();
     const [systemStatus, setSystemStatus] = useState({
         database: 'healthy',
         cache: 'healthy',
@@ -113,15 +115,15 @@ const AdminMonitoring: React.FC = () => {
             {/* Header */}
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Monitoring Système</h1>
-                    <p className="mt-2 text-gray-600">Surveillance de la santé et des performances du système</p>
+                    <h1 className="text-3xl font-bold text-gray-900">{t('admin.monitoring.title')}</h1>
+                    <p className="mt-2 text-gray-600">{t('admin.monitoring.subtitle')}</p>
                 </div>
                 <button
                     onClick={() => window.location.reload()}
                     className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
                     <ArrowPathIcon className="h-5 w-5" />
-                    Actualiser
+                    {t('common.refresh')}
                 </button>
             </div>
 
@@ -129,50 +131,50 @@ const AdminMonitoring: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="bg-white rounded-lg shadow p-6">
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-medium text-gray-600">Base de données</h3>
+                        <h3 className="text-sm font-medium text-gray-600">{t('admin.monitoring.services.database')}</h3>
                         <CircleStackIcon className="h-5 w-5 text-blue-600" />
                     </div>
                     <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${getStatusColor(systemStatus.database)}`}>
                         {getStatusIcon(systemStatus.database)}
-                        <span className="text-sm font-semibold">Opérationnel</span>
+                        <span className="text-sm font-semibold">{t('admin.monitoring.services.operational')}</span>
                     </div>
-                    <p className="text-xs text-gray-600 mt-2">{metrics?.database_connections} connexions actives</p>
+                    <p className="text-xs text-gray-600 mt-2">{t('admin.monitoring.services.connections', { count: metrics?.database_connections })}</p>
                 </div>
 
                 <div className="bg-white rounded-lg shadow p-6">
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-medium text-gray-600">Cache</h3>
+                        <h3 className="text-sm font-medium text-gray-600">{t('admin.monitoring.services.cache')}</h3>
                         <ServerIcon className="h-5 w-5 text-purple-600" />
                     </div>
                     <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${getStatusColor(systemStatus.cache)}`}>
                         {getStatusIcon(systemStatus.cache)}
-                        <span className="text-sm font-semibold">Opérationnel</span>
+                        <span className="text-sm font-semibold">{t('admin.monitoring.services.operational')}</span>
                     </div>
-                    <p className="text-xs text-gray-600 mt-2">Redis actif</p>
+                    <p className="text-xs text-gray-600 mt-2">{t('admin.monitoring.services.redisActive')}</p>
                 </div>
 
                 <div className="bg-white rounded-lg shadow p-6">
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-medium text-gray-600">Stockage</h3>
+                        <h3 className="text-sm font-medium text-gray-600">{t('admin.monitoring.services.storage')}</h3>
                         <CircleStackIcon className="h-5 w-5 text-green-600" />
                     </div>
                     <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${getStatusColor(systemStatus.storage)}`}>
                         {getStatusIcon(systemStatus.storage)}
-                        <span className="text-sm font-semibold">Opérationnel</span>
+                        <span className="text-sm font-semibold">{t('admin.monitoring.services.operational')}</span>
                     </div>
-                    <p className="text-xs text-gray-600 mt-2">{metrics?.disk}% utilisé</p>
+                    <p className="text-xs text-gray-600 mt-2">{t('admin.monitoring.services.diskUsed', { percent: metrics?.disk })}</p>
                 </div>
 
                 <div className="bg-white rounded-lg shadow p-6">
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-medium text-gray-600">File d'attente</h3>
+                        <h3 className="text-sm font-medium text-gray-600">{t('admin.monitoring.services.queue')}</h3>
                         <ClockIcon className="h-5 w-5 text-orange-600" />
                     </div>
                     <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${getStatusColor(systemStatus.queue)}`}>
                         {getStatusIcon(systemStatus.queue)}
-                        <span className="text-sm font-semibold">Opérationnel</span>
+                        <span className="text-sm font-semibold">{t('admin.monitoring.services.operational')}</span>
                     </div>
-                    <p className="text-xs text-gray-600 mt-2">Queue workers actifs</p>
+                    <p className="text-xs text-gray-600 mt-2">{t('admin.monitoring.services.queueWorkers')}</p>
                 </div>
             </div>
 
@@ -180,7 +182,7 @@ const AdminMonitoring: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="bg-white rounded-lg shadow p-6">
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-medium text-gray-600">CPU</h3>
+                        <h3 className="text-sm font-medium text-gray-600">{t('admin.monitoring.metrics.cpu')}</h3>
                         <CpuChipIcon className="h-5 w-5 text-blue-600" />
                     </div>
                     <p className="text-3xl font-bold text-gray-900">{metrics?.cpu}%</p>
@@ -194,7 +196,7 @@ const AdminMonitoring: React.FC = () => {
 
                 <div className="bg-white rounded-lg shadow p-6">
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-medium text-gray-600">Mémoire</h3>
+                        <h3 className="text-sm font-medium text-gray-600">{t('admin.monitoring.metrics.memory')}</h3>
                         <ServerIcon className="h-5 w-5 text-green-600" />
                     </div>
                     <p className="text-3xl font-bold text-gray-900">{metrics?.memory}%</p>
@@ -208,20 +210,20 @@ const AdminMonitoring: React.FC = () => {
 
                 <div className="bg-white rounded-lg shadow p-6">
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-medium text-gray-600">Utilisateurs actifs</h3>
+                        <h3 className="text-sm font-medium text-gray-600">{t('admin.monitoring.metrics.activeUsers')}</h3>
                         <ServerIcon className="h-5 w-5 text-purple-600" />
                     </div>
                     <p className="text-3xl font-bold text-gray-900">{metrics?.active_users}</p>
-                    <p className="text-sm text-gray-600 mt-2">En ligne maintenant</p>
+                    <p className="text-sm text-gray-600 mt-2">{t('admin.monitoring.metrics.onlineNow')}</p>
                 </div>
 
                 <div className="bg-white rounded-lg shadow p-6">
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-medium text-gray-600">Temps de réponse</h3>
+                        <h3 className="text-sm font-medium text-gray-600">{t('admin.monitoring.metrics.responseTime')}</h3>
                         <ClockIcon className="h-5 w-5 text-orange-600" />
                     </div>
                     <p className="text-3xl font-bold text-gray-900">{metrics?.average_response_time}ms</p>
-                    <p className="text-sm text-gray-600 mt-2">Moyenne</p>
+                    <p className="text-sm text-gray-600 mt-2">{t('admin.monitoring.metrics.average')}</p>
                 </div>
             </div>
 
@@ -230,7 +232,7 @@ const AdminMonitoring: React.FC = () => {
                 {/* Requests Chart */}
                 <div className="bg-white rounded-lg shadow p-6">
                     <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                        Requêtes par minute
+                        {t('admin.monitoring.charts.requestsPerMinute')}
                     </h2>
                     <ResponsiveContainer width="100%" height={300}>
                         <LineChart data={chartData}>
@@ -244,7 +246,7 @@ const AdminMonitoring: React.FC = () => {
                                 dataKey="requests"
                                 stroke="#3B82F6"
                                 strokeWidth={2}
-                                name="Requêtes"
+                                name={t('admin.monitoring.charts.requests')}
                             />
                         </LineChart>
                     </ResponsiveContainer>
@@ -253,7 +255,7 @@ const AdminMonitoring: React.FC = () => {
                 {/* Response Time Chart */}
                 <div className="bg-white rounded-lg shadow p-6">
                     <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                        Temps de réponse (ms)
+                        {t('admin.monitoring.charts.responseTimeMs')}
                     </h2>
                     <ResponsiveContainer width="100%" height={300}>
                         <LineChart data={chartData}>
@@ -267,7 +269,7 @@ const AdminMonitoring: React.FC = () => {
                                 dataKey="responseTime"
                                 stroke="#10B981"
                                 strokeWidth={2}
-                                name="Temps de réponse"
+                                name={t('admin.monitoring.charts.responseTime')}
                             />
                         </LineChart>
                     </ResponsiveContainer>
@@ -276,18 +278,18 @@ const AdminMonitoring: React.FC = () => {
 
             {/* System Information */}
             <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Informations système</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('admin.monitoring.systemInfo.title')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <p className="text-sm text-gray-600">Disponibilité</p>
+                        <p className="text-sm text-gray-600">{t('admin.monitoring.systemInfo.uptime')}</p>
                         <p className="text-2xl font-bold text-green-600">{metrics?.uptime}%</p>
                     </div>
                     <div>
-                        <p className="text-sm text-gray-600">Requêtes/minute</p>
+                        <p className="text-sm text-gray-600">{t('admin.monitoring.systemInfo.requestsPerMinute')}</p>
                         <p className="text-2xl font-bold text-blue-600">{metrics?.requests_per_minute}</p>
                     </div>
                     <div>
-                        <p className="text-sm text-gray-600">Version Laravel</p>
+                        <p className="text-sm text-gray-600">{t('admin.monitoring.systemInfo.laravelVersion')}</p>
                         <p className="text-2xl font-bold text-gray-900">11.x</p>
                     </div>
                 </div>
@@ -295,19 +297,19 @@ const AdminMonitoring: React.FC = () => {
 
             {/* Recent Alerts */}
             <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Alertes récentes</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('admin.monitoring.alerts.title')}</h2>
                 <div className="space-y-3">
                     <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
                         <CheckCircleIcon className="h-5 w-5 text-green-600" />
                         <div className="flex-1">
                             <p className="text-sm font-medium text-green-900">
-                                Système opérationnel
+                                {t('admin.monitoring.alerts.systemOperational')}
                             </p>
                             <p className="text-xs text-green-700">
-                                Tous les services fonctionnent normalement
+                                {t('admin.monitoring.alerts.allServicesNormal')}
                             </p>
                         </div>
-                        <span className="text-xs text-green-600">Il y a 2 min</span>
+                        <span className="text-xs text-green-600">{t('admin.monitoring.alerts.timeAgo', { time: '2 min' })}</span>
                     </div>
                 </div>
             </div>

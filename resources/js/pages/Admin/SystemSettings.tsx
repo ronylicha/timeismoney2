@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import {
     CogIcon,
     ServerIcon,
@@ -85,6 +86,7 @@ interface SystemSettings {
 }
 
 const SystemSettings: React.FC = () => {
+    const { t } = useTranslation();
     const queryClient = useQueryClient();
     const [activeTab, setActiveTab] = useState('general');
     const [editMode, setEditMode] = useState(false);
@@ -106,12 +108,12 @@ const SystemSettings: React.FC = () => {
             await axios.put('/api/admin/system-settings', updatedSettings);
         },
         onSuccess: () => {
-            toast.success('Paramètres sauvegardés');
+            toast.success(t('admin.settings.saved'));
             setEditMode(false);
             queryClient.invalidateQueries({ queryKey: ['admin-settings'] });
         },
         onError: () => {
-            toast.error('Erreur lors de la sauvegarde');
+            toast.error(t('admin.settings.saveError'));
         }
     });
 
@@ -121,10 +123,10 @@ const SystemSettings: React.FC = () => {
             await axios.post('/api/admin/test-email');
         },
         onSuccess: () => {
-            toast.success('Email de test envoyé');
+            toast.success(t('admin.settings.testEmailSent'));
         },
         onError: () => {
-            toast.error('Erreur lors de l\'envoi');
+            toast.error(t('admin.settings.testEmailError'));
         }
     });
 
@@ -134,7 +136,7 @@ const SystemSettings: React.FC = () => {
             await axios.post('/api/admin/clear-cache');
         },
         onSuccess: () => {
-            toast.success('Cache vidé');
+            toast.success(t('admin.settings.cacheCleared'));
         }
     });
 
@@ -144,22 +146,22 @@ const SystemSettings: React.FC = () => {
             await axios.post('/api/admin/run-backup');
         },
         onSuccess: () => {
-            toast.success('Backup lancé');
+            toast.success(t('admin.settings.backupStarted'));
         },
         onError: () => {
-            toast.error('Erreur lors du backup');
+            toast.error(t('admin.settings.backupError'));
         }
     });
 
     const tabs = [
-        { id: 'general', label: 'Général', icon: CogIcon },
-        { id: 'security', label: 'Sécurité', icon: ShieldCheckIcon },
-        { id: 'email', label: 'Email', icon: EnvelopeIcon },
-        { id: 'storage', label: 'Stockage', icon: CloudArrowUpIcon },
-        { id: 'billing', label: 'Facturation', icon: CurrencyEuroIcon },
-        { id: 'chorus_pro', label: 'Chorus Pro', icon: DocumentTextIcon },
-        { id: 'notifications', label: 'Notifications', icon: BellIcon },
-        { id: 'backup', label: 'Backup', icon: CircleStackIcon },
+        { id: 'general', label: t('admin.settings.tabs.general'), icon: CogIcon },
+        { id: 'security', label: t('admin.settings.tabs.security'), icon: ShieldCheckIcon },
+        { id: 'email', label: t('admin.settings.tabs.email'), icon: EnvelopeIcon },
+        { id: 'storage', label: t('admin.settings.tabs.storage'), icon: CloudArrowUpIcon },
+        { id: 'billing', label: t('admin.settings.tabs.billing'), icon: CurrencyEuroIcon },
+        { id: 'chorus_pro', label: t('admin.settings.tabs.chorusPro'), icon: DocumentTextIcon },
+        { id: 'notifications', label: t('admin.settings.tabs.notifications'), icon: BellIcon },
+        { id: 'backup', label: t('admin.settings.tabs.backup'), icon: CircleStackIcon },
     ];
 
     const handleSave = () => {
@@ -187,8 +189,8 @@ const SystemSettings: React.FC = () => {
             <div className="mb-6">
                 <div className="flex justify-between items-center">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Paramètres système</h1>
-                        <p className="text-gray-600 mt-1">Configuration globale de l'application</p>
+                        <h1 className="text-2xl font-bold text-gray-900">{t('admin.settings.title')}</h1>
+                        <p className="text-gray-600 mt-1">{t('admin.settings.subtitle')}</p>
                     </div>
                     <div className="flex space-x-3">
                         {editMode ? (
@@ -197,14 +199,14 @@ const SystemSettings: React.FC = () => {
                                     onClick={handleCancel}
                                     className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                                 >
-                                    Annuler
+                                    {t('common.cancel')}
                                 </button>
                                 <button
                                     onClick={handleSave}
                                     disabled={saveSettingsMutation.isPending}
                                     className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
                                 >
-                                    {saveSettingsMutation.isPending ? 'Sauvegarde...' : 'Sauvegarder'}
+                                    {saveSettingsMutation.isPending ? t('admin.settings.saving') : t('common.save')}
                                 </button>
                             </>
                         ) : (
@@ -212,7 +214,7 @@ const SystemSettings: React.FC = () => {
                                 onClick={() => setEditMode(true)}
                                 className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
                             >
-                                Modifier
+                                {t('common.edit')}
                             </button>
                         )}
                     </div>
@@ -249,21 +251,21 @@ const SystemSettings: React.FC = () => {
                             className="w-full flex items-center px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
                         >
                             <ArrowPathIcon className="h-4 w-4 mr-2" />
-                            Vider le cache
+                            {t('admin.settings.actions.clearCache')}
                         </button>
                         <button
                             onClick={() => testEmailMutation.mutate()}
                             className="w-full flex items-center px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
                         >
                             <EnvelopeIcon className="h-4 w-4 mr-2" />
-                            Test email
+                            {t('admin.settings.actions.testEmail')}
                         </button>
                         <button
                             onClick={() => runBackupMutation.mutate()}
                             className="w-full flex items-center px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
                         >
                             <CircleStackIcon className="h-4 w-4 mr-2" />
-                            Lancer backup
+                            {t('admin.settings.actions.runBackup')}
                         </button>
                     </div>
                 </div>
@@ -274,12 +276,12 @@ const SystemSettings: React.FC = () => {
                         {/* General Settings */}
                         {activeTab === 'general' && (
                             <div className="space-y-6">
-                                <h2 className="text-lg font-semibold text-gray-900 mb-4">Paramètres généraux</h2>
+                                <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('admin.settings.general.title')}</h2>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Nom de l'application
+                                            {t('admin.settings.general.appName')}
                                         </label>
                                         <input
                                             type="text"
@@ -295,7 +297,7 @@ const SystemSettings: React.FC = () => {
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            URL de l'application
+                                            {t('admin.settings.general.appUrl')}
                                         </label>
                                         <input
                                             type="url"
@@ -311,7 +313,7 @@ const SystemSettings: React.FC = () => {
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Environnement
+                                            {t('admin.settings.general.environment')}
                                         </label>
                                         <select
                                             value={settings.general.app_env}
@@ -322,15 +324,15 @@ const SystemSettings: React.FC = () => {
                                             disabled={!editMode}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50"
                                         >
-                                            <option value="local">Local</option>
-                                            <option value="staging">Staging</option>
-                                            <option value="production">Production</option>
+                                            <option value="local">{t('admin.settings.general.env.local')}</option>
+                                            <option value="staging">{t('admin.settings.general.env.staging')}</option>
+                                            <option value="production">{t('admin.settings.general.env.production')}</option>
                                         </select>
                                     </div>
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Fuseau horaire
+                                            {t('admin.settings.general.timezone')}
                                         </label>
                                         <select
                                             value={settings.general.timezone}
@@ -349,7 +351,7 @@ const SystemSettings: React.FC = () => {
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Langue
+                                            {t('admin.settings.general.language')}
                                         </label>
                                         <select
                                             value={settings.general.locale}
@@ -367,7 +369,7 @@ const SystemSettings: React.FC = () => {
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Devise
+                                            {t('admin.settings.general.currency')}
                                         </label>
                                         <select
                                             value={settings.general.currency}
@@ -397,7 +399,7 @@ const SystemSettings: React.FC = () => {
                                             disabled={!editMode}
                                             className="h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 disabled:opacity-50"
                                         />
-                                        <span className="ml-2 text-sm text-gray-700">Mode debug</span>
+                                        <span className="ml-2 text-sm text-gray-700">{t('admin.settings.general.debugMode')}</span>
                                     </label>
 
                                     <label className="flex items-center">
@@ -411,7 +413,7 @@ const SystemSettings: React.FC = () => {
                                             disabled={!editMode}
                                             className="h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 disabled:opacity-50"
                                         />
-                                        <span className="ml-2 text-sm text-gray-700">Mode maintenance</span>
+                                        <span className="ml-2 text-sm text-gray-700">{t('admin.settings.general.maintenanceMode')}</span>
                                     </label>
                                 </div>
                             </div>
@@ -420,12 +422,12 @@ const SystemSettings: React.FC = () => {
                         {/* Security Settings */}
                         {activeTab === 'security' && (
                             <div className="space-y-6">
-                                <h2 className="text-lg font-semibold text-gray-900 mb-4">Paramètres de sécurité</h2>
+                                <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('admin.settings.security.title')}</h2>
 
                                 <div className="space-y-6">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Durée de session (minutes)
+                                            {t('admin.settings.security.sessionLifetime')}
                                         </label>
                                         <input
                                             type="number"
@@ -441,7 +443,7 @@ const SystemSettings: React.FC = () => {
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Longueur minimale mot de passe
+                                            {t('admin.settings.security.passwordMinLength')}
                                         </label>
                                         <input
                                             type="number"
@@ -457,7 +459,7 @@ const SystemSettings: React.FC = () => {
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Limite de requêtes par minute
+                                            {t('admin.settings.security.rateLimit')}
                                         </label>
                                         <input
                                             type="number"
@@ -483,7 +485,7 @@ const SystemSettings: React.FC = () => {
                                                 disabled={!editMode}
                                                 className="h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 disabled:opacity-50"
                                             />
-                                            <span className="ml-2 text-sm text-gray-700">Forcer HTTPS</span>
+                                            <span className="ml-2 text-sm text-gray-700">{t('admin.settings.security.forceHttps')}</span>
                                         </label>
 
                                         <label className="flex items-center">
@@ -497,7 +499,7 @@ const SystemSettings: React.FC = () => {
                                                 disabled={!editMode}
                                                 className="h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 disabled:opacity-50"
                                             />
-                                            <span className="ml-2 text-sm text-gray-700">2FA obligatoire pour les admins</span>
+                                            <span className="ml-2 text-sm text-gray-700">{t('admin.settings.security.require2fa')}</span>
                                         </label>
                                     </div>
                                 </div>
@@ -507,12 +509,12 @@ const SystemSettings: React.FC = () => {
                         {/* Email Settings */}
                         {activeTab === 'email' && (
                             <div className="space-y-6">
-                                <h2 className="text-lg font-semibold text-gray-900 mb-4">Configuration email</h2>
+                                <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('admin.settings.email.title')}</h2>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Driver
+                                            {t('admin.settings.email.driver')}
                                         </label>
                                         <select
                                             value={settings.email.driver}
@@ -532,7 +534,7 @@ const SystemSettings: React.FC = () => {
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Host
+                                            {t('admin.settings.email.host')}
                                         </label>
                                         <input
                                             type="text"
@@ -548,7 +550,7 @@ const SystemSettings: React.FC = () => {
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Port
+                                            {t('admin.settings.email.port')}
                                         </label>
                                         <input
                                             type="number"
@@ -564,7 +566,7 @@ const SystemSettings: React.FC = () => {
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Encryption
+                                            {t('admin.settings.email.encryption')}
                                         </label>
                                         <select
                                             value={settings.email.encryption}
@@ -583,7 +585,7 @@ const SystemSettings: React.FC = () => {
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Email expéditeur
+                                            {t('admin.settings.email.fromAddress')}
                                         </label>
                                         <input
                                             type="email"
@@ -599,7 +601,7 @@ const SystemSettings: React.FC = () => {
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Nom expéditeur
+                                            {t('admin.settings.email.fromName')}
                                         </label>
                                         <input
                                             type="text"
@@ -619,7 +621,7 @@ const SystemSettings: React.FC = () => {
                         {/* Chorus Pro Settings */}
                         {activeTab === 'chorus_pro' && (
                             <div className="space-y-6">
-                                <h2 className="text-lg font-semibold text-gray-900 mb-4">Configuration Chorus Pro</h2>
+                                <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('admin.settings.chorusPro.title')}</h2>
 
                                 <div className="space-y-4">
                                     <label className="flex items-center">
@@ -633,7 +635,7 @@ const SystemSettings: React.FC = () => {
                                             disabled={!editMode}
                                             className="h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 disabled:opacity-50"
                                         />
-                                        <span className="ml-2 text-sm text-gray-700">Activer Chorus Pro</span>
+                                        <span className="ml-2 text-sm text-gray-700">{t('admin.settings.chorusPro.enabled')}</span>
                                     </label>
 
                                     <label className="flex items-center">
@@ -647,7 +649,7 @@ const SystemSettings: React.FC = () => {
                                             disabled={!editMode}
                                             className="h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 disabled:opacity-50"
                                         />
-                                        <span className="ml-2 text-sm text-gray-700">Mode production</span>
+                                        <span className="ml-2 text-sm text-gray-700">{t('admin.settings.chorusPro.productionMode')}</span>
                                     </label>
 
                                     <label className="flex items-center">
@@ -661,7 +663,7 @@ const SystemSettings: React.FC = () => {
                                             disabled={!editMode}
                                             className="h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 disabled:opacity-50"
                                         />
-                                        <span className="ml-2 text-sm text-gray-700">Envoi automatique</span>
+                                        <span className="ml-2 text-sm text-gray-700">{t('admin.settings.chorusPro.autoSubmit')}</span>
                                     </label>
                                 </div>
 
@@ -671,7 +673,7 @@ const SystemSettings: React.FC = () => {
                                             <ExclamationTriangleIcon className="h-5 w-5 text-yellow-400" />
                                             <div className="ml-3">
                                                 <p className="text-sm text-yellow-800">
-                                                    Certificat expire le {settings.chorus_pro.certificate_expiry}
+                                                    {t('admin.settings.chorusPro.certificateExpiry', { date: settings.chorus_pro.certificate_expiry })}
                                                 </p>
                                             </div>
                                         </div>
@@ -683,7 +685,7 @@ const SystemSettings: React.FC = () => {
                         {/* Backup Settings */}
                         {activeTab === 'backup' && (
                             <div className="space-y-6">
-                                <h2 className="text-lg font-semibold text-gray-900 mb-4">Configuration des backups</h2>
+                                <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('admin.settings.backup.title')}</h2>
 
                                 <div className="space-y-6">
                                     <label className="flex items-center">
@@ -697,12 +699,12 @@ const SystemSettings: React.FC = () => {
                                             disabled={!editMode}
                                             className="h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 disabled:opacity-50"
                                         />
-                                        <span className="ml-2 text-sm text-gray-700">Backups automatiques activés</span>
+                                        <span className="ml-2 text-sm text-gray-700">{t('admin.settings.backup.enabled')}</span>
                                     </label>
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Fréquence
+                                            {t('admin.settings.backup.frequency')}
                                         </label>
                                         <select
                                             value={settings.backup.frequency}
@@ -713,15 +715,15 @@ const SystemSettings: React.FC = () => {
                                             disabled={!editMode}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50"
                                         >
-                                            <option value="daily">Quotidien</option>
-                                            <option value="weekly">Hebdomadaire</option>
-                                            <option value="monthly">Mensuel</option>
+                                            <option value="daily">{t('admin.settings.backup.freq.daily')}</option>
+                                            <option value="weekly">{t('admin.settings.backup.freq.weekly')}</option>
+                                            <option value="monthly">{t('admin.settings.backup.freq.monthly')}</option>
                                         </select>
                                     </div>
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Rétention (jours)
+                                            {t('admin.settings.backup.retention')}
                                         </label>
                                         <input
                                             type="number"
@@ -737,7 +739,7 @@ const SystemSettings: React.FC = () => {
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Emplacement de stockage
+                                            {t('admin.settings.backup.storageLocation')}
                                         </label>
                                         <select
                                             value={settings.backup.storage_location}
@@ -748,20 +750,20 @@ const SystemSettings: React.FC = () => {
                                             disabled={!editMode}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50"
                                         >
-                                            <option value="local">Local</option>
-                                            <option value="s3">Amazon S3</option>
-                                            <option value="ftp">FTP</option>
+                                            <option value="local">{t('admin.settings.backup.storage.local')}</option>
+                                            <option value="s3">{t('admin.settings.backup.storage.s3')}</option>
+                                            <option value="ftp">{t('admin.settings.backup.storage.ftp')}</option>
                                         </select>
                                     </div>
 
                                     {settings.backup.last_backup && (
                                         <div className="p-4 bg-gray-50 rounded-lg">
                                             <p className="text-sm text-gray-700">
-                                                <span className="font-medium">Dernier backup:</span> {settings.backup.last_backup}
+                                                <span className="font-medium">{t('admin.settings.backup.lastBackup')}:</span> {settings.backup.last_backup}
                                             </p>
                                             {settings.backup.next_backup && (
                                                 <p className="text-sm text-gray-700 mt-1">
-                                                    <span className="font-medium">Prochain backup:</span> {settings.backup.next_backup}
+                                                    <span className="font-medium">{t('admin.settings.backup.nextBackup')}:</span> {settings.backup.next_backup}
                                                 </p>
                                             )}
                                         </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import {
     ClockIcon,
     UserIcon,
@@ -53,6 +54,7 @@ interface ActivityLog {
 }
 
 const AuditLogs: React.FC = () => {
+    const { t } = useTranslation();
     const [searchTerm, setSearchTerm] = useState('');
     const [filterType, setFilterType] = useState<string>('all');
     const [filterUser, setFilterUser] = useState<string>('all');
@@ -64,13 +66,13 @@ const AuditLogs: React.FC = () => {
 
     // Activity types for filtering
     const activityTypes = [
-        { value: 'all', label: 'Tous les types' },
-        { value: 'authentication', label: 'Authentification', types: ['user_login', 'user_logout', 'user_2fa_enabled', 'user_2fa_disabled'] },
-        { value: 'user_management', label: 'Gestion utilisateurs', types: ['user_created', 'user_updated', 'user_deleted', 'user_suspended'] },
-        { value: 'tenant_management', label: 'Gestion tenants', types: ['tenant_created', 'tenant_updated', 'tenant_deleted'] },
-        { value: 'projects', label: 'Projets', types: ['project_created', 'project_updated', 'project_deleted'] },
-        { value: 'invoices', label: 'Factures', types: ['invoice_created', 'invoice_sent', 'invoice_paid', 'chorus_pro_sent'] },
-        { value: 'system', label: 'Système', types: ['settings_updated', 'system_error', 'maintenance_mode_enabled'] }
+        { value: 'all', label: t('admin.audit.filters.allTypes') },
+        { value: 'authentication', label: t('admin.audit.filters.authentication'), types: ['user_login', 'user_logout', 'user_2fa_enabled', 'user_2fa_disabled'] },
+        { value: 'user_management', label: t('admin.audit.filters.userManagement'), types: ['user_created', 'user_updated', 'user_deleted', 'user_suspended'] },
+        { value: 'tenant_management', label: t('admin.audit.filters.tenantManagement'), types: ['tenant_created', 'tenant_updated', 'tenant_deleted'] },
+        { value: 'projects', label: t('admin.audit.filters.projects'), types: ['project_created', 'project_updated', 'project_deleted'] },
+        { value: 'invoices', label: t('admin.audit.filters.invoices'), types: ['invoice_created', 'invoice_sent', 'invoice_paid', 'chorus_pro_sent'] },
+        { value: 'system', label: t('admin.audit.filters.system'), types: ['settings_updated', 'system_error', 'maintenance_mode_enabled'] }
     ];
 
     // Fetch audit logs
@@ -213,9 +215,9 @@ const AuditLogs: React.FC = () => {
         <div className="p-6">
             {/* Header */}
             <div className="mb-8">
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">Journaux d'Audit</h1>
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('admin.audit.title')}</h1>
                 <p className="text-gray-600">
-                    Suivi complet de toutes les activités et modifications du système
+                    {t('admin.audit.subtitle')}
                 </p>
             </div>
 
@@ -225,7 +227,7 @@ const AuditLogs: React.FC = () => {
                     <div className="flex items-center">
                         <ClockIcon className="h-8 w-8 text-blue-600 mr-3" />
                         <div>
-                            <p className="text-sm text-gray-600">Dernière activité</p>
+                            <p className="text-sm text-gray-600">{t('admin.audit.stats.lastActivity')}</p>
                             <p className="text-lg font-semibold">
                                 {logsData?.data?.[0] ?
                                     format(parseISO(logsData.data[0].created_at), 'HH:mm', { locale: fr })
@@ -239,7 +241,7 @@ const AuditLogs: React.FC = () => {
                     <div className="flex items-center">
                         <UserIcon className="h-8 w-8 text-green-600 mr-3" />
                         <div>
-                            <p className="text-sm text-gray-600">Utilisateurs actifs</p>
+                            <p className="text-sm text-gray-600">{t('admin.audit.stats.activeUsers')}</p>
                             <p className="text-lg font-semibold">
                                 {logsData?.stats?.unique_users || 0}
                             </p>
@@ -251,7 +253,7 @@ const AuditLogs: React.FC = () => {
                     <div className="flex items-center">
                         <ExclamationTriangleIcon className="h-8 w-8 text-red-600 mr-3" />
                         <div>
-                            <p className="text-sm text-gray-600">Erreurs système</p>
+                            <p className="text-sm text-gray-600">{t('admin.audit.stats.systemErrors')}</p>
                             <p className="text-lg font-semibold">
                                 {logsData?.stats?.errors || 0}
                             </p>
@@ -263,7 +265,7 @@ const AuditLogs: React.FC = () => {
                     <div className="flex items-center">
                         <DocumentTextIcon className="h-8 w-8 text-purple-600 mr-3" />
                         <div>
-                            <p className="text-sm text-gray-600">Total événements</p>
+                            <p className="text-sm text-gray-600">{t('admin.audit.stats.totalEvents')}</p>
                             <p className="text-lg font-semibold">
                                 {logsData?.total || 0}
                             </p>
@@ -277,14 +279,14 @@ const AuditLogs: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
                     {/* Search */}
                     <div className="lg:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Recherche</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.audit.filters.search')}</label>
                         <div className="relative">
                             <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                             <input
                                 type="text"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                placeholder="Rechercher dans les logs..."
+                                placeholder={t('admin.audit.filters.searchPlaceholder')}
                                 className="pl-10 pr-3 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
@@ -292,7 +294,7 @@ const AuditLogs: React.FC = () => {
 
                     {/* Type Filter */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.audit.filters.type')}</label>
                         <select
                             value={filterType}
                             onChange={(e) => setFilterType(e.target.value)}
@@ -306,13 +308,13 @@ const AuditLogs: React.FC = () => {
 
                     {/* User Filter */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Utilisateur</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.audit.filters.user')}</label>
                         <select
                             value={filterUser}
                             onChange={(e) => setFilterUser(e.target.value)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                         >
-                            <option value="all">Tous</option>
+                            <option value="all">{t('common.all')}</option>
                             {users?.map((user: any) => (
                                 <option key={user.id} value={user.id}>{user.name}</option>
                             ))}
@@ -321,7 +323,7 @@ const AuditLogs: React.FC = () => {
 
                     {/* Date From */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Du</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.audit.filters.dateFrom')}</label>
                         <input
                             type="date"
                             value={dateFrom}
@@ -332,7 +334,7 @@ const AuditLogs: React.FC = () => {
 
                     {/* Date To */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Au</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.audit.filters.dateTo')}</label>
                         <input
                             type="date"
                             value={dateTo}
@@ -356,7 +358,7 @@ const AuditLogs: React.FC = () => {
                         }}
                         className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
                     >
-                        Réinitialiser
+                        {t('common.reset')}
                     </button>
                     <div className="flex space-x-3">
                         <button
@@ -364,14 +366,14 @@ const AuditLogs: React.FC = () => {
                             className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                         >
                             <ArrowPathIcon className="h-5 w-5 mr-2" />
-                            Actualiser
+                            {t('common.refresh')}
                         </button>
                         <button
                             onClick={exportLogs}
                             className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                         >
                             <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
-                            Exporter
+                            {t('common.export')}
                         </button>
                     </div>
                 </div>
@@ -382,12 +384,12 @@ const AuditLogs: React.FC = () => {
                 {isLoading ? (
                     <div className="p-8 text-center">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                        <p className="mt-4 text-gray-600">Chargement des journaux...</p>
+                        <p className="mt-4 text-gray-600">{t('admin.audit.loading')}</p>
                     </div>
                 ) : logsData?.data?.length === 0 ? (
                     <div className="p-8 text-center text-gray-500">
                         <ClockIcon className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                        <p>Aucun journal trouvé pour ces critères</p>
+                        <p>{t('admin.audit.noLogs')}</p>
                     </div>
                 ) : (
                     <>
@@ -396,19 +398,19 @@ const AuditLogs: React.FC = () => {
                                 <thead className="bg-gray-50">
                                     <tr>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Date/Heure
+                                            {t('admin.audit.table.dateTime')}
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Type
+                                            {t('admin.audit.table.type')}
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Description
+                                            {t('admin.audit.table.description')}
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Utilisateur
+                                            {t('admin.audit.table.user')}
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Détails
+                                            {t('admin.audit.table.details')}
                                         </th>
                                     </tr>
                                 </thead>
@@ -452,7 +454,7 @@ const AuditLogs: React.FC = () => {
                                                             </div>
                                                         </div>
                                                     ) : (
-                                                        <span className="text-sm text-gray-500">Système</span>
+                                                        <span className="text-sm text-gray-500">{t('admin.audit.system')}</span>
                                                     )}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
@@ -472,7 +474,7 @@ const AuditLogs: React.FC = () => {
                                                 <tr>
                                                     <td colSpan={5} className="px-6 py-4 bg-gray-50">
                                                         <div className="text-sm">
-                                                            <h4 className="font-medium text-gray-900 mb-2">Propriétés additionnelles:</h4>
+                                                            <h4 className="font-medium text-gray-900 mb-2">{t('admin.audit.additionalProperties')}</h4>
                                                             <pre className="bg-white p-3 rounded border border-gray-200 overflow-x-auto">
                                                                 {JSON.stringify(log.properties, null, 2)}
                                                             </pre>
@@ -490,7 +492,7 @@ const AuditLogs: React.FC = () => {
                         {logsData && logsData.last_page > 1 && (
                             <div className="px-6 py-3 bg-gray-50 flex items-center justify-between">
                                 <div className="text-sm text-gray-700">
-                                    Affichage de {logsData.from} à {logsData.to} sur {logsData.total} entrées
+                                    {t('admin.audit.pagination', { from: logsData.from, to: logsData.to, total: logsData.total })}
                                 </div>
                                 <div className="flex space-x-2">
                                     <button

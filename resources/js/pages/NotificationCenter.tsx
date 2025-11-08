@@ -21,6 +21,7 @@ import {
     CogIcon
 } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 
 interface Notification {
     id: number;
@@ -39,6 +40,7 @@ interface Notification {
 }
 
 const NotificationCenter: React.FC = () => {
+    const { t } = useTranslation();
     const queryClient = useQueryClient();
     const [selectedFilter, setSelectedFilter] = useState<'all' | 'unread' | 'read'>('all');
     const [selectedType, setSelectedType] = useState<string>('all');
@@ -47,16 +49,16 @@ const NotificationCenter: React.FC = () => {
 
     // Notification types with icons and colors
     const notificationTypes = {
-        all: { label: 'Toutes', icon: BellIcon, color: 'gray' },
-        timer: { label: 'Timer', icon: ClockIcon, color: 'blue' },
-        invoice: { label: 'Factures', icon: DocumentTextIcon, color: 'green' },
-        payment: { label: 'Paiements', icon: CurrencyEuroIcon, color: 'emerald' },
-        project: { label: 'Projets', icon: FolderIcon, color: 'purple' },
-        task: { label: 'Tâches', icon: CheckCircleIcon, color: 'indigo' },
-        expense: { label: 'Dépenses', icon: XCircleIcon, color: 'red' },
-        team: { label: 'Équipe', icon: UserGroupIcon, color: 'orange' },
-        report: { label: 'Rapports', icon: ChartBarIcon, color: 'cyan' },
-        system: { label: 'Système', icon: CogIcon, color: 'gray' },
+        all: { label: t('notifications.types.all'), icon: BellIcon, color: 'gray' },
+        timer: { label: t('notifications.types.timer'), icon: ClockIcon, color: 'blue' },
+        invoice: { label: t('notifications.types.invoice'), icon: DocumentTextIcon, color: 'green' },
+        payment: { label: t('notifications.types.payment'), icon: CurrencyEuroIcon, color: 'emerald' },
+        project: { label: t('notifications.types.project'), icon: FolderIcon, color: 'purple' },
+        task: { label: t('notifications.types.task'), icon: CheckCircleIcon, color: 'indigo' },
+        expense: { label: t('notifications.types.expense'), icon: XCircleIcon, color: 'red' },
+        team: { label: t('notifications.types.team'), icon: UserGroupIcon, color: 'orange' },
+        report: { label: t('notifications.types.report'), icon: ChartBarIcon, color: 'cyan' },
+        system: { label: t('notifications.types.system'), icon: CogIcon, color: 'gray' },
     };
 
     // Fetch notifications with filters
@@ -86,7 +88,7 @@ const NotificationCenter: React.FC = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['notifications-center'] });
             queryClient.invalidateQueries({ queryKey: ['notification-unread-count'] });
-            toast.success(`${selectedNotifications.length} notification(s) marquée(s) comme lue(s)`);
+            toast.success(t('notifications.markedAsRead', { count: selectedNotifications.length }));
             setSelectedNotifications([]);
         }
     });
@@ -99,7 +101,7 @@ const NotificationCenter: React.FC = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['notifications-center'] });
             queryClient.invalidateQueries({ queryKey: ['notification-unread-count'] });
-            toast.success('Toutes les notifications ont été marquées comme lues');
+            toast.success(t('notifications.allMarkedAsRead'));
         }
     });
 
@@ -110,7 +112,7 @@ const NotificationCenter: React.FC = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['notifications-center'] });
-            toast.success(`${selectedNotifications.length} notification(s) supprimée(s)`);
+            toast.success(t('notifications.deleted', { count: selectedNotifications.length }));
             setSelectedNotifications([]);
         }
     });
@@ -147,9 +149,9 @@ const NotificationCenter: React.FC = () => {
         const parsedDate = parseISO(date);
 
         if (isToday(parsedDate)) {
-            return `Aujourd'hui à ${format(parsedDate, 'HH:mm', { locale: fr })}`;
+            return t('notifications.todayAt', { time: format(parsedDate, 'HH:mm', { locale: fr }) });
         } else if (isYesterday(parsedDate)) {
-            return `Hier à ${format(parsedDate, 'HH:mm', { locale: fr })}`;
+            return t('notifications.yesterdayAt', { time: format(parsedDate, 'HH:mm', { locale: fr }) });
         } else {
             return format(parsedDate, 'dd MMM yyyy à HH:mm', { locale: fr });
         }
@@ -193,8 +195,8 @@ const NotificationCenter: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {/* Header */}
             <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900">Centre de Notifications</h1>
-                <p className="mt-2 text-gray-600">Gérez et consultez toutes vos notifications</p>
+                <h1 className="text-3xl font-bold text-gray-900">{t('notifications.title')}</h1>
+                <p className="mt-2 text-gray-600">{t('notifications.description')}</p>
             </div>
 
             {/* Stats Cards */}
@@ -202,7 +204,7 @@ const NotificationCenter: React.FC = () => {
                 <div className="bg-white rounded-lg shadow p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-600">Non lues</p>
+                            <p className="text-sm text-gray-600">{t('notifications.stats.unread')}</p>
                             <p className="text-2xl font-bold text-gray-900">{unreadCount}</p>
                         </div>
                         <div className="p-3 bg-red-100 rounded-lg">
@@ -214,7 +216,7 @@ const NotificationCenter: React.FC = () => {
                 <div className="bg-white rounded-lg shadow p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-600">Aujourd'hui</p>
+                            <p className="text-sm text-gray-600">{t('notifications.stats.today')}</p>
                             <p className="text-2xl font-bold text-gray-900">{todayCount}</p>
                         </div>
                         <div className="p-3 bg-blue-100 rounded-lg">
@@ -226,7 +228,7 @@ const NotificationCenter: React.FC = () => {
                 <div className="bg-white rounded-lg shadow p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-600">Cette semaine</p>
+                            <p className="text-sm text-gray-600">{t('notifications.stats.thisWeek')}</p>
                             <p className="text-2xl font-bold text-gray-900">
                                 {notifications.filter((n: Notification) => {
                                     const date = parseISO(n.sent_at);
@@ -245,7 +247,7 @@ const NotificationCenter: React.FC = () => {
                 <div className="bg-white rounded-lg shadow p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-600">Total</p>
+                            <p className="text-sm text-gray-600">{t('notifications.stats.total')}</p>
                             <p className="text-2xl font-bold text-gray-900">{notifications.length}</p>
                         </div>
                         <div className="p-3 bg-purple-100 rounded-lg">
@@ -263,7 +265,7 @@ const NotificationCenter: React.FC = () => {
                         <div className="flex-1 max-w-md">
                             <input
                                 type="text"
-                                placeholder="Rechercher dans les notifications..."
+                                placeholder={t('notifications.searchPlaceholder')}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -280,7 +282,7 @@ const NotificationCenter: React.FC = () => {
                                         : 'text-gray-600 hover:bg-gray-100'
                                 }`}
                             >
-                                Toutes
+                                {t('notifications.filters.all')}
                             </button>
                             <button
                                 onClick={() => setSelectedFilter('unread')}
@@ -290,7 +292,7 @@ const NotificationCenter: React.FC = () => {
                                         : 'text-gray-600 hover:bg-gray-100'
                                 }`}
                             >
-                                Non lues ({unreadCount})
+                                {t('notifications.filters.unread', { count: unreadCount })}
                             </button>
                             <button
                                 onClick={() => setSelectedFilter('read')}
@@ -300,7 +302,7 @@ const NotificationCenter: React.FC = () => {
                                         : 'text-gray-600 hover:bg-gray-100'
                                 }`}
                             >
-                                Lues
+                                {t('notifications.filters.read')}
                             </button>
                         </div>
 
@@ -312,18 +314,18 @@ const NotificationCenter: React.FC = () => {
                                     className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
                                 >
                                     <CheckIcon className="h-4 w-4 inline mr-1" />
-                                    Marquer comme lu ({selectedNotifications.length})
+                                    {t('notifications.markAsRead', { count: selectedNotifications.length })}
                                 </button>
                                 <button
                                     onClick={() => {
-                                        if (confirm('Êtes-vous sûr de vouloir supprimer ces notifications ?')) {
+                                        if (confirm(t('notifications.confirmDelete'))) {
                                             deleteNotificationsMutation.mutate(selectedNotifications);
                                         }
                                     }}
                                     className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
                                 >
                                     <TrashIcon className="h-4 w-4 inline mr-1" />
-                                    Supprimer ({selectedNotifications.length})
+                                    {t('notifications.delete', { count: selectedNotifications.length })}
                                 </button>
                             </div>
                         )}
@@ -359,7 +361,7 @@ const NotificationCenter: React.FC = () => {
                                 className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                             />
                             <label className="ml-2 text-sm text-gray-600">
-                                Tout sélectionner
+                                {t('notifications.selectAll')}
                             </label>
                         </div>
 
@@ -368,7 +370,7 @@ const NotificationCenter: React.FC = () => {
                                 onClick={() => markAllAsReadMutation.mutate()}
                                 className="text-sm text-blue-600 hover:text-blue-800 font-medium"
                             >
-                                Tout marquer comme lu
+                                {t('notifications.markAllAsRead')}
                             </button>
                         )}
                     </div>
@@ -379,14 +381,14 @@ const NotificationCenter: React.FC = () => {
                     {isLoading ? (
                         <div className="p-8 text-center">
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                            <p className="mt-4 text-gray-600">Chargement des notifications...</p>
+                            <p className="mt-4 text-gray-600">{t('notifications.loading')}</p>
                         </div>
                     ) : notifications.length === 0 ? (
                         <div className="p-8 text-center">
                             <BellIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                            <p className="text-gray-600">Aucune notification trouvée</p>
+                            <p className="text-gray-600">{t('notifications.noNotifications')}</p>
                             <p className="text-sm text-gray-500 mt-2">
-                                {searchQuery ? 'Essayez avec d\'autres critères de recherche' : 'Vous êtes à jour !'}
+                                {searchQuery ? t('notifications.tryDifferentSearch') : t('notifications.allCaughtUp')}
                             </p>
                         </div>
                     ) : (
@@ -395,9 +397,9 @@ const NotificationCenter: React.FC = () => {
                                 <div className="px-4 py-2 bg-gray-50">
                                     <h3 className="text-sm font-semibold text-gray-700">
                                         {isToday(parseISO(date + 'T00:00:00'))
-                                            ? 'Aujourd\'hui'
+                                            ? t('notifications.today')
                                             : isYesterday(parseISO(date + 'T00:00:00'))
-                                            ? 'Hier'
+                                            ? t('notifications.yesterday')
                                             : format(parseISO(date), 'EEEE d MMMM yyyy', { locale: fr })}
                                     </h3>
                                 </div>
@@ -444,10 +446,10 @@ const NotificationCenter: React.FC = () => {
                                                             </p>
                                                             {notification.read && notification.read_at && (
                                                                 <p className="text-xs text-gray-400">
-                                                                    Lu {formatDistanceToNow(parseISO(notification.read_at), {
+                                                                    {t('notifications.readAgo', { time: formatDistanceToNow(parseISO(notification.read_at), {
                                                                         addSuffix: true,
                                                                         locale: fr
-                                                                    })}
+                                                                    }) })}
                                                                 </p>
                                                             )}
                                                         </div>
@@ -473,9 +475,11 @@ const NotificationCenter: React.FC = () => {
                     <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
                         <div className="flex items-center justify-between">
                             <p className="text-sm text-gray-700">
-                                Affichage de <span className="font-medium">{meta.from}</span> à{' '}
-                                <span className="font-medium">{meta.to}</span> sur{' '}
-                                <span className="font-medium">{meta.total}</span> notifications
+                                {t('notifications.pagination', {
+                                    from: meta.from,
+                                    to: meta.to,
+                                    total: meta.total
+                                })}
                             </p>
                             {/* Add pagination controls here if needed */}
                         </div>

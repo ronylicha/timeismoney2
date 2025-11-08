@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import {
     UserIcon,
     EnvelopeIcon,
@@ -55,6 +56,7 @@ interface Tenant {
 }
 
 const UserManagement: React.FC = () => {
+    const { t } = useTranslation();
     const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
     const [filterRole, setFilterRole] = useState<string>('all');
@@ -94,11 +96,11 @@ const UserManagement: React.FC = () => {
             await axios.post(`/admin/users/${userId}/suspend`);
         },
         onSuccess: () => {
-            toast.success('Utilisateur suspendu');
+            toast.success(t('admin.users.suspendSuccess'));
             queryClient.invalidateQueries({ queryKey: ['admin-users'] });
         },
         onError: () => {
-            toast.error('Erreur lors de la suspension');
+            toast.error(t('admin.users.suspendError'));
         }
     });
 
@@ -108,11 +110,11 @@ const UserManagement: React.FC = () => {
             await axios.post(`/admin/users/${userId}/activate`);
         },
         onSuccess: () => {
-            toast.success('Utilisateur activé');
+            toast.success(t('admin.users.activateSuccess'));
             queryClient.invalidateQueries({ queryKey: ['admin-users'] });
         },
         onError: () => {
-            toast.error('Erreur lors de l\'activation');
+            toast.error(t('admin.users.activateError'));
         }
     });
 
@@ -122,11 +124,11 @@ const UserManagement: React.FC = () => {
             await axios.delete(`/admin/users/${userId}`);
         },
         onSuccess: () => {
-            toast.success('Utilisateur supprimé');
+            toast.success(t('admin.users.deleteSuccess'));
             queryClient.invalidateQueries({ queryKey: ['admin-users'] });
         },
         onError: () => {
-            toast.error('Erreur lors de la suppression');
+            toast.error(t('admin.users.deleteError'));
         }
     });
 
@@ -136,10 +138,10 @@ const UserManagement: React.FC = () => {
             await axios.post(`/admin/users/${userId}/reset-password`);
         },
         onSuccess: () => {
-            toast.success('Email de réinitialisation envoyé');
+            toast.success(t('admin.users.resetPasswordSuccess'));
         },
         onError: () => {
-            toast.error('Erreur lors de l\'envoi');
+            toast.error(t('admin.users.resetPasswordError'));
         }
     });
 
@@ -150,12 +152,12 @@ const UserManagement: React.FC = () => {
             return response.data;
         },
         onSuccess: () => {
-            toast.success('Utilisateur créé avec succès');
+            toast.success(t('admin.users.createSuccess'));
             queryClient.invalidateQueries({ queryKey: ['admin-users'] });
             setShowCreateModal(false);
         },
         onError: (error: any) => {
-            const message = error.response?.data?.message || 'Erreur lors de la création';
+            const message = error.response?.data?.message || t('admin.users.createError');
             toast.error(message);
             throw error;
         }
@@ -168,13 +170,13 @@ const UserManagement: React.FC = () => {
             return response.data;
         },
         onSuccess: () => {
-            toast.success('Utilisateur mis à jour');
+            toast.success(t('admin.users.updateSuccess'));
             queryClient.invalidateQueries({ queryKey: ['admin-users'] });
             setShowEditModal(false);
             setSelectedUser(null);
         },
         onError: (error: any) => {
-            const message = error.response?.data?.message || 'Erreur lors de la mise à jour';
+            const message = error.response?.data?.message || t('admin.users.updateError');
             toast.error(message);
             throw error;
         }
@@ -187,7 +189,7 @@ const UserManagement: React.FC = () => {
             // Redirect to user's dashboard with impersonation token
             window.location.href = `/dashboard?impersonate_token=${response.data.token}`;
         } catch (error) {
-            toast.error('Erreur lors de l\'impersonation');
+            toast.error(t('admin.users.impersonateError'));
         }
     };
 
@@ -211,7 +213,7 @@ const UserManagement: React.FC = () => {
             link.click();
             link.remove();
         } catch (error) {
-            toast.error('Erreur lors de l\'export');
+            toast.error(t('admin.users.exportError'));
         }
     };
 
@@ -220,13 +222,13 @@ const UserManagement: React.FC = () => {
             {/* Error Display */}
             {error && (
                 <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-                    <p className="font-bold">Erreur de chargement</p>
-                    <p className="text-sm">{(error as any)?.response?.data?.message || 'Impossible de charger les utilisateurs'}</p>
+                    <p className="font-bold">{t('common.error')}</p>
+                    <p className="text-sm">{(error as any)?.response?.data?.message || t('admin.users.loadError')}</p>
                     <button
                         onClick={() => setRefreshKey(prev => prev + 1)}
                         className="mt-2 text-sm underline hover:text-red-900"
                     >
-                        Réessayer
+                        {t('common.retry')}
                     </button>
                 </div>
             )}
@@ -235,16 +237,16 @@ const UserManagement: React.FC = () => {
             <div className="mb-6">
                 <div className="flex justify-between items-center">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Gestion des utilisateurs</h1>
+                        <h1 className="text-2xl font-bold text-gray-900">{t('admin.users.title')}</h1>
                         <p className="text-gray-600 mt-1">
-                            {usersData?.total || 0} utilisateurs au total
+                            {usersData?.total || 0} {t('admin.users.totalUsers')}
                         </p>
                     </div>
                     <div className="flex space-x-3">
                         <button
                             onClick={() => setRefreshKey(prev => prev + 1)}
                             className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-                            title="Actualiser"
+                            title={t('common.refresh')}
                         >
                             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -255,14 +257,14 @@ const UserManagement: React.FC = () => {
                             className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                         >
                             <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
-                            Exporter
+                            {t('admin.users.export')}
                         </button>
                         <button
                             onClick={() => setShowCreateModal(true)}
                             className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
                         >
                             <PlusIcon className="h-5 w-5 mr-2" />
-                            Nouvel utilisateur
+                            {t('admin.users.newUser')}
                         </button>
                     </div>
                 </div>
@@ -278,7 +280,7 @@ const UserManagement: React.FC = () => {
                             type="text"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="Rechercher..."
+                            placeholder={t('admin.users.searchPlaceholder')}
                             className="pl-10 pr-3 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                         />
                     </div>
@@ -289,13 +291,13 @@ const UserManagement: React.FC = () => {
                         onChange={(e) => setFilterRole(e.target.value)}
                         className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                     >
-                        <option value="all">Tous les rôles</option>
-                        <option value="super-admin">Super Admin</option>
-                        <option value="admin">Admin</option>
-                        <option value="manager">Manager</option>
-                        <option value="employee">Employé</option>
-                        <option value="accountant">Comptable</option>
-                        <option value="client">Client</option>
+                        <option value="all">{t('admin.users.allRoles')}</option>
+                        <option value="super-admin">{t('admin.users.roles.superAdmin')}</option>
+                        <option value="admin">{t('admin.users.roles.admin')}</option>
+                        <option value="manager">{t('admin.users.roles.manager')}</option>
+                        <option value="employee">{t('admin.users.roles.employee')}</option>
+                        <option value="accountant">{t('admin.users.roles.accountant')}</option>
+                        <option value="client">{t('admin.users.roles.client')}</option>
                     </select>
 
                     {/* Status Filter */}
@@ -304,11 +306,11 @@ const UserManagement: React.FC = () => {
                         onChange={(e) => setFilterStatus(e.target.value)}
                         className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                     >
-                        <option value="all">Tous les statuts</option>
-                        <option value="active">Actif</option>
-                        <option value="suspended">Suspendu</option>
-                        <option value="verified">Email vérifié</option>
-                        <option value="unverified">Email non vérifié</option>
+                        <option value="all">{t('admin.users.allStatuses')}</option>
+                        <option value="active">{t('admin.users.status.active')}</option>
+                        <option value="suspended">{t('admin.users.status.suspended')}</option>
+                        <option value="verified">{t('admin.users.status.verified')}</option>
+                        <option value="unverified">{t('admin.users.status.unverified')}</option>
                     </select>
 
                     {/* Clear Filters */}
@@ -320,7 +322,7 @@ const UserManagement: React.FC = () => {
                         }}
                         className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
                     >
-                        Réinitialiser
+                        {t('common.reset')}
                     </button>
                 </div>
             </div>
@@ -331,22 +333,22 @@ const UserManagement: React.FC = () => {
                     <thead className="bg-gray-50">
                         <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Utilisateur
+                                {t('admin.users.table.user')}
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Organisation
+                                {t('admin.users.table.organization')}
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Rôle
+                                {t('admin.users.table.role')}
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Statut
+                                {t('admin.users.table.status')}
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Activité
+                                {t('admin.users.table.activity')}
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Actions
+                                {t('admin.users.table.actions')}
                             </th>
                         </tr>
                     </thead>
@@ -360,7 +362,7 @@ const UserManagement: React.FC = () => {
                         ) : usersData?.data?.length === 0 ? (
                             <tr>
                                 <td colSpan={6} className="text-center py-8 text-gray-500">
-                                    Aucun utilisateur trouvé
+                                    {t('admin.users.noUsers')}
                                 </td>
                             </tr>
                         ) : (
@@ -396,12 +398,12 @@ const UserManagement: React.FC = () => {
                                             user.role === 'client' ? 'bg-yellow-100 text-yellow-800' :
                                             'bg-gray-100 text-gray-800'
                                         }`}>
-                                            {user.role === 'super-admin' ? 'Super Admin' :
-                                             user.role === 'admin' ? 'Admin' :
-                                             user.role === 'manager' ? 'Manager' :
-                                             user.role === 'accountant' ? 'Comptable' :
-                                             user.role === 'employee' ? 'Employé' :
-                                             user.role === 'client' ? 'Client' :
+                                            {user.role === 'super-admin' ? t('admin.users.roles.superAdmin') :
+                                             user.role === 'admin' ? t('admin.users.roles.admin') :
+                                             user.role === 'manager' ? t('admin.users.roles.manager') :
+                                             user.role === 'accountant' ? t('admin.users.roles.accountant') :
+                                             user.role === 'employee' ? t('admin.users.roles.employee') :
+                                             user.role === 'client' ? t('admin.users.roles.client') :
                                              user.role}
                                         </span>
                                     </td>
@@ -424,18 +426,18 @@ const UserManagement: React.FC = () => {
                                         <div>
                                             {user.last_login_at ? (
                                                 <span>
-                                                    Dernière connexion{' '}
+                                                    {t('admin.users.lastLogin')}{' '}
                                                     {formatDistanceToNow(new Date(user.last_login_at), {
                                                         addSuffix: true,
                                                         locale: fr
                                                     })}
                                                 </span>
                                             ) : (
-                                                <span>Jamais connecté</span>
+                                                <span>{t('admin.users.neverLoggedIn')}</span>
                                             )}
                                         </div>
                                         <div className="text-xs">
-                                            {user.time_entries_count || 0} entrées • {user.invoices_count || 0} factures
+                                            {user.time_entries_count || 0} {t('admin.users.entries')} • {user.invoices_count || 0} {t('admin.users.invoices')}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -443,7 +445,7 @@ const UserManagement: React.FC = () => {
                                             <button
                                                 onClick={() => impersonateUser(user.id)}
                                                 className="text-gray-600 hover:text-gray-900"
-                                                title="Impersonate"
+                                                title={t('admin.users.actions.impersonate')}
                                             >
                                                 <EyeIcon className="h-5 w-5" />
                                             </button>
@@ -453,14 +455,14 @@ const UserManagement: React.FC = () => {
                                                     setShowEditModal(true);
                                                 }}
                                                 className="text-indigo-600 hover:text-indigo-900"
-                                                title="Éditer"
+                                                title={t('common.edit')}
                                             >
                                                 <PencilIcon className="h-5 w-5" />
                                             </button>
                                             <button
                                                 onClick={() => resetPasswordMutation.mutate(user.id)}
                                                 className="text-blue-600 hover:text-blue-900"
-                                                title="Réinitialiser mot de passe"
+                                                title={t('admin.users.actions.resetPassword')}
                                             >
                                                 <KeyIcon className="h-5 w-5" />
                                             </button>
@@ -468,7 +470,7 @@ const UserManagement: React.FC = () => {
                                                 <button
                                                     onClick={() => suspendUserMutation.mutate(user.id)}
                                                     className="text-yellow-600 hover:text-yellow-900"
-                                                    title="Suspendre"
+                                                    title={t('admin.users.actions.suspend')}
                                                 >
                                                     <LockClosedIcon className="h-5 w-5" />
                                                 </button>
@@ -476,19 +478,19 @@ const UserManagement: React.FC = () => {
                                                 <button
                                                     onClick={() => activateUserMutation.mutate(user.id)}
                                                     className="text-green-600 hover:text-green-900"
-                                                    title="Activer"
+                                                    title={t('admin.users.actions.activate')}
                                                 >
                                                     <CheckCircleIcon className="h-5 w-5" />
                                                 </button>
                                             )}
                                             <button
                                                 onClick={() => {
-                                                    if (confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
+                                                    if (confirm(t('admin.users.confirmDelete'))) {
                                                         deleteUserMutation.mutate(user.id);
                                                     }
                                                 }}
                                                 className="text-red-600 hover:text-red-900"
-                                                title="Supprimer"
+                                                title={t('common.delete')}
                                             >
                                                 <TrashIcon className="h-5 w-5" />
                                             </button>
@@ -509,22 +511,22 @@ const UserManagement: React.FC = () => {
                                 disabled={currentPage === 1}
                                 className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
                             >
-                                Précédent
+                                {t('common.previous')}
                             </button>
                             <button
                                 onClick={() => setCurrentPage(Math.min(usersData.last_page, currentPage + 1))}
                                 disabled={currentPage === usersData.last_page}
                                 className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
                             >
-                                Suivant
+                                {t('common.next')}
                             </button>
                         </div>
                         <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                             <div>
                                 <p className="text-sm text-gray-700">
-                                    Affichage de <span className="font-medium">{usersData.from}</span> à{' '}
-                                    <span className="font-medium">{usersData.to}</span> sur{' '}
-                                    <span className="font-medium">{usersData.total}</span> résultats
+                                    {t('common.showing')} <span className="font-medium">{usersData.from}</span> {t('common.to')}{' '}
+                                    <span className="font-medium">{usersData.to}</span> {t('common.of')}{' '}
+                                    <span className="font-medium">{usersData.total}</span> {t('common.results')}
                                 </p>
                             </div>
                             <div>

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, BellOff, Check, X } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { enablePushNotifications } from '@/utils/serviceWorker';
 
 export const PushNotificationManager: React.FC = () => {
+    const { t } = useTranslation();
     const [permission, setPermission] = useState<NotificationPermission>('default');
     const [isSubscribed, setIsSubscribed] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -41,7 +43,7 @@ export const PushNotificationManager: React.FC = () => {
             setPermission(permission);
 
             if (permission !== 'granted') {
-                toast.error('Vous devez autoriser les notifications pour continuer');
+                toast.error(t('notifications.push.permissionRequired'));
                 setIsLoading(false);
                 return;
             }
@@ -51,16 +53,16 @@ export const PushNotificationManager: React.FC = () => {
 
             if (subscription) {
                 setIsSubscribed(true);
-                toast.success('Notifications push activées avec succès !');
+                toast.success(t('notifications.push.enabled'));
 
                 // Send subscription to server
                 await sendSubscriptionToServer(subscription);
             } else {
-                toast.error('Impossible d\'activer les notifications push');
+                toast.error(t('notifications.push.enableError'));
             }
         } catch (error) {
             console.error('Failed to enable notifications:', error);
-            toast.error('Erreur lors de l\'activation des notifications');
+            toast.error(t('notifications.push.enableError'));
         } finally {
             setIsLoading(false);
         }
@@ -76,14 +78,14 @@ export const PushNotificationManager: React.FC = () => {
             if (subscription) {
                 await subscription.unsubscribe();
                 setIsSubscribed(false);
-                toast.success('Notifications désactivées');
+                toast.success(t('notifications.push.disabled'));
 
                 // Remove subscription from server
                 await removeSubscriptionFromServer(subscription);
             }
         } catch (error) {
             console.error('Failed to disable notifications:', error);
-            toast.error('Erreur lors de la désactivation des notifications');
+            toast.error(t('notifications.push.disableError'));
         } finally {
             setIsLoading(false);
         }
@@ -129,12 +131,12 @@ export const PushNotificationManager: React.FC = () => {
 
     const testNotification = () => {
         if (permission !== 'granted') {
-            toast.error('Les notifications doivent être autorisées');
+            toast.error(t('notifications.push.mustBeEnabled'));
             return;
         }
 
-        const notification = new Notification('Time Is Money', {
-            body: 'Test de notification - Tout fonctionne correctement !',
+        const notification = new Notification(t('notifications.push.testTitle'), {
+            body: t('notifications.push.testBody'),
             icon: '/images/icons/icon-192x192.png',
             badge: '/images/icons/badge-72x72.png',
             vibrate: [200, 100, 200],
@@ -156,10 +158,10 @@ export const PushNotificationManager: React.FC = () => {
                     <BellOff className="h-5 w-5 text-yellow-600" />
                     <div>
                         <p className="font-medium text-yellow-800">
-                            Notifications non disponibles
+                            {t('notifications.push.notSupported')}
                         </p>
                         <p className="text-sm text-yellow-700 mt-1">
-                            Votre navigateur ne supporte pas les notifications push
+                            {t('notifications.push.browserNotSupported')}
                         </p>
                     </div>
                 </div>
@@ -178,12 +180,12 @@ export const PushNotificationManager: React.FC = () => {
                         </div>
                         <div>
                             <h4 className="font-medium text-gray-900">
-                                Notifications Push
+                                {t('notifications.push.title')}
                             </h4>
                             <p className="text-sm text-gray-600">
                                 {isSubscribed
-                                    ? 'Activées - Vous recevrez des notifications'
-                                    : 'Désactivées - Activez pour recevoir des alertes'}
+                                    ? t('notifications.push.statusEnabled')
+                                    : t('notifications.push.statusDisabled')}
                             </p>
                         </div>
                     </div>
@@ -195,7 +197,7 @@ export const PushNotificationManager: React.FC = () => {
                             disabled={isLoading}
                             className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg font-medium transition-colors disabled:opacity-50"
                         >
-                            {isLoading ? 'Désactivation...' : 'Désactiver'}
+                            {isLoading ? t('notifications.push.disabling') : t('notifications.push.disable')}
                         </button>
                     ) : (
                         <button
@@ -203,7 +205,7 @@ export const PushNotificationManager: React.FC = () => {
                             disabled={isLoading || permission === 'denied'}
                             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
                         >
-                            {isLoading ? 'Activation...' : 'Activer'}
+                            {isLoading ? t('notifications.push.enabling') : t('notifications.push.enable')}
                         </button>
                     )}
                 </div>
@@ -213,7 +215,7 @@ export const PushNotificationManager: React.FC = () => {
                     <div className="mt-3 p-3 bg-red-50 rounded-lg">
                         <p className="text-sm text-red-700">
                             <X className="h-4 w-4 inline mr-1" />
-                            Les notifications ont été bloquées. Veuillez les autoriser dans les paramètres de votre navigateur.
+                            {t('notifications.push.blocked')}
                         </p>
                     </div>
                 )}
@@ -225,31 +227,31 @@ export const PushNotificationManager: React.FC = () => {
                     onClick={testNotification}
                     className="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors"
                 >
-                    Tester une notification
+                    {t('notifications.push.testButton')}
                 </button>
             )}
 
             {/* Benefits List */}
             <div className="bg-gray-50 rounded-lg p-4">
                 <h5 className="font-medium text-gray-900 mb-3">
-                    Avec les notifications activées :
+                    {t('notifications.push.benefitsTitle')}
                 </h5>
                 <ul className="space-y-2">
                     <li className="flex items-start text-sm text-gray-600">
                         <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                        <span>Rappels pour démarrer/arrêter le timer</span>
+                        <span>{t('notifications.push.benefit1')}</span>
                     </li>
                     <li className="flex items-start text-sm text-gray-600">
                         <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                        <span>Alertes pour les échéances de projets</span>
+                        <span>{t('notifications.push.benefit2')}</span>
                     </li>
                     <li className="flex items-start text-sm text-gray-600">
                         <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                        <span>Notifications de paiements reçus</span>
+                        <span>{t('notifications.push.benefit3')}</span>
                     </li>
                     <li className="flex items-start text-sm text-gray-600">
                         <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                        <span>Mises à jour importantes de l'application</span>
+                        <span>{t('notifications.push.benefit4')}</span>
                     </li>
                 </ul>
             </div>

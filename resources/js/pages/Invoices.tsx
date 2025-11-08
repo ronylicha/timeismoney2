@@ -3,18 +3,28 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
-import { PlusIcon, MagnifyingGlassIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+import {
+    PlusIcon,
+    MagnifyingGlassIcon,
+    DocumentTextIcon,
+    ReceiptPercentIcon,
+    ClipboardDocumentCheckIcon,
+    DocumentMinusIcon,
+} from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { InvoiceType } from '../types';
 
 interface Invoice {
     id: number;
     invoice_number: string;
     client_id: number;
     status: string;
+    type: InvoiceType;
     issue_date: string;
     due_date: string;
     total_amount: number;
+    advance_percentage?: number;
     client?: {
         name: string;
     };
@@ -50,6 +60,54 @@ const Invoices: React.FC = () => {
         return (
             <span className={`px-2 py-1 text-xs font-medium rounded-full ${colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800'}`}>
                 {t(`invoices.statuses.${status}`, status)}
+            </span>
+        );
+    };
+
+    const getTypeBadge = (type: InvoiceType, advancePercentage?: number) => {
+        const typeConfig = {
+            invoice: {
+                label: 'Facture',
+                color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+                icon: DocumentTextIcon,
+            },
+            advance: {
+                label: 'Acompte',
+                color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+                icon: ReceiptPercentIcon,
+            },
+            final: {
+                label: 'Solde',
+                color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+                icon: ClipboardDocumentCheckIcon,
+            },
+            credit_note: {
+                label: 'Avoir',
+                color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+                icon: DocumentMinusIcon,
+            },
+            quote: {
+                label: 'Devis',
+                color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+                icon: DocumentTextIcon,
+            },
+            recurring: {
+                label: 'Récurrent',
+                color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300',
+                icon: DocumentTextIcon,
+            },
+        };
+
+        const config = typeConfig[type] || typeConfig.invoice;
+        const Icon = config.icon;
+
+        return (
+            <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${config.color}`}>
+                <Icon className="w-3 h-3 mr-1" />
+                {config.label}
+                {type === 'advance' && advancePercentage && (
+                    <span className="ml-1">({advancePercentage}%)</span>
+                )}
             </span>
         );
     };
@@ -130,6 +188,9 @@ const Invoices: React.FC = () => {
                                     {t('invoices.client')}
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Type
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     {t('invoices.issueDate')}
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -155,6 +216,9 @@ const Invoices: React.FC = () => {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                         {invoice.client?.name || '-'}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        {getTypeBadge(invoice.type || 'invoice', invoice.advance_percentage)}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                         {format(new Date(invoice.issue_date), 'dd MMM yyyy', { locale: fr })}

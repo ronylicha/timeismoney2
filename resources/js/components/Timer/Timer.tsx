@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Play, Pause, Square, Clock, DollarSign, Calendar } from 'lucide-react';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import { useTimer } from '../../hooks/useTimer';
 import { useProjects } from '../../hooks/useProjects';
 import { useTasks } from '../../hooks/useTasks';
@@ -12,6 +13,7 @@ interface TimerProps {
 }
 
 export const Timer: React.FC<TimerProps> = ({ onTimerStop }) => {
+    const { t } = useTranslation();
     const { activeTimer, isLoading, startTimer, stopTimer, currentTimer } = useTimer();
     const { projects } = useProjects();
     const [selectedProject, setSelectedProject] = useState<string>('');
@@ -91,7 +93,7 @@ export const Timer: React.FC<TimerProps> = ({ onTimerStop }) => {
 
     const handleStart = async () => {
         if (!selectedProject) {
-            alert('Please select a project');
+            alert(t('time.selectProject'));
             return;
         }
 
@@ -120,7 +122,7 @@ export const Timer: React.FC<TimerProps> = ({ onTimerStop }) => {
             <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center">
                     <Clock className="mr-2" />
-                    Time Tracker
+                    {t('time.title')}
                 </h2>
                 <div className="text-3xl font-mono text-gray-700 dark:text-gray-300">
                     {formatDuration(elapsedSeconds)}
@@ -131,7 +133,7 @@ export const Timer: React.FC<TimerProps> = ({ onTimerStop }) => {
                 {/* Project Selection */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Project *
+                        {t('time.project')} *
                     </label>
                     <select
                         value={selectedProject}
@@ -142,7 +144,7 @@ export const Timer: React.FC<TimerProps> = ({ onTimerStop }) => {
                         disabled={isRunning}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                     >
-                        <option value="">Select a project...</option>
+                        <option value="">{t('time.selectProject')}</option>
                         {projects.map((project) => (
                             <option key={project.id} value={project.id}>
                                 {project.name} - {project.client?.name}
@@ -155,7 +157,7 @@ export const Timer: React.FC<TimerProps> = ({ onTimerStop }) => {
                 {selectedProject && tasks.length > 0 && (
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Task (optional)
+                            {t('time.task')}
                         </label>
                         <select
                             value={selectedTask}
@@ -163,7 +165,7 @@ export const Timer: React.FC<TimerProps> = ({ onTimerStop }) => {
                             disabled={isRunning}
                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                         >
-                            <option value="">No specific task</option>
+                            <option value="">{t('time.noTask')}</option>
                             {tasks.map((task) => (
                                 <option key={task.id} value={task.id}>
                                     {task.title}
@@ -176,13 +178,13 @@ export const Timer: React.FC<TimerProps> = ({ onTimerStop }) => {
                 {/* Description */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        What are you working on?
+                        {t('time.workingOn')}
                     </label>
                     <input
                         type="text"
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        placeholder="Enter task description..."
+                        placeholder={t('time.descriptionPlaceholder')}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                     />
                 </div>
@@ -199,7 +201,7 @@ export const Timer: React.FC<TimerProps> = ({ onTimerStop }) => {
                     />
                     <label htmlFor="billable" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
                         <DollarSign className="inline h-4 w-4 mr-1" />
-                        Billable
+                        {t('time.billable')}
                     </label>
                 </div>
 
@@ -212,7 +214,7 @@ export const Timer: React.FC<TimerProps> = ({ onTimerStop }) => {
                             className="flex items-center px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                             <Play className="mr-2" size={20} />
-                            Start Timer
+                            {t('time.start')}
                         </button>
                     ) : (
                         <>
@@ -222,7 +224,7 @@ export const Timer: React.FC<TimerProps> = ({ onTimerStop }) => {
                                 className="flex items-center px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
                                 <Square className="mr-2" size={20} />
-                                Stop Timer
+                                {t('time.stop')}
                             </button>
                         </>
                     )}
@@ -232,10 +234,10 @@ export const Timer: React.FC<TimerProps> = ({ onTimerStop }) => {
                 {isRunning && activeTimer && (
                     <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                         <div className="text-sm text-gray-600 dark:text-gray-400">
-                            <p><strong>Project:</strong> {activeTimer.project?.name}</p>
-                            {activeTimer.task && <p><strong>Task:</strong> {activeTimer.task.title}</p>}
-                            {activeTimer.description && <p><strong>Description:</strong> {activeTimer.description}</p>}
-                            <p><strong>Started at:</strong> {new Date(activeTimer.started_at).toLocaleTimeString()}</p>
+                            <p><strong>{t('time.currentProject')}:</strong> {activeTimer.project?.name}</p>
+                            {activeTimer.task && <p><strong>{t('time.currentTask')}:</strong> {activeTimer.task.title}</p>}
+                            {activeTimer.description && <p><strong>{t('time.currentDescription')}:</strong> {activeTimer.description}</p>}
+                            <p><strong>{t('time.startedAt')}:</strong> {new Date(activeTimer.started_at).toLocaleTimeString()}</p>
                         </div>
                     </div>
                 )}

@@ -366,7 +366,7 @@ const CreateInvoice: React.FC = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        Invoice Date *
+                                        {t('invoices.invoiceDate')} *
                                     </label>
                                     <input
                                         type="date"
@@ -379,7 +379,7 @@ const CreateInvoice: React.FC = () => {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        Due Date *
+                                        {t('invoices.dueDate')} *
                                     </label>
                                     <input
                                         type="date"
@@ -393,7 +393,7 @@ const CreateInvoice: React.FC = () => {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        Payment Terms (days)
+                                        {t('invoices.paymentTerms')}
                                     </label>
                                     <input
                                         type="number"
@@ -405,7 +405,7 @@ const CreateInvoice: React.FC = () => {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        Tax Rate (%)
+                                        {t('invoices.taxRate')}
                                     </label>
                                     <input
                                         type="number"
@@ -424,7 +424,7 @@ const CreateInvoice: React.FC = () => {
                             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
                                 <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
                                     <Clock className="mr-2" />
-                                    Time Entries
+                                    {t('invoices.timeEntries')}
                                 </h2>
                                 <div className="space-y-2 max-h-64 overflow-y-auto">
                                     {timeEntriesData.map(entry => {
@@ -467,7 +467,7 @@ const CreateInvoice: React.FC = () => {
                             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
                                 <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
                                     <Package className="mr-2" />
-                                    Expenses
+                                    {t('invoices.expenses')}
                                 </h2>
                                 <div className="space-y-2 max-h-64 overflow-y-auto">
                                     {expensesData.map(expense => (
@@ -504,7 +504,7 @@ const CreateInvoice: React.FC = () => {
                         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
-                                    Custom Items
+                                    {t('invoices.customItems')}
                                 </h2>
                                 <button
                                     type="button"
@@ -512,7 +512,7 @@ const CreateInvoice: React.FC = () => {
                                     className="flex items-center px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
                                 >
                                     <Plus size={16} className="mr-1" />
-                                    Add Item
+                                    {t('invoices.addItem')}
                                 </button>
                             </div>
                             <div className="space-y-3">
@@ -522,14 +522,14 @@ const CreateInvoice: React.FC = () => {
                                             type="text"
                                             value={item.description}
                                             onChange={(e) => updateCustomItem(index, 'description', e.target.value)}
-                                            placeholder="Description"
+                                            placeholder={t('invoices.description')}
                                             className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                                         />
                                         <input
                                             type="number"
                                             value={item.quantity}
                                             onChange={(e) => updateCustomItem(index, 'quantity', parseFloat(e.target.value))}
-                                            placeholder="Qty"
+                                            placeholder={t('invoices.quantity')}
                                             step="0.01"
                                             className="w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                                         />
@@ -537,7 +537,7 @@ const CreateInvoice: React.FC = () => {
                                             type="number"
                                             value={item.unit_price}
                                             onChange={(e) => updateCustomItem(index, 'unit_price', parseFloat(e.target.value))}
-                                            placeholder="Price"
+                                            placeholder={t('invoices.price')}
                                             step="0.01"
                                             className="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                                         />
@@ -556,12 +556,12 @@ const CreateInvoice: React.FC = () => {
                         {/* Notes */}
                         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
                             <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-                                Additional Information
+                                {t('invoices.additionalInformation')}
                             </h2>
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        Notes (appears on invoice)
+                                        {t('invoices.notes')}
                                     </label>
                                     <textarea
                                         name="notes"
@@ -573,7 +573,7 @@ const CreateInvoice: React.FC = () => {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        Footer Text
+                                        {t('invoices.footerText')}
                                     </label>
                                     <textarea
                                         name="footer"
@@ -591,13 +591,13 @@ const CreateInvoice: React.FC = () => {
                     <div className="lg:col-span-1">
                         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 sticky top-6">
                             <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-                                Invoice Summary
+                                {t('invoices.invoiceSummary')}
                             </h2>
 
                             {/* Discount */}
                             <div className="mb-4">
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Discount
+                                    {t('invoices.discount')}
                                 </label>
                                 <div className="flex space-x-2">
                                     <input
@@ -623,14 +623,14 @@ const CreateInvoice: React.FC = () => {
                             {/* Totals */}
                             <div className="space-y-2 border-t border-gray-200 dark:border-gray-700 pt-4">
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
+                                    <span className="text-gray-600 dark:text-gray-400">{t('invoices.subtotal')}</span>
                                     <span className="font-medium text-gray-900 dark:text-white">
                                         €{totals.subtotal.toFixed(2)}
                                     </span>
                                 </div>
                                 {totals.discountAmount > 0 && (
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-gray-600 dark:text-gray-400">Discount</span>
+                                        <span className="text-gray-600 dark:text-gray-400">{t('invoices.discount')}</span>
                                         <span className="font-medium text-red-600">
                                             -€{totals.discountAmount.toFixed(2)}
                                         </span>
@@ -638,14 +638,14 @@ const CreateInvoice: React.FC = () => {
                                 )}
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-600 dark:text-gray-400">
-                                        Tax ({formData.tax_rate}%)
+                                        {t('invoices.tax')} ({formData.tax_rate}%)
                                     </span>
                                     <span className="font-medium text-gray-900 dark:text-white">
                                         €{totals.taxAmount.toFixed(2)}
                                     </span>
                                 </div>
                                 <div className="flex justify-between text-lg font-semibold border-t border-gray-200 dark:border-gray-700 pt-2">
-                                    <span className="text-gray-900 dark:text-white">Total</span>
+                                    <span className="text-gray-900 dark:text-white">{t('invoices.total')}</span>
                                     <span className="text-blue-600">
                                         €{totals.total.toFixed(2)}
                                     </span>
@@ -657,8 +657,8 @@ const CreateInvoice: React.FC = () => {
                                 <div className="flex items-start">
                                     <AlertTriangle className="text-yellow-600 dark:text-yellow-400 mr-2 flex-shrink-0 mt-0.5" size={16} />
                                     <div className="text-xs text-yellow-700 dark:text-yellow-300">
-                                        <p className="font-semibold mb-1">NF525 Compliance</p>
-                                        <p>Once sent, this invoice cannot be edited or deleted to ensure compliance with French anti-fraud law.</p>
+                                        <p className="font-semibold mb-1">{t('invoices.nf525ComplianceTitle')}</p>
+                                        <p>{t('invoices.nf525ComplianceNote')}</p>
                                     </div>
                                 </div>
                             </div>
@@ -672,7 +672,7 @@ const CreateInvoice: React.FC = () => {
                                     className="w-full flex items-center justify-center px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
                                     <Save className="mr-2" size={18} />
-                                    Save as Draft
+                                    {t('invoices.saveAsDraft')}
                                 </button>
                                 <button
                                     type="button"
@@ -681,7 +681,7 @@ const CreateInvoice: React.FC = () => {
                                     className="w-full flex items-center justify-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
                                     <Send className="mr-2" size={18} />
-                                    Save & Send
+                                    {t('invoices.saveAndSend')}
                                 </button>
                             </div>
                         </div>
@@ -697,14 +697,13 @@ const CreateInvoice: React.FC = () => {
                             <AlertTriangle className="text-yellow-600 mr-3 flex-shrink-0 mt-1" size={24} />
                             <div>
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                                    NF525 Compliance Warning
+                                    {t('invoices.nf525WarningTitle')}
                                 </h3>
                                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                                    Once sent, this invoice will be locked and cannot be edited or deleted.
-                                    This ensures compliance with French anti-fraud law NF525.
+                                    {t('invoices.nf525WarningMessage')}
                                 </p>
                                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                                    Are you sure you want to send this invoice?
+                                    {t('invoices.nf525WarningConfirm')}
                                 </p>
                             </div>
                         </div>
@@ -713,13 +712,13 @@ const CreateInvoice: React.FC = () => {
                                 onClick={() => setShowNF525Warning(false)}
                                 className="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
                             >
-                                Cancel
+                                {t('common.cancel')}
                             </button>
                             <button
                                 onClick={confirmSend}
                                 className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
                             >
-                                Send Invoice
+                                {t('invoices.sendInvoice')}
                             </button>
                         </div>
                     </div>

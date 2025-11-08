@@ -27,6 +27,7 @@ import {
 import { useTimer } from '../hooks/useTimer';
 import { useProjects } from '../hooks/useProjects';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 
 type ViewMode = 'day' | 'week' | 'month';
 
@@ -48,6 +49,7 @@ interface TimeSheetData {
 }
 
 const TimeSheet: React.FC = () => {
+    const { t } = useTranslation();
     const [viewMode, setViewMode] = useState<ViewMode>('week');
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedProject, setSelectedProject] = useState<string>('');
@@ -155,24 +157,24 @@ const TimeSheet: React.FC = () => {
             link.click();
             link.remove();
 
-            toast.success('Timesheet exported successfully');
+            toast.success(t('time.exportSuccess'));
         } catch (error) {
-            toast.error('Failed to export timesheet');
+            toast.error(t('time.exportError'));
         }
     };
 
     // Delete time entry
     const deleteEntry = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this time entry?')) {
+        if (!confirm(t('time.confirmDelete'))) {
             return;
         }
 
         try {
             await axios.delete(`/api/time-entries/${id}`);
-            toast.success('Time entry deleted');
+            toast.success(t('time.deleteSuccess'));
             refetch();
         } catch (error) {
-            toast.error('Failed to delete time entry');
+            toast.error(t('time.deleteError'));
         }
     };
 
@@ -209,7 +211,7 @@ const TimeSheet: React.FC = () => {
             <div className="space-y-4">
                 {entries.length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
-                        No time entries for this day
+                        {t('time.noEntriesDay')}
                     </div>
                 ) : (
                     entries.map((entry) => (
@@ -230,7 +232,7 @@ const TimeSheet: React.FC = () => {
                                         )}
                                         {entry.is_billable && (
                                             <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded">
-                                                Billable
+                                                {t('time.billable')}
                                             </span>
                                         )}
                                     </div>
@@ -241,7 +243,7 @@ const TimeSheet: React.FC = () => {
                                     )}
                                     <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
                                         <span>
-                                            {formatTime(entry.started_at)} - {entry.ended_at ? formatTime(entry.ended_at) : 'Running'}
+                                            {formatTime(entry.started_at)} - {entry.ended_at ? formatTime(entry.ended_at) : t('time.running')}
                                         </span>
                                         <span className="font-mono">
                                             {formatDuration(entry.duration_seconds || 0)}
@@ -257,20 +259,20 @@ const TimeSheet: React.FC = () => {
                                     <button
                                         onClick={() => continueTimer(entry)}
                                         className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                                        title="Continue timer"
+                                        title={t('time.continueTimer')}
                                     >
                                         <Play size={18} />
                                     </button>
                                     <button
                                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                        title="Edit entry"
+                                        title={t('time.editEntry')}
                                     >
                                         <Edit2 size={18} />
                                     </button>
                                     <button
                                         onClick={() => deleteEntry(entry.id)}
                                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                        title="Delete entry"
+                                        title={t('time.deleteEntry')}
                                     >
                                         <Trash2 size={18} />
                                     </button>
@@ -341,7 +343,7 @@ const TimeSheet: React.FC = () => {
                             ))}
                             {day.entries.length > 3 && (
                                 <div className="text-xs text-center text-gray-500 dark:text-gray-400">
-                                    +{day.entries.length - 3} more
+                                    +{day.entries.length - 3} {t('time.more')}
                                 </div>
                             )}
                         </div>
@@ -393,7 +395,7 @@ const TimeSheet: React.FC = () => {
                 <div className="flex items-center justify-between mb-4">
                     <h1 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center">
                         <Calendar className="mr-2" />
-                        TimeSheet
+                        {t('time.timesheet')}
                     </h1>
                     <div className="flex items-center space-x-4">
                         {/* View mode selector */}
@@ -412,7 +414,7 @@ const TimeSheet: React.FC = () => {
                                         mode === 'month' ? 'rounded-r-lg' : ''
                                     } transition-colors`}
                                 >
-                                    {mode}
+                                    {t(`time.${mode}`)}
                                 </button>
                             ))}
                         </div>
@@ -422,7 +424,7 @@ const TimeSheet: React.FC = () => {
                             <button
                                 onClick={() => exportTimesheet('csv')}
                                 className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                                title="Export CSV"
+                                title={t('time.exportCSV')}
                             >
                                 <Download size={20} />
                             </button>
@@ -443,7 +445,7 @@ const TimeSheet: React.FC = () => {
                             onClick={navigateToday}
                             className="px-4 py-2 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
                         >
-                            Today
+                            {t('time.today')}
                         </button>
                         <button
                             onClick={navigateNext}
@@ -463,7 +465,7 @@ const TimeSheet: React.FC = () => {
                             onChange={(e) => setSelectedProject(e.target.value)}
                             className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                         >
-                            <option value="">All Projects</option>
+                            <option value="">{t('time.allProjects')}</option>
                             {projects.map((project) => (
                                 <option key={project.id} value={project.id}>
                                     {project.name}
@@ -480,7 +482,7 @@ const TimeSheet: React.FC = () => {
                                 className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                             />
                             <span className="text-sm text-gray-700 dark:text-gray-300">
-                                Billable only
+                                {t('time.billableOnly')}
                             </span>
                         </label>
                     </div>
@@ -490,25 +492,25 @@ const TimeSheet: React.FC = () => {
                 {data && data.totals && (
                     <div className="grid grid-cols-4 gap-4 mt-6">
                         <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
-                            <div className="text-sm text-gray-600 dark:text-gray-400">Total Time</div>
+                            <div className="text-sm text-gray-600 dark:text-gray-400">{t('time.totalTime')}</div>
                             <div className="text-xl font-semibold text-gray-900 dark:text-white">
                                 {formatDuration(data.totals?.total_duration || 0)}
                             </div>
                         </div>
                         <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
-                            <div className="text-sm text-green-600 dark:text-green-400">Billable</div>
+                            <div className="text-sm text-green-600 dark:text-green-400">{t('time.billable')}</div>
                             <div className="text-xl font-semibold text-green-700 dark:text-green-300">
                                 {formatDuration(data.totals?.billable_duration || 0)}
                             </div>
                         </div>
                         <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
-                            <div className="text-sm text-gray-600 dark:text-gray-400">Non-Billable</div>
+                            <div className="text-sm text-gray-600 dark:text-gray-400">{t('time.nonBillable')}</div>
                             <div className="text-xl font-semibold text-gray-900 dark:text-white">
                                 {formatDuration(data.totals?.non_billable_duration || 0)}
                             </div>
                         </div>
                         <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
-                            <div className="text-sm text-blue-600 dark:text-blue-400">Total Amount</div>
+                            <div className="text-sm text-blue-600 dark:text-blue-400">{t('time.totalAmount')}</div>
                             <div className="text-xl font-semibold text-blue-700 dark:text-blue-300">
                                 €{(data.totals?.total_amount || 0).toFixed(2)}
                             </div>

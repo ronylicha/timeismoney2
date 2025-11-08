@@ -61,6 +61,7 @@
   },
   "nav": {
     "dashboard": "Tableau de bord",
+    "adminDashboard": "Tableau de bord admin",
     "userDashboard": "Dashboard utilisateur",
     "time": "Suivi du temps",
     "timesheet": "Feuille de temps",
@@ -269,7 +270,17 @@
     "timerStopped": "Timer arrêté",
     "timerError": "Erreur lors du démarrage du timer",
     "stopError": "Erreur lors de l'arrêt du timer",
-    "totalToday": "Total aujourd'hui"
+    "totalToday": "Total aujourd'hui",
+    "timesheet": "Feuille de temps",
+    "noTask": "Aucune tâche",
+    "workingOn": "Travail en cours",
+    "startTime": "Heure de début",
+    "endTime": "Heure de fin",
+    "totalHours": "Total heures",
+    "editEntry": "Modifier l'entrée",
+    "deleteEntry": "Supprimer l'entrée",
+    "saveEntry": "Enregistrer l'entrée",
+    "addEntry": "Ajouter une entrée"
   },
   "projects": {
     "title": "Projets",
@@ -341,7 +352,22 @@
     "language": "Langue",
     "noClients": "Aucun client",
     "totalProjects": "Total projets",
-    "totalInvoiced": "Total facturé"
+    "totalInvoiced": "Total facturé",
+    "managePortfolio": "Gérer le portefeuille client",
+    "totalClients": "Total clients",
+    "activeProjects": "Projets actifs",
+    "totalRevenue": "Revenu total",
+    "searchClients": "Rechercher des clients...",
+    "addFirstClient": "Ajoutez votre premier client pour commencer",
+    "addClient": "Ajouter un client",
+    "editClient": "Modifier le client",
+    "clientDetails": "Détails du client",
+    "deleteClient": "Supprimer le client",
+    "deleteClientConfirm": "Êtes-vous sûr de vouloir supprimer ce client ?",
+    "clientDeleted": "Client supprimé avec succès",
+    "clientCreated": "Client créé avec succès",
+    "clientUpdated": "Client mis à jour avec succès",
+    "createClient": "Créer un client"
   },
   "invoices": {
     "title": "Factures",
@@ -558,7 +584,90 @@
     "userManagement": "Gestion des utilisateurs",
     "tenantManagement": "Gestion des organisations",
     "statistics": "Statistiques",
-    "activity": "Activité"
+    "activity": "Activité",
+    "dashboard": {
+      "title": "Tableau de bord admin",
+      "overview": "Vue d'ensemble du système",
+      "stats": "Statistiques",
+      "systemHealth": "Santé du système",
+      "activeUsers": "Utilisateurs actifs",
+      "totalTenants": "Total organisations",
+      "revenueThisMonth": "Revenu ce mois",
+      "activeSessions": "Sessions actives"
+    },
+    "users": {
+      "title": "Gestion des utilisateurs",
+      "totalUsers": "Total utilisateurs",
+      "activeUsers": "Utilisateurs actifs",
+      "newUsers": "Nouveaux utilisateurs",
+      "searchUsers": "Rechercher des utilisateurs...",
+      "addUser": "Ajouter un utilisateur",
+      "editUser": "Modifier l'utilisateur",
+      "deleteUser": "Supprimer l'utilisateur",
+      "userDetails": "Détails de l'utilisateur",
+      "lastLogin": "Dernière connexion",
+      "createdAt": "Créé le",
+      "status": "Statut",
+      "role": "Rôle",
+      "actions": "Actions"
+    },
+    "tenants": {
+      "title": "Gestion des organisations",
+      "totalTenants": "Total organisations",
+      "activeTenants": "Organisations actives",
+      "searchTenants": "Rechercher des organisations...",
+      "addTenant": "Ajouter une organisation",
+      "editTenant": "Modifier l'organisation",
+      "deleteTenant": "Supprimer l'organisation",
+      "tenantDetails": "Détails de l'organisation",
+      "subscription": "Abonnement",
+      "plan": "Plan"
+    },
+    "audit": {
+      "title": "Journaux d'audit",
+      "searchLogs": "Rechercher dans les journaux...",
+      "user": "Utilisateur",
+      "action": "Action",
+      "resource": "Ressource",
+      "timestamp": "Horodatage",
+      "ipAddress": "Adresse IP",
+      "userAgent": "User Agent",
+      "noLogs": "Aucun journal d'audit trouvé"
+    },
+    "settings": {
+      "title": "Paramètres système",
+      "general": "Paramètres généraux",
+      "email": "Paramètres email",
+      "security": "Paramètres de sécurité",
+      "maintenance": "Mode maintenance",
+      "backups": "Sauvegardes",
+      "updates": "Mises à jour"
+    },
+    "monitoring": {
+      "title": "Surveillance du système",
+      "performance": "Performance",
+      "errors": "Erreurs",
+      "logs": "Journaux",
+      "metrics": "Métriques",
+      "uptime": "Temps de disponibilité",
+      "responseTime": "Temps de réponse"
+    },
+    "notifications": {
+      "title": "Notifications système",
+      "sendNotification": "Envoyer une notification",
+      "recipients": "Destinataires",
+      "message": "Message",
+      "type": "Type",
+      "sent": "Envoyé",
+      "pending": "En attente"
+    },
+    "reports": {
+      "title": "Rapports système",
+      "userActivity": "Activité utilisateur",
+      "systemUsage": "Utilisation système",
+      "financialReports": "Rapports financiers",
+      "generateReport": "Générer un rapport"
+    }
   },
   "notifications": {
     "title": "Notifications",
@@ -573,6 +682,17 @@
       "warning": "Avertissement",
       "error": "Erreur",
       "reminder": "Rappel"
+    },
+    "push": {
+      "enable": "Activer les notifications push",
+      "disable": "Désactiver les notifications push",
+      "enabled": "Notifications push activées",
+      "disabled": "Notifications push désactivées",
+      "permissionDenied": "Permission des notifications push refusée",
+      "notSupported": "Les notifications push ne sont pas prises en charge par ce navigateur",
+      "subscribe": "S'abonner aux notifications",
+      "unsubscribe": "Se désabonner des notifications",
+      "title": "Notifications Push"
     }
   },
   "toast": {
@@ -771,6 +891,44 @@
     "dashboard": "Tableau de bord",
     "administration": "Administration",
     "logout": "Déconnexion"
+  },
+  "pwa": {
+    "install": {
+      "title": "Installer TimeIsMoney",
+      "subtitle": "Installez notre application pour une meilleure expérience",
+      "benefit1": "Accès rapide depuis votre écran d'accueil",
+      "benefit2": "Fonctionne hors ligne",
+      "benefit3": "Recevez des notifications",
+      "installNow": "Installer maintenant",
+      "later": "Plus tard"
+    },
+    "update": {
+      "available": "Une nouvelle version est disponible",
+      "updating": "Mise à jour...",
+      "title": "Mise à jour disponible",
+      "subtitle": "Une nouvelle version de l'application est disponible",
+      "updateNow": "Mettre à jour maintenant",
+      "later": "Plus tard"
+    },
+    "status": {
+      "online": "En ligne",
+      "offline": "Hors ligne",
+      "updateAvailable": "Mise à jour disponible"
+    }
+  },
+  "team": {
+    "title": "Gestion d'équipe",
+    "members": "Membres de l'équipe",
+    "addMember": "Ajouter un membre",
+    "removeMember": "Retirer un membre",
+    "inviteMember": "Inviter un membre",
+    "pendingInvitations": "Invitations en attente",
+    "role": "Rôle",
+    "permissions": "Permissions",
+    "noMembers": "Aucun membre d'équipe pour le moment",
+    "memberAdded": "Membre ajouté avec succès",
+    "memberRemoved": "Membre retiré avec succès",
+    "invitationSent": "Invitation envoyée avec succès"
   },
   "app": {
     "name": "TimeIsMoney",

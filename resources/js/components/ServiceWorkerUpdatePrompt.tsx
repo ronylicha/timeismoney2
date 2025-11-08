@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, X, Info } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 
 export const ServiceWorkerUpdatePrompt: React.FC = () => {
+    const { t } = useTranslation();
     const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
     const [showUpdate, setShowUpdate] = useState(false);
 
@@ -38,7 +40,7 @@ export const ServiceWorkerUpdatePrompt: React.FC = () => {
                                 setShowUpdate(true);
 
                                 // Show toast notification
-                                toast.info('Une nouvelle version de l\'application est disponible !', {
+                                toast.info(t('pwa.update.available'), {
                                     autoClose: false,
                                     closeButton: true
                                 });
@@ -84,7 +86,7 @@ export const ServiceWorkerUpdatePrompt: React.FC = () => {
         waitingWorker.postMessage({ type: 'SKIP_WAITING' });
 
         // Show loading toast
-        toast.info('Mise à jour en cours...', {
+        toast.info(t('pwa.update.updating'), {
             autoClose: 2000
         });
 
@@ -120,17 +122,17 @@ export const ServiceWorkerUpdatePrompt: React.FC = () => {
                         </div>
                         <div>
                             <h3 className="font-semibold text-gray-900">
-                                Mise à jour disponible
+                                {t('pwa.update.title')}
                             </h3>
                             <p className="text-sm text-gray-600 mt-0.5">
-                                Une nouvelle version est prête
+                                {t('pwa.update.subtitle')}
                             </p>
                         </div>
                     </div>
                     <button
                         onClick={handleDismiss}
                         className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
-                        aria-label="Fermer"
+                        aria-label={t('pwa.update.close')}
                     >
                         <X className="h-4 w-4 text-gray-400" />
                     </button>
@@ -140,7 +142,7 @@ export const ServiceWorkerUpdatePrompt: React.FC = () => {
                 <div className="flex items-start space-x-2 mb-4 p-2 bg-blue-50 rounded-lg">
                     <Info className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
                     <p className="text-sm text-blue-700">
-                        L'application sera rechargée pour appliquer les améliorations et nouvelles fonctionnalités.
+                        {t('pwa.update.info')}
                     </p>
                 </div>
 
@@ -151,13 +153,13 @@ export const ServiceWorkerUpdatePrompt: React.FC = () => {
                         className="flex-1 flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
                     >
                         <RefreshCw className="h-4 w-4 mr-2" />
-                        Mettre à jour maintenant
+                        {t('pwa.update.updateNow')}
                     </button>
                     <button
                         onClick={handleDismiss}
                         className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg font-medium transition-colors"
                     >
-                        Plus tard
+                        {t('pwa.update.later')}
                     </button>
                 </div>
             </div>
@@ -195,13 +197,15 @@ export const ServiceWorkerStatus: React.FC = () => {
         };
     }, []);
 
+    const { t } = useTranslation();
+
     return (
         <div className="flex items-center space-x-4 text-sm">
             {/* Online Status */}
             <div className="flex items-center space-x-2">
                 <div className={`h-2 w-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'} animate-pulse`} />
                 <span className="text-gray-600">
-                    {isOnline ? 'En ligne' : 'Hors ligne'}
+                    {isOnline ? t('pwa.status.online') : t('pwa.status.offline')}
                 </span>
             </div>
 
@@ -209,7 +213,7 @@ export const ServiceWorkerStatus: React.FC = () => {
             {hasUpdate && (
                 <div className="flex items-center space-x-2 text-blue-600">
                     <RefreshCw className="h-4 w-4" />
-                    <span>Mise à jour disponible</span>
+                    <span>{t('pwa.status.updateAvailable')}</span>
                 </div>
             )}
         </div>

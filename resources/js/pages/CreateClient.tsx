@@ -15,6 +15,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { Client } from '../types';
 import AddressAutocomplete from '../components/AddressAutocomplete';
+import { COUNTRIES } from '../constants/countries';
 
 interface ClientFormData {
     name: string;
@@ -58,6 +59,7 @@ const CreateClient: React.FC = () => {
         currency: 'EUR',
         notes: ''
     });
+    const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
 
     // Create client mutation
     const createClientMutation = useMutation({
@@ -70,8 +72,14 @@ const CreateClient: React.FC = () => {
             navigate(`/clients/${client.id}`);
         },
         onError: (error: any) => {
-            const message = error.response?.data?.message || t('clients.clientCreatedError');
-            toast.error(message);
+            // Handle validation errors
+            if (error.response?.status === 422 && error.response?.data?.errors) {
+                setValidationErrors(error.response.data.errors);
+                toast.error(t('clients.validationError') || 'Veuillez corriger les erreurs dans le formulaire');
+            } else {
+                const message = error.response?.data?.message || t('clients.clientCreatedError');
+                toast.error(message);
+            }
         }
     });
 
@@ -81,6 +89,14 @@ const CreateClient: React.FC = () => {
             ...prev,
             [name]: value
         }));
+        // Clear validation error for this field
+        if (validationErrors[name]) {
+            setValidationErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors[name];
+                return newErrors;
+            });
+        }
     };
 
     const handleAddressChange = (address: string, components: {
@@ -92,12 +108,24 @@ const CreateClient: React.FC = () => {
         latitude?: string;
         longitude?: string;
     }) => {
+        // Convert country name to ISO code if needed
+        let countryCode = components.country || 'FR';
+
+        // If the country from API is a full name, try to match it to a code
+        if (countryCode && countryCode.length > 2) {
+            const foundCountry = COUNTRIES.find(c =>
+                c.name.toLowerCase() === countryCode.toLowerCase() ||
+                c.nameFr.toLowerCase() === countryCode.toLowerCase()
+            );
+            countryCode = foundCountry?.code || 'FR';
+        }
+
         setFormData(prev => ({
             ...prev,
             address: address,
             city: components.city || '',
             postal_code: components.postal_code || '',
-            country: components.country || 'FR'
+            country: countryCode
         }));
     };
 
@@ -125,10 +153,29 @@ const CreateClient: React.FC = () => {
     };
 
 
-    const commonCountries = [
-        'France', 'Belgique', 'Suisse', 'Luxembourg', 'Canada', 'États-Unis',
-        'Royaume-Uni', 'Allemagne', 'Espagne', 'Italie', 'Portugal', 'Pays-Bas'
-    ];
+    // Sort countries by French name for better UX
+    const sortedCountries = [...COUNTRIES].sort((a, b) =>
+        a.nameFr.localeCompare(b.nameFr, 'fr')
+    );
+
+    // Helper to get field error
+    const getFieldError = (fieldName: string): string | null => {
+        return validationErrors[fieldName]?.[0] || null;
+    };
+
+    // Helper to check if field has error
+    const hasFieldError = (fieldName: string): boolean => {
+        return !!validationErrors[fieldName];
+    };
+
+    // Get field class with error state
+    const getFieldClass = (fieldName: string): string => {
+        const baseClass = "w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none transition";
+        if (hasFieldError(fieldName)) {
+            return `${baseClass} border-red-300 focus:ring-red-500 focus:border-red-500`;
+        }
+        return `${baseClass} border-gray-300 focus:ring-blue-500 focus:border-transparent`;
+    };
 
     return (
         <div className="p-6 max-w-4xl mx-auto">
@@ -176,17 +223,20 @@ const CreateClient: React.FC = () => {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                {t('clients.name')} *
+                                {t('clients.name')} <span className="text-red-500">*</span>
                             </label>
                             <input
                                 type="text"
                                 name="name"
                                 value={formData.name}
                                 onChange={handleInputChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className={getFieldClass('name')}
                                 placeholder={t('clients.namePlaceholder')}
                                 required
                             />
+                            {getFieldError('name') && (
+                                <p className="mt-1 text-sm text-red-600">{getFieldError('name')}</p>
+                            )}
                         </div>
 
                         {formData.is_company && (
@@ -207,17 +257,20 @@ const CreateClient: React.FC = () => {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                {t('clients.email')} *
+                                {t('clients.email')} <span className="text-red-500">*</span>
                             </label>
                             <input
                                 type="email"
                                 name="email"
                                 value={formData.email}
                                 onChange={handleInputChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className={getFieldClass('email')}
                                 placeholder={t('clients.emailPlaceholder')}
                                 required
                             />
+                            {getFieldError('email') && (
+                                <p className="mt-1 text-sm text-red-600">{getFieldError('email')}</p>
+                            )}
                         </div>
 
                         <div>
@@ -229,9 +282,12 @@ const CreateClient: React.FC = () => {
                                 name="phone"
                                 value={formData.phone}
                                 onChange={handleInputChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className={getFieldClass('phone')}
                                 placeholder={t('clients.phonePlaceholder')}
                             />
+                            {getFieldError('phone') && (
+                                <p className="mt-1 text-sm text-red-600">{getFieldError('phone')}</p>
+                            )}
                         </div>
 
                         <div>
@@ -243,9 +299,12 @@ const CreateClient: React.FC = () => {
                                 name="website"
                                 value={formData.website}
                                 onChange={handleInputChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className={getFieldClass('website')}
                                 placeholder={t('clients.websitePlaceholder')}
                             />
+                            {getFieldError('website') && (
+                                <p className="mt-1 text-sm text-red-600">{getFieldError('website')}</p>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -308,15 +367,18 @@ const CreateClient: React.FC = () => {
                                 name="country"
                                 value={formData.country}
                                 onChange={handleInputChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className={getFieldClass('country')}
                             >
                                 <option value="">{t('clients.selectCountry')}</option>
-                                {commonCountries.map(country => (
-                                    <option key={country} value={country}>
-                                        {country}
+                                {sortedCountries.map(country => (
+                                    <option key={country.code} value={country.code}>
+                                        {country.nameFr}
                                     </option>
                                 ))}
                             </select>
+                            {getFieldError('country') && (
+                                <p className="mt-1 text-sm text-red-600">{getFieldError('country')}</p>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -339,9 +401,12 @@ const CreateClient: React.FC = () => {
                                     name="vat_number"
                                     value={formData.vat_number}
                                     onChange={handleInputChange}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className={getFieldClass('vat_number')}
                                     placeholder={t('clients.vatNumberPlaceholder')}
                                 />
+                                {getFieldError('vat_number') && (
+                                    <p className="mt-1 text-sm text-red-600">{getFieldError('vat_number')}</p>
+                                )}
                             </div>
 
                             {formData.is_company && (
@@ -354,9 +419,12 @@ const CreateClient: React.FC = () => {
                                         name="siret"
                                         value={formData.siret}
                                         onChange={handleInputChange}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className={getFieldClass('siret')}
                                         placeholder={t('clients.siretNumberPlaceholder')}
                                     />
+                                    {getFieldError('siret') && (
+                                        <p className="mt-1 text-sm text-red-600">{getFieldError('siret')}</p>
+                                    )}
                                 </div>
                             )}
                         </div>

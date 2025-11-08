@@ -13,15 +13,20 @@ import {
     CheckCircleIcon,
     XCircleIcon,
     PrinterIcon,
+    ReceiptPercentIcon,
+    ClipboardDocumentCheckIcon,
+    InformationCircleIcon,
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { InvoiceType } from '../types';
 
 interface Invoice {
     id: number;
     invoice_number: string;
     client_id: number;
     status: string;
+    type: InvoiceType;
     issue_date: string;
     due_date: string;
     subtotal: number;
@@ -29,6 +34,12 @@ interface Invoice {
     tax_amount: number;
     total_amount: number;
     notes: string | null;
+    advance_percentage?: number;
+    advances?: Invoice[];
+    total_advances?: number;
+    remaining_balance?: number;
+    final_invoice?: Invoice[];
+    is_linked_to_final?: boolean;
     client?: {
         id: number;
         name: string;
@@ -298,6 +309,110 @@ const InvoiceDetail: React.FC = () => {
                     </div>
                 )}
 
+                {/* Advance Invoice Info */}
+                {invoice.type === 'advance' && (
+                    <div className="mb-8 p-4 bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800 rounded-lg">
+                        <div className="flex items-start space-x-3">
+                            <ReceiptPercentIcon className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                                <h3 className="text-sm font-semibold text-green-900 dark:text-green-100 mb-2">
+                                    Facture d'acompte
+                                    {invoice.advance_percentage && (
+                                        <span className="ml-2 text-green-700 dark:text-green-300">
+                                            ({invoice.advance_percentage}%)
+                                        </span>
+                                    )}
+                                </h3>
+                                {invoice.is_linked_to_final && invoice.final_invoice && invoice.final_invoice.length > 0 ? (
+                                    <div>
+                                        <p className="text-sm text-green-700 dark:text-green-300 mb-2">
+                                            Cet acompte a été déduit de la facture de solde suivante:
+                                        </p>
+                                        {invoice.final_invoice.map((finalInv) => (
+                                            <Link
+                                                key={finalInv.id}
+                                                to={`/invoices/${finalInv.id}`}
+                                                className="inline-flex items-center px-3 py-2 bg-white dark:bg-gray-800 border border-green-300 dark:border-green-700 rounded-lg text-sm font-medium text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors"
+                                            >
+                                                <ClipboardDocumentCheckIcon className="w-4 h-4 mr-2" />
+                                                {finalInv.invoice_number}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-green-700 dark:text-green-300">
+                                        <InformationCircleIcon className="w-4 h-4 inline mr-1" />
+                                        Cet acompte n'est pas encore lié à une facture de solde.
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Final Invoice Info with Advances */}
+                {invoice.type === 'final' && invoice.advances && invoice.advances.length > 0 && (
+                    <div className="mb-8 p-4 bg-purple-50 dark:bg-purple-900/20 border-2 border-purple-200 dark:border-purple-800 rounded-lg">
+                        <div className="flex items-start space-x-3">
+                            <ClipboardDocumentCheckIcon className="w-6 h-6 text-purple-600 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                                <h3 className="text-sm font-semibold text-purple-900 dark:text-purple-100 mb-3">
+                                    Facture de solde - Acomptes déduits
+                                </h3>
+                                <div className="space-y-2">
+                                    {invoice.advances.map((advance) => (
+                                        <div
+                                            key={advance.id}
+                                            className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-700 rounded-lg"
+                                        >
+                                            <div className="flex items-center space-x-3">
+                                                <ReceiptPercentIcon className="w-5 h-5 text-purple-600" />
+                                                <div>
+                                                    <Link
+                                                        to={`/invoices/${advance.id}`}
+                                                        className="text-sm font-medium text-purple-700 dark:text-purple-300 hover:text-purple-900 dark:hover:text-purple-100"
+                                                    >
+                                                        {advance.invoice_number}
+                                                    </Link>
+                                                    {advance.advance_percentage && (
+                                                        <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                                                            ({advance.advance_percentage}%)
+                                                        </span>
+                                                    )}
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                        {format(new Date(advance.issue_date), 'dd MMM yyyy', { locale: fr })}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-sm font-semibold text-purple-700 dark:text-purple-300">
+                                                    - {new Intl.NumberFormat('fr-FR', {
+                                                        style: 'currency',
+                                                        currency: 'EUR',
+                                                    }).format(advance.total_amount)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="mt-3 pt-3 border-t border-purple-200 dark:border-purple-700">
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="font-medium text-purple-900 dark:text-purple-100">
+                                            Total des acomptes déduits:
+                                        </span>
+                                        <span className="font-bold text-purple-700 dark:text-purple-300">
+                                            - {new Intl.NumberFormat('fr-FR', {
+                                                style: 'currency',
+                                                currency: 'EUR',
+                                            }).format(invoice.total_advances || 0)}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Items Table */}
                 <div className="mb-8">
                     <table className="w-full">
@@ -362,6 +477,36 @@ const InvoiceDetail: React.FC = () => {
                                 }).format(invoice.total_amount)}
                             </span>
                         </div>
+
+                        {/* Advances Deduction for Final Invoices */}
+                        {invoice.type === 'final' && invoice.total_advances && invoice.total_advances > 0 && (
+                            <>
+                                <div className="flex justify-between text-purple-700 dark:text-purple-400 pt-2">
+                                    <span className="flex items-center">
+                                        <ReceiptPercentIcon className="w-4 h-4 mr-1" />
+                                        Acomptes déduits
+                                    </span>
+                                    <span className="font-semibold">
+                                        - {new Intl.NumberFormat('fr-FR', {
+                                            style: 'currency',
+                                            currency: 'EUR',
+                                        }).format(invoice.total_advances)}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between text-xl font-bold text-green-700 dark:text-green-500 pt-2 border-t-2 border-green-300 dark:border-green-700">
+                                    <span className="flex items-center">
+                                        <ClipboardDocumentCheckIcon className="w-5 h-5 mr-1" />
+                                        Solde à payer
+                                    </span>
+                                    <span>
+                                        {new Intl.NumberFormat('fr-FR', {
+                                            style: 'currency',
+                                            currency: 'EUR',
+                                        }).format(invoice.remaining_balance || 0)}
+                                    </span>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
 

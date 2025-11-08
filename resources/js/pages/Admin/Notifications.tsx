@@ -10,8 +10,10 @@ import {
     XCircleIcon
 } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 
 const AdminNotifications: React.FC = () => {
+    const { t } = useTranslation();
     const [notificationType, setNotificationType] = useState('system');
     const [formData, setFormData] = useState({
         title: '',
@@ -35,7 +37,7 @@ const AdminNotifications: React.FC = () => {
             return response.data;
         },
         onSuccess: () => {
-            toast.success('Notification envoyée avec succès');
+            toast.success(t('admin.notifications.sendSuccess'));
             setFormData({
                 title: '',
                 message: '',
@@ -49,7 +51,7 @@ const AdminNotifications: React.FC = () => {
             });
         },
         onError: () => {
-            toast.error('Erreur lors de l\'envoi de la notification');
+            toast.error(t('admin.notifications.sendError'));
         },
     });
 
@@ -59,33 +61,33 @@ const AdminNotifications: React.FC = () => {
     };
 
     const notificationTypes = [
-        { id: 'system', name: 'Système', icon: BellIcon, color: 'blue', description: 'Notifications système' },
-        { id: 'announcement', name: 'Annonce', icon: MegaphoneIcon, color: 'purple', description: 'Annonces générales' },
-        { id: 'maintenance', name: 'Maintenance', icon: XCircleIcon, color: 'yellow', description: 'Alertes maintenance' },
-        { id: 'security', name: 'Sécurité', icon: CheckCircleIcon, color: 'red', description: 'Alertes sécurité' },
+        { id: 'system', name: t('admin.notifications.types.system'), icon: BellIcon, color: 'blue', description: t('admin.notifications.types.systemDesc') },
+        { id: 'announcement', name: t('admin.notifications.types.announcement'), icon: MegaphoneIcon, color: 'purple', description: t('admin.notifications.types.announcementDesc') },
+        { id: 'maintenance', name: t('admin.notifications.types.maintenance'), icon: XCircleIcon, color: 'yellow', description: t('admin.notifications.types.maintenanceDesc') },
+        { id: 'security', name: t('admin.notifications.types.security'), icon: CheckCircleIcon, color: 'red', description: t('admin.notifications.types.securityDesc') },
     ];
 
     const recentNotifications = [
         {
             id: 1,
-            title: 'Mise à jour système',
-            message: 'Le système sera mis à jour ce soir à 22h00',
+            title: t('admin.notifications.recent.systemUpdate'),
+            message: t('admin.notifications.recent.systemUpdateMsg'),
             type: 'system',
             sentAt: '2025-01-08 10:30',
             recipients: 150,
         },
         {
             id: 2,
-            title: 'Nouvelles fonctionnalités',
-            message: 'Découvrez les nouvelles fonctionnalités de reporting',
+            title: t('admin.notifications.recent.newFeatures'),
+            message: t('admin.notifications.recent.newFeaturesMsg'),
             type: 'announcement',
             sentAt: '2025-01-07 14:15',
             recipients: 200,
         },
         {
             id: 3,
-            title: 'Maintenance planifiée',
-            message: 'Maintenance planifiée demain de 2h à 4h du matin',
+            title: t('admin.notifications.recent.plannedMaintenance'),
+            message: t('admin.notifications.recent.plannedMaintenanceMsg'),
             type: 'maintenance',
             sentAt: '2025-01-06 09:00',
             recipients: 200,
@@ -96,8 +98,8 @@ const AdminNotifications: React.FC = () => {
         <div className="p-6 space-y-6">
             {/* Header */}
             <div>
-                <h1 className="text-3xl font-bold text-gray-900">Notifications Système</h1>
-                <p className="mt-2 text-gray-600">Envoyez des notifications à tous les utilisateurs ou groupes spécifiques</p>
+                <h1 className="text-3xl font-bold text-gray-900">{t('admin.notifications.title')}</h1>
+                <p className="mt-2 text-gray-600">{t('admin.notifications.description')}</p>
             </div>
 
             {/* Notification Type Cards */}
@@ -124,20 +126,20 @@ const AdminNotifications: React.FC = () => {
 
             {/* Send Notification Form */}
             <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-6">Envoyer une notification</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">{t('admin.notifications.sendNotification')}</h2>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Title */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Titre de la notification
+                            {t('admin.notifications.form.title')}
                         </label>
                         <input
                             type="text"
                             value={formData.title}
                             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="Ex: Mise à jour système"
+                            placeholder={t('admin.notifications.form.titlePlaceholder')}
                             required
                         />
                     </div>
@@ -145,14 +147,14 @@ const AdminNotifications: React.FC = () => {
                     {/* Message */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Message
+                            {t('admin.notifications.form.message')}
                         </label>
                         <textarea
                             value={formData.message}
                             onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                             rows={4}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="Votre message ici..."
+                            placeholder={t('admin.notifications.form.messagePlaceholder')}
                             required
                         />
                     </div>
@@ -160,41 +162,41 @@ const AdminNotifications: React.FC = () => {
                     {/* Type */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Type de notification
+                            {t('admin.notifications.form.notificationType')}
                         </label>
                         <select
                             value={formData.type}
                             onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         >
-                            <option value="info">Information</option>
-                            <option value="success">Succès</option>
-                            <option value="warning">Avertissement</option>
-                            <option value="error">Erreur</option>
+                            <option value="info">{t('admin.notifications.form.typeInfo')}</option>
+                            <option value="success">{t('admin.notifications.form.typeSuccess')}</option>
+                            <option value="warning">{t('admin.notifications.form.typeWarning')}</option>
+                            <option value="error">{t('admin.notifications.form.typeError')}</option>
                         </select>
                     </div>
 
                     {/* Target */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Destinataires
+                            {t('admin.notifications.form.recipients')}
                         </label>
                         <select
                             value={formData.target}
                             onChange={(e) => setFormData({ ...formData, target: e.target.value })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         >
-                            <option value="all">Tous les utilisateurs</option>
-                            <option value="admins">Administrateurs uniquement</option>
-                            <option value="tenants">Tous les tenants</option>
-                            <option value="active">Utilisateurs actifs uniquement</option>
+                            <option value="all">{t('admin.notifications.form.targetAll')}</option>
+                            <option value="admins">{t('admin.notifications.form.targetAdmins')}</option>
+                            <option value="tenants">{t('admin.notifications.form.targetTenants')}</option>
+                            <option value="active">{t('admin.notifications.form.targetActive')}</option>
                         </select>
                     </div>
 
                     {/* Channels */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-3">
-                            Canaux de diffusion
+                            {t('admin.notifications.form.channels')}
                         </label>
                         <div className="space-y-3">
                             <label className="flex items-center gap-3 cursor-pointer">
@@ -211,8 +213,8 @@ const AdminNotifications: React.FC = () => {
                                 />
                                 <BellIcon className="h-5 w-5 text-blue-600" />
                                 <div>
-                                    <p className="text-sm font-medium text-gray-900">Notification dans l'app</p>
-                                    <p className="text-xs text-gray-500">Affichée dans l'interface utilisateur</p>
+                                    <p className="text-sm font-medium text-gray-900">{t('admin.notifications.form.channelInApp')}</p>
+                                    <p className="text-xs text-gray-500">{t('admin.notifications.form.channelInAppDesc')}</p>
                                 </div>
                             </label>
 
@@ -230,8 +232,8 @@ const AdminNotifications: React.FC = () => {
                                 />
                                 <EnvelopeIcon className="h-5 w-5 text-green-600" />
                                 <div>
-                                    <p className="text-sm font-medium text-gray-900">Email</p>
-                                    <p className="text-xs text-gray-500">Envoyée par email</p>
+                                    <p className="text-sm font-medium text-gray-900">{t('admin.notifications.form.channelEmail')}</p>
+                                    <p className="text-xs text-gray-500">{t('admin.notifications.form.channelEmailDesc')}</p>
                                 </div>
                             </label>
 
@@ -249,8 +251,8 @@ const AdminNotifications: React.FC = () => {
                                 />
                                 <DevicePhoneMobileIcon className="h-5 w-5 text-purple-600" />
                                 <div>
-                                    <p className="text-sm font-medium text-gray-900">Notification push</p>
-                                    <p className="text-xs text-gray-500">Sur mobile et navigateur</p>
+                                    <p className="text-sm font-medium text-gray-900">{t('admin.notifications.form.channelPush')}</p>
+                                    <p className="text-xs text-gray-500">{t('admin.notifications.form.channelPushDesc')}</p>
                                 </div>
                             </label>
                         </div>
@@ -263,7 +265,7 @@ const AdminNotifications: React.FC = () => {
                             disabled={sendNotificationMutation.isPending}
                             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
                         >
-                            {sendNotificationMutation.isPending ? 'Envoi...' : 'Envoyer la notification'}
+                            {sendNotificationMutation.isPending ? t('admin.notifications.form.sending') : t('admin.notifications.form.send')}
                         </button>
                         <button
                             type="button"
@@ -278,7 +280,7 @@ const AdminNotifications: React.FC = () => {
                             }
                             className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
                         >
-                            Réinitialiser
+                            {t('admin.notifications.form.reset')}
                         </button>
                     </div>
                 </form>
@@ -286,7 +288,7 @@ const AdminNotifications: React.FC = () => {
 
             {/* Recent Notifications */}
             <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-6">Notifications récentes</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">{t('admin.notifications.recentNotifications')}</h2>
                 <div className="space-y-4">
                     {recentNotifications.map((notification) => {
                         const typeConfig = notificationTypes.find((t) => t.id === notification.type);
@@ -303,11 +305,11 @@ const AdminNotifications: React.FC = () => {
                                     <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
                                         <span>{notification.sentAt}</span>
                                         <span>•</span>
-                                        <span>{notification.recipients} destinataires</span>
+                                        <span>{t('admin.notifications.recipients', { count: notification.recipients })}</span>
                                     </div>
                                 </div>
                                 <button className="text-sm text-blue-600 hover:text-blue-700">
-                                    Voir détails
+                                    {t('admin.notifications.viewDetails')}
                                 </button>
                             </div>
                         );

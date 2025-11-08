@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\TaskController;
 use App\Http\Controllers\Api\TimeEntryController;
 use App\Http\Controllers\Api\InvoiceController;
+use App\Http\Controllers\Api\InvoiceTypeController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\ExpenseController;
@@ -111,6 +112,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf']);
     Route::post('/invoices/{invoice}/chorus', [InvoiceController::class, 'sendToChorus']);
     Route::get('/invoices/{invoice}/audit-log', [InvoiceController::class, 'auditLog']);
+
+    // French Invoice Types (Acomptes, Solde)
+    Route::get('/invoices/available-advances/{clientId}', [InvoiceTypeController::class, 'getAvailableAdvances']);
+    Route::post('/invoices/advance', [InvoiceTypeController::class, 'createAdvanceInvoice']);
+    Route::post('/invoices/final', [InvoiceTypeController::class, 'createFinalInvoice']);
+    Route::get('/invoices/advance-stats/{clientId}', [InvoiceTypeController::class, 'getAdvanceStats']);
 
     // Quotes
     Route::apiResource('quotes', QuoteController::class);

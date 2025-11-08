@@ -7,6 +7,7 @@ import { BellIcon } from '@heroicons/react/24/outline';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 interface NotificationItem {
     id: number;
@@ -22,6 +23,7 @@ interface NotificationItem {
 }
 
 const NotificationBell: React.FC = () => {
+    const { t } = useTranslation();
     const queryClient = useQueryClient();
     const [isOpen, setIsOpen] = useState(false);
 
@@ -157,13 +159,13 @@ const NotificationBell: React.FC = () => {
                 <Menu.Items className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
                     <div className="p-4 border-b border-gray-200">
                         <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+                            <h3 className="text-lg font-semibold text-gray-900">{t('notifications.title')}</h3>
                             {unreadCount > 0 && (
                                 <button
                                     onClick={() => markAllAsReadMutation.mutate()}
                                     className="text-sm text-indigo-600 hover:text-indigo-800"
                                 >
-                                    Tout marquer comme lu
+                                    {t('notifications.markAllRead')}
                                 </button>
                             )}
                         </div>
@@ -172,7 +174,7 @@ const NotificationBell: React.FC = () => {
                     <div className="divide-y divide-gray-100">
                         {notifications.length === 0 ? (
                             <div className="p-4 text-center text-gray-500">
-                                Aucune notification récente
+                                {t('notifications.noRecent')}
                             </div>
                         ) : (
                             notifications.map((notification: NotificationItem) => (
@@ -221,7 +223,7 @@ const NotificationBell: React.FC = () => {
                             className="block text-center text-sm text-indigo-600 hover:text-indigo-800"
                             onClick={() => setIsOpen(false)}
                         >
-                            Voir toutes les notifications
+                            {t('notifications.viewAll')}
                         </Link>
                     </div>
                 </Menu.Items>

@@ -192,7 +192,7 @@ const AdminDashboard: React.FC = () => {
                 <div className="bg-white rounded-lg shadow p-6">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm font-medium text-gray-600">Utilisateurs</p>
+                            <p className="text-sm font-medium text-gray-600">{t('admin.stats.users')}</p>
                             <p className="text-2xl font-bold text-gray-900 mt-1">
                                 {stats?.users?.total?.toLocaleString() || '0'}
                             </p>
@@ -205,7 +205,7 @@ const AdminDashboard: React.FC = () => {
                                 <span className={`text-sm ${(stats?.users?.growth || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>
                                     {Math.abs(stats?.users?.growth || 0)}%
                                 </span>
-                                <span className="text-sm text-gray-500 ml-1">ce mois</span>
+                                <span className="text-sm text-gray-500 ml-1">{t('admin.stats.thisMonth')}</span>
                             </div>
                         </div>
                         <UsersIcon className="h-10 w-10 text-indigo-600" />
@@ -216,19 +216,19 @@ const AdminDashboard: React.FC = () => {
                 <div className="bg-white rounded-lg shadow p-6">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm font-medium text-gray-600">Organisations</p>
+                            <p className="text-sm font-medium text-gray-600">{t('admin.stats.organizations')}</p>
                             <p className="text-2xl font-bold text-gray-900 mt-1">
                                 {stats?.tenants?.total?.toLocaleString() || '0'}
                             </p>
                             <div className="mt-2 space-y-1">
                                 <div className="text-xs text-gray-500">
-                                    Individual: {stats?.tenants?.by_plan?.individual || 0}
+                                    {t('admin.tenants.plans.individual')}: {stats?.tenants?.by_plan?.individual || 0}
                                 </div>
                                 <div className="text-xs text-gray-500">
-                                    Team: {stats?.tenants?.by_plan?.team || 0}
+                                    {t('admin.tenants.plans.team')}: {stats?.tenants?.by_plan?.team || 0}
                                 </div>
                                 <div className="text-xs text-gray-500">
-                                    Enterprise: {stats?.tenants?.by_plan?.enterprise || 0}
+                                    {t('admin.tenants.plans.enterprise')}: {stats?.tenants?.by_plan?.enterprise || 0}
                                 </div>
                             </div>
                         </div>
@@ -240,12 +240,12 @@ const AdminDashboard: React.FC = () => {
                 <div className="bg-white rounded-lg shadow p-6">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm font-medium text-gray-600">Revenu mensuel</p>
+                            <p className="text-sm font-medium text-gray-600">{t('admin.stats.monthlyRevenue')}</p>
                             <p className="text-2xl font-bold text-gray-900 mt-1">
                                 {stats?.tenants?.revenue?.toLocaleString() || '0'}€
                             </p>
                             <p className="text-sm text-gray-500 mt-2">
-                                MRR actuel
+                                {t('admin.stats.currentMRR')}
                             </p>
                         </div>
                         <CreditCardIcon className="h-10 w-10 text-green-600" />
@@ -256,10 +256,10 @@ const AdminDashboard: React.FC = () => {
                 <div className="bg-white rounded-lg shadow p-6">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm font-medium text-gray-600">Système</p>
+                            <p className="text-sm font-medium text-gray-600">{t('admin.stats.system')}</p>
                             <div className="mt-2 space-y-1">
                                 <div className="flex items-center">
-                                    <span className="text-xs text-gray-500 w-12">CPU:</span>
+                                    <span className="text-xs text-gray-500 w-12">{t('admin.system.cpu')}:</span>
                                     <div className="flex-1 bg-gray-200 rounded-full h-2">
                                         <div
                                             className={`h-2 rounded-full ${
@@ -272,7 +272,7 @@ const AdminDashboard: React.FC = () => {
                                     <span className="text-xs ml-2">{stats?.system?.cpu_percent || 0}%</span>
                                 </div>
                                 <div className="flex items-center">
-                                    <span className="text-xs text-gray-500 w-12">RAM:</span>
+                                    <span className="text-xs text-gray-500 w-12">{t('admin.system.ram')}:</span>
                                     <div className="flex-1 bg-gray-200 rounded-full h-2">
                                         <div
                                             className={`h-2 rounded-full ${
@@ -285,7 +285,7 @@ const AdminDashboard: React.FC = () => {
                                     <span className="text-xs ml-2">{stats?.system?.memory_percent || 0}%</span>
                                 </div>
                                 <div className="flex items-center">
-                                    <span className="text-xs text-gray-500 w-12">Disk:</span>
+                                    <span className="text-xs text-gray-500 w-12">{t('admin.system.disk')}:</span>
                                     <div className="flex-1 bg-gray-200 rounded-full h-2">
                                         <div
                                             className={`h-2 rounded-full ${
@@ -299,7 +299,7 @@ const AdminDashboard: React.FC = () => {
                                 </div>
                             </div>
                             <p className="text-xs text-gray-500 mt-2">
-                                Uptime: {stats?.system?.uptime_days || 0} jours
+                                {t('admin.system.uptime')}: {stats?.system?.uptime_days || 0} {t('admin.system.days')}
                             </p>
                         </div>
                         <ServerIcon className="h-10 w-10 text-gray-600" />
@@ -311,13 +311,13 @@ const AdminDashboard: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Revenue Chart */}
                 <div className="bg-white rounded-lg shadow p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Évolution du revenu</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('admin.charts.revenueEvolution')}</h3>
                     {revenueData && (
                         <Line
                             data={{
                                 labels: revenueData.labels,
                                 datasets: [{
-                                    label: 'Revenu',
+                                    label: t('admin.charts.revenue'),
                                     data: revenueData.values,
                                     borderColor: 'rgb(99, 102, 241)',
                                     backgroundColor: 'rgba(99, 102, 241, 0.1)',
@@ -346,13 +346,13 @@ const AdminDashboard: React.FC = () => {
 
                 {/* User Growth Chart */}
                 <div className="bg-white rounded-lg shadow p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Croissance des utilisateurs</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('admin.charts.userGrowth')}</h3>
                     {userGrowthData && (
                         <Bar
                             data={{
                                 labels: userGrowthData.labels,
                                 datasets: [{
-                                    label: 'Nouveaux utilisateurs',
+                                    label: t('admin.charts.newUsers'),
                                     data: userGrowthData.values,
                                     backgroundColor: 'rgba(34, 197, 94, 0.5)',
                                     borderColor: 'rgb(34, 197, 94)',
@@ -382,7 +382,7 @@ const AdminDashboard: React.FC = () => {
                 {/* System Issues */}
                 {stats?.health?.issues && stats?.health?.issues.length > 0 && (
                     <div className="bg-white rounded-lg shadow p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Problèmes système</h3>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('admin.health.systemIssues')}</h3>
                         <div className="space-y-3">
                             {stats?.health?.issues.map((issue, index) => (
                                 <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
@@ -402,7 +402,7 @@ const AdminDashboard: React.FC = () => {
 
                 {/* Recent Activity */}
                 <div className="bg-white rounded-lg shadow p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Activité récente</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('admin.activity.recentActivity')}</h3>
                     <div className="space-y-3 max-h-64 overflow-y-auto">
                         {(Array.isArray(recentActivity) ? recentActivity : []).map((activity: any, index: number) => (
                             <div key={index} className="flex items-start space-x-3">
@@ -424,56 +424,56 @@ const AdminDashboard: React.FC = () => {
 
             {/* Quick Actions */}
             <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Actions rapides</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('admin.quickActions.title')}</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <a
                         href="/admin/users"
                         className="flex flex-col items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                     >
                         <UsersIcon className="h-8 w-8 text-indigo-600 mb-2" />
-                        <span className="text-sm font-medium text-gray-900">Gérer utilisateurs</span>
+                        <span className="text-sm font-medium text-gray-900">{t('admin.quickActions.manageUsers')}</span>
                     </a>
                     <a
                         href="/admin/tenants"
                         className="flex flex-col items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                     >
                         <BuildingOfficeIcon className="h-8 w-8 text-purple-600 mb-2" />
-                        <span className="text-sm font-medium text-gray-900">Gérer organisations</span>
+                        <span className="text-sm font-medium text-gray-900">{t('admin.quickActions.manageOrganizations')}</span>
                     </a>
                     <a
                         href="/admin/settings"
                         className="flex flex-col items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                     >
                         <CogIcon className="h-8 w-8 text-gray-600 mb-2" />
-                        <span className="text-sm font-medium text-gray-900">Paramètres système</span>
+                        <span className="text-sm font-medium text-gray-900">{t('admin.quickActions.systemSettings')}</span>
                     </a>
                     <a
                         href="/admin/audit"
                         className="flex flex-col items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                     >
                         <ShieldCheckIcon className="h-8 w-8 text-red-600 mb-2" />
-                        <span className="text-sm font-medium text-gray-900">Audit & Sécurité</span>
+                        <span className="text-sm font-medium text-gray-900">{t('admin.quickActions.auditSecurity')}</span>
                     </a>
                     <a
                         href="/admin/reports"
                         className="flex flex-col items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                     >
                         <DocumentChartBarIcon className="h-8 w-8 text-blue-600 mb-2" />
-                        <span className="text-sm font-medium text-gray-900">Rapports</span>
+                        <span className="text-sm font-medium text-gray-900">{t('admin.quickActions.reports')}</span>
                     </a>
                     <a
                         href="/admin/notifications"
                         className="flex flex-col items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                     >
                         <BellIcon className="h-8 w-8 text-yellow-600 mb-2" />
-                        <span className="text-sm font-medium text-gray-900">Notifications</span>
+                        <span className="text-sm font-medium text-gray-900">{t('admin.quickActions.notifications')}</span>
                     </a>
                     <a
                         href="/admin/monitoring"
                         className="flex flex-col items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                     >
                         <ChartBarIcon className="h-8 w-8 text-cyan-600 mb-2" />
-                        <span className="text-sm font-medium text-gray-900">Monitoring</span>
+                        <span className="text-sm font-medium text-gray-900">{t('admin.quickActions.monitoring')}</span>
                     </a>
                 </div>
             </div>

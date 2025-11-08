@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 
 type UserRole = 'super-admin' | 'admin' | 'manager' | 'employee' | 'accountant' | 'client';
@@ -27,6 +28,7 @@ interface Tenant {
 }
 
 const UserForm: React.FC<UserFormProps> = ({ user, onSubmit, onClose, isLoading }) => {
+    const { t } = useTranslation();
     const { user: currentUser } = useAuth();
     const isEditing = !!user;
     const isSuperAdmin = currentUser?.role === 'super-admin';
@@ -74,24 +76,24 @@ const UserForm: React.FC<UserFormProps> = ({ user, onSubmit, onClose, isLoading 
     const validate = () => {
         const newErrors: Record<string, string> = {};
 
-        if (!formData.name) newErrors.name = 'Le nom est requis';
-        if (!formData.email) newErrors.email = 'L\'email est requis';
-        if (!formData.role) newErrors.role = 'Le rôle est requis';
+        if (!formData.name) newErrors.name = t('admin.users.nameRequired');
+        if (!formData.email) newErrors.email = t('admin.users.emailRequired');
+        if (!formData.role) newErrors.role = t('admin.users.roleRequired');
 
         if (!isEditing) {
             if (!formData.password) {
-                newErrors.password = 'Le mot de passe est requis';
+                newErrors.password = t('admin.users.passwordRequired');
             } else if (formData.password.length < 8) {
-                newErrors.password = 'Le mot de passe doit contenir au moins 8 caractères';
+                newErrors.password = t('admin.users.passwordMinLength');
             }
 
             if (formData.password !== formData.password_confirmation) {
-                newErrors.password_confirmation = 'Les mots de passe ne correspondent pas';
+                newErrors.password_confirmation = t('admin.users.passwordMismatch');
             }
         }
 
         if (isSuperAdmin && !formData.tenant_id) {
-            newErrors.tenant_id = 'L\'organisation est requise';
+            newErrors.tenant_id = t('admin.users.organizationRequired');
         }
 
         setErrors(newErrors);
@@ -126,7 +128,7 @@ const UserForm: React.FC<UserFormProps> = ({ user, onSubmit, onClose, isLoading 
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                        {isEditing ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur'}
+                        {isEditing ? t('admin.users.editTitle') : t('admin.users.createTitle')}
                     </h2>
                     <button
                         onClick={onClose}
@@ -141,7 +143,7 @@ const UserForm: React.FC<UserFormProps> = ({ user, onSubmit, onClose, isLoading 
                     {/* Name */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Nom complet *
+                            {t('admin.users.fullName')} *
                         </label>
                         <input
                             type="text"
@@ -149,7 +151,7 @@ const UserForm: React.FC<UserFormProps> = ({ user, onSubmit, onClose, isLoading 
                             value={formData.name}
                             onChange={handleChange}
                             className={`w-full px-3 py-2 border ${errors.name ? 'border-red-500' : 'border-gray-300'} dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white`}
-                            placeholder="Jean Dupont"
+                            placeholder={t('admin.users.namePlaceholder')}
                         />
                         {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
                     </div>
@@ -157,7 +159,7 @@ const UserForm: React.FC<UserFormProps> = ({ user, onSubmit, onClose, isLoading 
                     {/* Email */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Email *
+                            {t('admin.users.email')} *
                         </label>
                         <input
                             type="email"
@@ -165,7 +167,7 @@ const UserForm: React.FC<UserFormProps> = ({ user, onSubmit, onClose, isLoading 
                             value={formData.email}
                             onChange={handleChange}
                             className={`w-full px-3 py-2 border ${errors.email ? 'border-red-500' : 'border-gray-300'} dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white`}
-                            placeholder="jean.dupont@example.com"
+                            placeholder={t('admin.users.emailPlaceholder')}
                         />
                         {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
                     </div>
@@ -173,7 +175,7 @@ const UserForm: React.FC<UserFormProps> = ({ user, onSubmit, onClose, isLoading 
                     {/* Phone */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Téléphone
+                            {t('admin.users.phone')}
                         </label>
                         <input
                             type="tel"
@@ -181,7 +183,7 @@ const UserForm: React.FC<UserFormProps> = ({ user, onSubmit, onClose, isLoading 
                             value={formData.phone}
                             onChange={handleChange}
                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
-                            placeholder="+33 1 23 45 67 89"
+                            placeholder={t('admin.users.phonePlaceholder')}
                         />
                     </div>
 
@@ -190,7 +192,7 @@ const UserForm: React.FC<UserFormProps> = ({ user, onSubmit, onClose, isLoading 
                         <>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Mot de passe *
+                                    {t('admin.users.password')} *
                                 </label>
                                 <input
                                     type="password"
@@ -198,14 +200,14 @@ const UserForm: React.FC<UserFormProps> = ({ user, onSubmit, onClose, isLoading 
                                     value={formData.password}
                                     onChange={handleChange}
                                     className={`w-full px-3 py-2 border ${errors.password ? 'border-red-500' : 'border-gray-300'} dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white`}
-                                    placeholder="Minimum 8 caractères"
+                                    placeholder={t('admin.users.passwordPlaceholder')}
                                 />
                                 {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Confirmer le mot de passe *
+                                    {t('admin.users.confirmPassword')} *
                                 </label>
                                 <input
                                     type="password"
@@ -222,7 +224,7 @@ const UserForm: React.FC<UserFormProps> = ({ user, onSubmit, onClose, isLoading 
                     {/* Role */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Rôle *
+                            {t('admin.users.role')} *
                         </label>
                         <select
                             name="role"
@@ -231,17 +233,17 @@ const UserForm: React.FC<UserFormProps> = ({ user, onSubmit, onClose, isLoading 
                             disabled={!isSuperAdmin && user?.role === 'super-admin'}
                             className={`w-full px-3 py-2 border ${errors.role ? 'border-red-500' : 'border-gray-300'} dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white disabled:opacity-50`}
                         >
-                            {isSuperAdmin && <option value="super-admin">Super Admin</option>}
-                            <option value="admin">Admin</option>
-                            <option value="manager">Manager</option>
-                            <option value="employee">Employé</option>
-                            <option value="accountant">Comptable</option>
-                            <option value="client">Client</option>
+                            {isSuperAdmin && <option value="super-admin">{t('admin.users.roles.superAdmin')}</option>}
+                            <option value="admin">{t('admin.users.roles.admin')}</option>
+                            <option value="manager">{t('admin.users.roles.manager')}</option>
+                            <option value="employee">{t('admin.users.roles.employee')}</option>
+                            <option value="accountant">{t('admin.users.roles.accountant')}</option>
+                            <option value="client">{t('admin.users.roles.client')}</option>
                         </select>
                         {errors.role && <p className="text-red-500 text-sm mt-1">{errors.role}</p>}
                         {!isSuperAdmin && (
                             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                Seul un super-admin peut créer des super-admins
+                                {t('admin.users.superAdminOnly')}
                             </p>
                         )}
                     </div>
@@ -250,7 +252,7 @@ const UserForm: React.FC<UserFormProps> = ({ user, onSubmit, onClose, isLoading 
                     {isSuperAdmin && (
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Organisation *
+                                {t('admin.users.organization')} *
                             </label>
                             <select
                                 name="tenant_id"
@@ -258,7 +260,7 @@ const UserForm: React.FC<UserFormProps> = ({ user, onSubmit, onClose, isLoading 
                                 onChange={handleChange}
                                 className={`w-full px-3 py-2 border ${errors.tenant_id ? 'border-red-500' : 'border-gray-300'} dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white`}
                             >
-                                <option value="">Sélectionner une organisation...</option>
+                                <option value="">{t('admin.users.selectOrganization')}</option>
                                 {tenantsData?.data?.map((tenant: Tenant) => (
                                     <option key={tenant.id} value={tenant.id}>
                                         {tenant.name}
@@ -279,7 +281,7 @@ const UserForm: React.FC<UserFormProps> = ({ user, onSubmit, onClose, isLoading 
                             className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                         />
                         <label className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                            Compte actif
+                            {t('admin.users.activeAccount')}
                         </label>
                     </div>
 
@@ -291,14 +293,14 @@ const UserForm: React.FC<UserFormProps> = ({ user, onSubmit, onClose, isLoading 
                             className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600"
                             disabled={isLoading}
                         >
-                            Annuler
+                            {t('admin.users.cancel')}
                         </button>
                         <button
                             type="submit"
                             className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
                             disabled={isLoading}
                         >
-                            {isLoading ? 'Enregistrement...' : isEditing ? 'Mettre à jour' : 'Créer'}
+                            {isLoading ? t('admin.users.saving') : isEditing ? t('admin.users.update') : t('admin.users.create')}
                         </button>
                     </div>
                 </form>

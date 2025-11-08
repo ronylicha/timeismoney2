@@ -203,14 +203,14 @@ const CreateQuote: React.FC = () => {
                         className="flex items-center text-gray-600 hover:text-gray-900 transition mr-4"
                     >
                         <ArrowLeftIcon className="h-5 w-5 mr-1" />
-                        <span>Retour aux devis</span>
+                        <span>{t('quotes.backToQuotes')}</span>
                     </Link>
                 </div>
                 <div className="flex items-center">
                     <DocumentTextIcon className="h-8 w-8 text-blue-600 mr-3" />
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Nouveau devis</h1>
-                        <p className="text-gray-600">Créez un nouveau devis pour votre client</p>
+                        <h1 className="text-3xl font-bold text-gray-900">{t('quotes.newQuote')}</h1>
+                        <p className="text-gray-600">{t('quotes.createNewQuoteDescription')}</p>
                     </div>
                 </div>
             </div>
@@ -221,12 +221,12 @@ const CreateQuote: React.FC = () => {
                     <div className="lg:col-span-2 space-y-6">
                         {/* Quote Information */}
                         <div className="bg-white rounded-lg shadow p-6">
-                            <h2 className="text-lg font-semibold text-gray-900 mb-4">Informations du devis</h2>
-                            
+                            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('quotes.quoteInformation')}</h2>
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Client *
+                                        {t('quotes.client')} *
                                     </label>
                                     <select
                                         name="client_id"
@@ -235,7 +235,7 @@ const CreateQuote: React.FC = () => {
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         required
                                     >
-                                        <option value="">Sélectionnez un client...</option>
+                                        <option value="">{t('quotes.selectClient')}</option>
                                         {clientsData?.data?.map(client => (
                                             <option key={client.id} value={client.id}>
                                                 {client.name}
@@ -246,7 +246,7 @@ const CreateQuote: React.FC = () => {
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Projet
+                                        {t('quotes.project')}
                                     </label>
                                     <select
                                         name="project_id"
@@ -255,7 +255,7 @@ const CreateQuote: React.FC = () => {
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         disabled={!formData.client_id}
                                     >
-                                        <option value="">Sélectionnez un projet...</option>
+                                        <option value="">{t('quotes.selectProject')}</option>
                                         {projectsData?.data?.map(project => (
                                             <option key={project.id} value={project.id}>
                                                 {project.name}
@@ -266,7 +266,7 @@ const CreateQuote: React.FC = () => {
 
                                 <div className="md:col-span-2">
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Sujet du devis *
+                                        {t('quotes.subject')} *
                                     </label>
                                     <input
                                         type="text"
@@ -274,14 +274,14 @@ const CreateQuote: React.FC = () => {
                                         value={formData.subject}
                                         onChange={handleInputChange}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="Sujet du devis"
+                                        placeholder={t('quotes.subjectPlaceholder')}
                                         required
                                     />
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Date du devis *
+                                        {t('quotes.issueDate')} *
                                     </label>
                                     <input
                                         type="date"
@@ -295,7 +295,7 @@ const CreateQuote: React.FC = () => {
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Valide jusqu'au *
+                                        {t('quotes.validUntil')} *
                                     </label>
                                     <input
                                         type="date"
@@ -314,14 +314,14 @@ const CreateQuote: React.FC = () => {
                         {/* Items */}
                         <div className="bg-white rounded-lg shadow p-6">
                             <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-lg font-semibold text-gray-900">Articles</h2>
+                                <h2 className="text-lg font-semibold text-gray-900">{t('quotes.items')}</h2>
                                 <button
                                     type="button"
                                     onClick={addItem}
                                     className="flex items-center px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
                                 >
                                     <PlusIcon className="h-4 w-4 mr-1" />
-                                    Ajouter un article
+                                    {t('quotes.addItem')}
                                 </button>
                             </div>
                             
@@ -331,20 +331,20 @@ const CreateQuote: React.FC = () => {
                                         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                                             <div className="md:col-span-2">
                                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                    Description
+                                                    {t('quotes.description')}
                                                 </label>
                                                 <input
                                                     type="text"
                                                     value={item.description}
                                                     onChange={(e) => handleItemChange(index, 'description', e.target.value)}
                                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                    placeholder="Description de l'article..."
+                                                    placeholder={t('quotes.descriptionPlaceholder')}
                                                 />
                                             </div>
-                                            
+
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                    Quantité
+                                                    {t('quotes.quantity')}
                                                 </label>
                                                 <input
                                                     type="number"
@@ -355,10 +355,10 @@ const CreateQuote: React.FC = () => {
                                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                                 />
                                             </div>
-                                            
+
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                    Prix unitaire (€)
+                                                    {t('quotes.unitPrice')}
                                                 </label>
                                                 <input
                                                     type="number"
@@ -369,17 +369,17 @@ const CreateQuote: React.FC = () => {
                                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                                 />
                                             </div>
-                                            
+
                                             <div className="flex items-end">
                                                 <div className="flex-1">
                                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                        Total
+                                                        {t('quotes.total')}
                                                     </label>
                                                     <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg">
                                                         €{(item.quantity * item.unit_price - (item.discount || 0)).toFixed(2)}
                                                     </div>
                                                 </div>
-                                                
+
                                                 {formData.items.length > 1 && (
                                                     <button
                                                         type="button"
@@ -398,12 +398,12 @@ const CreateQuote: React.FC = () => {
 
                         {/* Notes */}
                         <div className="bg-white rounded-lg shadow p-6">
-                            <h2 className="text-lg font-semibold text-gray-900 mb-4">Notes et conditions</h2>
-                            
+                            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('quotes.notesAndTerms')}</h2>
+
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Conditions générales
+                                        {t('quotes.terms')}
                                     </label>
                                     <textarea
                                         name="terms_conditions"
@@ -411,13 +411,13 @@ const CreateQuote: React.FC = () => {
                                         onChange={handleInputChange}
                                         rows={3}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="Conditions générales de vente..."
+                                        placeholder={t('quotes.termsPlaceholder')}
                                     />
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Notes (visibles par le client)
+                                        {t('quotes.notes')}
                                     </label>
                                     <textarea
                                         name="notes"
@@ -425,20 +425,20 @@ const CreateQuote: React.FC = () => {
                                         onChange={handleInputChange}
                                         rows={3}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="Notes à afficher sur le devis..."
+                                        placeholder={t('quotes.notesPlaceholder')}
                                     />
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Notes internes
+                                        {t('quotes.internalNotes')}
                                     </label>
                                     <textarea
                                         name="internal_notes"
                                         onChange={handleInputChange}
                                         rows={3}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="Notes internes uniquement..."
+                                        placeholder={t('quotes.internalNotesPlaceholder')}
                                     />
                                 </div>
                             </div>
@@ -450,7 +450,7 @@ const CreateQuote: React.FC = () => {
                         <div className="bg-white rounded-lg shadow p-6 sticky top-6">
                             <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                                 <CurrencyEuroIcon className="h-5 w-5 mr-2" />
-                                Résumé
+                                {t('quotes.summary')}
                             </h2>
 
                             {/* Tax and Discount */}
@@ -458,15 +458,15 @@ const CreateQuote: React.FC = () => {
                             {/* Totals */}
                             <div className="space-y-2 border-t border-gray-200 pt-4">
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-gray-600">Sous-total</span>
+                                    <span className="text-gray-600">{t('quotes.subtotal')}</span>
                                     <span className="font-medium">€{totals.subtotal.toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-gray-600">TVA</span>
+                                    <span className="text-gray-600">{t('quotes.tax')}</span>
                                     <span className="font-medium">€{totals.taxAmount.toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between text-lg font-semibold border-t border-gray-200 pt-2">
-                                    <span>Total</span>
+                                    <span>{t('quotes.total')}</span>
                                     <span className="text-blue-600">€{totals.total.toFixed(2)}</span>
                                 </div>
                             </div>
@@ -481,12 +481,12 @@ const CreateQuote: React.FC = () => {
                                     {createQuoteMutation.isPending ? (
                                         <>
                                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                            Création...
+                                            {t('quotes.creating')}
                                         </>
                                     ) : (
                                         <>
                                             <CheckCircleIcon className="h-5 w-5 mr-2" />
-                                            Créer le devis
+                                            {t('quotes.createQuote')}
                                         </>
                                     )}
                                 </button>
