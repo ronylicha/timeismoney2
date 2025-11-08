@@ -418,27 +418,37 @@
   },
   "tasks": {
     "title": "Tâches",
+    "subtitle": "Gérez toutes vos tâches en un seul endroit",
     "newTask": "Nouvelle tâche",
-    "taskName": "Nom de la tâche",
-    "priority": "Priorité",
-    "dueDate": "Date d'échéance",
-    "assignedTo": "Assigné à",
-    "low": "Basse",
-    "medium": "Moyenne",
-    "high": "Haute",
-    "urgent": "Urgente",
-    "todo": "À faire",
-    "inProgress": "En cours",
-    "done": "Terminé",
-    "blocked": "Bloqué",
-    "project": "Projet",
-    "tags": "Tags",
-    "attachments": "Pièces jointes",
-    "comments": "Commentaires",
-    "subtasks": "Sous-tâches",
-    "estimatedTime": "Temps estimé",
-    "actualTime": "Temps réel",
-    "noTasks": "Aucune tâche"
+    "createTask": "Créer une tâche",
+    "searchPlaceholder": "Rechercher une tâche...",
+    "allStatuses": "Tous les statuts",
+    "allPriorities": "Toutes les priorités",
+    "allProjects": "Tous les projets",
+    "noTasks": "Aucune tâche",
+    "noTasksDescription": "Commencez par créer votre première tâche",
+    "overdue": "En retard",
+    "statusUpdated": "Statut mis à jour",
+    "updateStatusError": "Erreur lors de la mise à jour du statut",
+    "stats": {
+      "todo": "À faire",
+      "inProgress": "En cours",
+      "inReview": "En révision",
+      "completed": "Terminé"
+    },
+    "status": {
+      "todo": "À faire",
+      "inProgress": "En cours",
+      "inReview": "En révision",
+      "completed": "Terminé",
+      "cancelled": "Annulé"
+    },
+    "priority": {
+      "low": "Basse",
+      "medium": "Moyenne",
+      "high": "Haute",
+      "urgent": "Urgente"
+    }
   },
   "clients": {
     "title": "Clients",
@@ -768,93 +778,134 @@
   "integrations": {
     "title": "Intégrations",
     "subtitle": "Connectez vos outils préférés",
-    "connect": "Connecter",
-    "disconnect": "Déconnecter",
     "connected": "Connecté",
-    "notConnected": "Non connecté",
-    "connecting": "Connexion...",
-    "disconnecting": "Déconnexion...",
-    "configure": "Configurer",
-    "settings": "Paramètres",
-    "enabled": "Activé",
-    "disabled": "Désactivé",
-    "status": "Statut",
-    "googleCalendar": {
-      "title": "Intégration Google Calendar",
-      "description": "Synchroniser automatiquement les entrées de temps comme des événements de calendrier",
-      "calendarId": "ID du calendrier :",
-      "tokenExpires": "Expiration du jeton :",
-      "enableSync": "Activer la synchronisation du calendrier",
-      "syncDescription": "Synchroniser automatiquement les entrées de temps avec Google Calendar",
-      "authorize": "Veuillez autoriser dans la fenêtre ouverte. Actualisez cette page après avoir terminé l'autorisation.",
-      "success": "Google Calendar connecté avec succès",
-      "disconnectSuccess": "Google Calendar déconnecté avec succès",
-      "error": "Échec de la connexion à Google Calendar",
-      "disconnectError": "Échec de la déconnexion de Google Calendar",
-      "billableColor": "Les entrées facturables apparaîtront en vert",
-      "nonBillableColor": "Les non facturables en gris"
-    },
+    "disconnect": "Déconnecter",
+    "connect": "Connecter",
     "stripe": {
-      "title": "Intégration des paiements Stripe",
-      "description": "Générer automatiquement des liens de paiement pour les factures",
-      "publishableKey": "Clé publique",
-      "secretKey": "Clé secrète",
-      "webhookSecret": "Secret du Webhook",
-      "webhookSecretOptional": "Secret du Webhook (Optionnel)",
-      "webhookUrl": "URL du Webhook :",
-      "webhookEvents": "Événements requis :",
-      "webhookDescription": "Configurez ce webhook dans votre tableau de bord Stripe pour activer les notifications de paiement en temps réel",
-      "getDashboard": "Obtenez vos clés API depuis le",
-      "stripeDashboard": "Tableau de bord Stripe",
-      "statusActive": "Stripe est configuré et actif",
-      "testConnection": "Tester la connexion",
-      "testing": "Test...",
-      "testSuccess": "Test de connexion Stripe réussi",
-      "testError": "Le test de connexion Stripe a échoué",
-      "updateSettings": "Mettre à jour les paramètres",
-      "disable": "Désactiver Stripe",
-      "disabling": "Désactivation...",
-      "disableConfirm": "Êtes-vous sûr de vouloir désactiver Stripe ? Les liens de paiement ne seront plus générés.",
-      "disableSuccess": "Stripe désactivé avec succès",
-      "disableError": "Échec de la désactivation de Stripe",
-      "saveSuccess": "Paramètres Stripe mis à jour avec succès",
-      "saveError": "Échec de la mise à jour des paramètres Stripe",
-      "saving": "Enregistrement...",
-      "saveSettings": "Enregistrer les paramètres Stripe",
-      "keepSecret": "Gardez ce secret et ne le partagez jamais publiquement",
-      "webhookInstructions": "Configuration du Webhook",
-      "getWebhookSecret": "Obtenez ceci depuis vos paramètres de webhook Stripe après avoir configuré l'URL du webhook"
+      "description": "Acceptez les paiements en ligne et gérez vos abonnements"
+    },
+    "googleCalendar": {
+      "description": "Synchronisez vos événements et rendez-vous"
+    },
+    "slack": {
+      "description": "Recevez des notifications dans votre espace de travail"
+    },
+    "github": {
+      "description": "Liez vos commits et issues aux tâches"
+    },
+    "trello": {
+      "description": "Synchronisez vos tableaux et cartes"
+    },
+    "zapier": {
+      "description": "Automatisez vos workflows avec plus de 3000 applications"
     }
   },
   "admin": {
     "title": "Administration",
     "users": {
       "title": "Gestion des utilisateurs",
-      "totalUsers": "Total utilisateurs",
-      "activeUsers": "Utilisateurs actifs",
-      "newUsers": "Nouveaux utilisateurs",
-      "searchUsers": "Rechercher des utilisateurs...",
-      "addUser": "Ajouter un utilisateur",
-      "editUser": "Modifier l'utilisateur",
-      "deleteUser": "Supprimer l'utilisateur",
-      "userDetails": "Détails de l'utilisateur",
+      "totalUsers": "utilisateurs au total",
+      "export": "Exporter",
+      "newUser": "Nouvel utilisateur",
+      "searchPlaceholder": "Rechercher un utilisateur...",
+      "allRoles": "Tous les rôles",
+      "allStatuses": "Tous les statuts",
+      "roles": {
+        "superAdmin": "Super Admin",
+        "admin": "Admin",
+        "manager": "Manager",
+        "employee": "Employé",
+        "accountant": "Comptable",
+        "client": "Client"
+      },
+      "status": {
+        "active": "Actif",
+        "suspended": "Suspendu",
+        "verified": "Vérifié",
+        "unverified": "Non vérifié"
+      },
+      "table": {
+        "user": "Utilisateur",
+        "organization": "Organisation",
+        "role": "Rôle",
+        "status": "Statut",
+        "activity": "Activité",
+        "actions": "Actions"
+      },
+      "noUsers": "Aucun utilisateur",
       "lastLogin": "Dernière connexion",
-      "createdAt": "Créé le",
-      "status": "Statut",
-      "role": "Rôle",
-      "actions": "Actions"
+      "neverLoggedIn": "Jamais connecté",
+      "entries": "entrées",
+      "invoices": "factures",
+      "actions": {
+        "impersonate": "Se faire passer pour",
+        "resetPassword": "Réinitialiser le mot de passe",
+        "suspend": "Suspendre",
+        "activate": "Activer"
+      },
+      "confirmDelete": "Êtes-vous sûr de vouloir supprimer cet utilisateur ?",
+      "suspendSuccess": "Utilisateur suspendu avec succès",
+      "suspendError": "Erreur lors de la suspension de l'utilisateur",
+      "activateSuccess": "Utilisateur activé avec succès",
+      "activateError": "Erreur lors de l'activation de l'utilisateur",
+      "deleteSuccess": "Utilisateur supprimé avec succès",
+      "deleteError": "Erreur lors de la suppression de l'utilisateur",
+      "resetPasswordSuccess": "Mot de passe réinitialisé avec succès",
+      "resetPasswordError": "Erreur lors de la réinitialisation du mot de passe",
+      "createSuccess": "Utilisateur créé avec succès",
+      "createError": "Erreur lors de la création de l'utilisateur",
+      "updateSuccess": "Utilisateur mis à jour avec succès",
+      "updateError": "Erreur lors de la mise à jour de l'utilisateur",
+      "impersonateError": "Erreur lors de l'usurpation d'identité",
+      "exportError": "Erreur lors de l'exportation",
+      "loadError": "Erreur lors du chargement des utilisateurs"
     },
     "tenants": {
       "title": "Gestion des organisations",
-      "totalTenants": "Total organisations",
-      "activeTenants": "Organisations actives",
-      "searchTenants": "Rechercher des organisations...",
-      "addTenant": "Ajouter une organisation",
-      "editTenant": "Modifier l'organisation",
-      "deleteTenant": "Supprimer l'organisation",
-      "tenantDetails": "Détails de l'organisation",
-      "subscription": "Abonnement",
-      "plan": "Plan"
+      "totalOrganizations": "organisations au total",
+      "newTenant": "Nouvelle organisation",
+      "searchPlaceholder": "Rechercher une organisation...",
+      "allPlans": "Tous les plans",
+      "allStatuses": "Tous les statuts",
+      "plans": {
+        "individual": "Individuel",
+        "team": "Équipe",
+        "enterprise": "Entreprise"
+      },
+      "status": {
+        "active": "Actif",
+        "trial": "Essai",
+        "suspended": "Suspendu",
+        "cancelled": "Annulé"
+      },
+      "stats": {
+        "totalActive": "Total actifs",
+        "inTrial": "En période d'essai",
+        "totalMRR": "MRR total",
+        "invoices": "Factures",
+        "totalRevenue": "Revenu total",
+        "activeUsers": "Utilisateurs actifs",
+        "entriesThisMonth": "Entrées ce mois"
+      },
+      "owner": "Propriétaire",
+      "usage": {
+        "users": "Utilisateurs",
+        "projects": "Projets",
+        "storage": "Stockage"
+      },
+      "trialUntil": "Essai jusqu'au",
+      "subscriptionUntil": "Abonnement jusqu'au",
+      "created": "Créé",
+      "actions": {
+        "activate": "Activer",
+        "suspend": "Suspendre"
+      },
+      "confirmDelete": "Êtes-vous sûr de vouloir supprimer cette organisation ?",
+      "suspendSuccess": "Organisation suspendue avec succès",
+      "activateSuccess": "Organisation activée avec succès",
+      "updatePlanSuccess": "Plan mis à jour avec succès",
+      "deleteSuccess": "Organisation supprimée avec succès",
+      "noTenants": "Aucune organisation"
     },
     "billing": "Facturation",
     "monitoring": {
@@ -1011,11 +1062,66 @@
       "updates": "Mises à jour"
     },
     "reports": {
-      "title": "Rapports système",
-      "userActivity": "Activité utilisateur",
-      "systemUsage": "Utilisation système",
-      "financialReports": "Rapports financiers",
-      "generateReport": "Générer un rapport"
+      "title": "Rapports",
+      "description": "Analyses et statistiques détaillées",
+      "export": "Exporter",
+      "dateRanges": {
+        "last7Days": "7 derniers jours",
+        "last30Days": "30 derniers jours",
+        "last90Days": "90 derniers jours",
+        "last12Months": "12 derniers mois"
+      },
+      "metrics": {
+        "totalUsers": "Total utilisateurs",
+        "organizations": "Organisations",
+        "monthlyRevenue": "Revenu mensuel",
+        "retentionRate": "Taux de rétention"
+      },
+      "vsLastMonth": "vs mois dernier",
+      "charts": {
+        "userGrowth": "Croissance des utilisateurs",
+        "users": "Utilisateurs",
+        "organizations": "Organisations",
+        "revenueGrowth": "Croissance du revenu",
+        "revenue": "Revenu",
+        "dailyActivity": "Activité quotidienne",
+        "activeUsers": "Utilisateurs actifs",
+        "newUsers": "Nouveaux utilisateurs",
+        "planDistribution": "Répartition des plans"
+      },
+      "plans": {
+        "free": "Gratuit",
+        "starter": "Starter",
+        "professional": "Professionnel",
+        "enterprise": "Entreprise"
+      },
+      "topOrganizations": "Meilleures organisations",
+      "table": {
+        "organization": "Organisation",
+        "plan": "Plan",
+        "users": "Utilisateurs",
+        "monthlyRevenue": "Revenu mensuel",
+        "activity": "Activité",
+        "usersCount": "{count} utilisateur(s)"
+      },
+      "health": {
+        "systemPerformance": "Performance système",
+        "cpu": "CPU",
+        "memory": "Mémoire",
+        "storage": "Stockage"
+      },
+      "conversion": {
+        "title": "Taux de conversion",
+        "trialToPaid": "Essai → Payant",
+        "freeToPaid": "Gratuit → Payant",
+        "planUpgrade": "Mise à niveau"
+      },
+      "support": {
+        "title": "Support",
+        "openTickets": "Tickets ouverts",
+        "avgResponseTime": "Temps de réponse moyen",
+        "satisfaction": "Satisfaction"
+      }
     },
     "charts": {
       "userGrowth": "Croissance des utilisateurs",
@@ -1336,5 +1442,51 @@
   "app": {
     "name": "TimeIsMoney",
     "tagline": "Suivez votre temps, facturez vos clients"
+  },
+  "analytics": {
+    "title": "Analytiques",
+    "subtitle": "Tableaux de bord et indicateurs de performance",
+    "stats": {
+      "totalHours": "Temps total (ce mois)",
+      "billedRevenue": "Revenu facturé",
+      "activeProjects": "Projets actifs",
+      "invoices": "Factures"
+    },
+    "entries": "entrées",
+    "completed": "complétés",
+    "pending": "en attente",
+    "vsLastMonth": "vs mois dernier",
+    "range": {
+      "7days": "7 jours",
+      "30days": "30 jours"
+    },
+    "charts": {
+      "dailyHours": "Heures quotidiennes",
+      "dailyRevenue": "Revenu quotidien",
+      "projectDistribution": "Répartition par projet (Top 5)",
+      "monthlyRevenue": "Revenu mensuel (6 derniers mois)"
+    },
+    "noData": "Aucune donnée disponible",
+    "invoiced": "Facturé",
+    "paid": "Payé",
+    "invoiceStatus": "État des factures",
+    "invoices": {
+      "pending": "En attente",
+      "overdue": "En retard",
+      "paidThisMonth": "Payées ce mois"
+    },
+    "taskStatus": "État des tâches",
+    "tasks": {
+      "todo": "À faire",
+      "inProgress": "En cours",
+      "completedThisMonth": "Complétées ce mois",
+      "overdue": "En retard"
+    },
+    "projectStatus": "État des projets",
+    "projects": {
+      "active": "Actifs",
+      "completed": "Complétés",
+      "onHold": "En attente"
+    }
   }
 }

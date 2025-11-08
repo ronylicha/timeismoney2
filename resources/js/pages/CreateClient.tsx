@@ -47,21 +47,26 @@ const CreateClient: React.FC = () => {
     const navigate = useNavigate();
     const [formData, setFormData] = useState<ClientFormData>({
         name: '',
-        email: '',
-        phone: '',
-        website: '',
+        company_name: '',
+        is_company: false,
+        legal_form: '',
+        siret: '',
+        vat_number: '',
         address: '',
         city: '',
         postal_code: '',
         country: '',
-        vat_number: '',
-        siret: '',
-        legal_form: '',
-        is_company: false,
+        phone: '',
+        email: '',
+        website: '',
+        billing_email: '',
         payment_terms: 30,
+        payment_method: 'bank_transfer',
         discount_percentage: 0,
+        vat_exempt: false,
         hourly_rate: 0,
         currency: 'EUR',
+        status: 'prospect',
         notes: ''
     });
     const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
@@ -89,10 +94,12 @@ const CreateClient: React.FC = () => {
     });
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
+        const { name, value, type } = e.target;
+        const checked = (e.target as HTMLInputElement).checked;
+
         setFormData(prev => ({
             ...prev,
-            [name]: value
+            [name]: type === 'checkbox' ? checked : value
         }));
         // Clear validation error for this field
         if (validationErrors[name]) {
@@ -245,19 +252,51 @@ const CreateClient: React.FC = () => {
                         </div>
 
                         {formData.is_company && (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    {t('clients.legalForm')}
-                                </label>
-                                <input
-                                    type="text"
-                                    name="legal_form"
-                                    value={formData.legal_form}
-                                    onChange={handleInputChange}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    placeholder={t('clients.legalFormPlaceholder')}
-                                />
-                            </div>
+                            <>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        {t('clients.companyName')}
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="company_name"
+                                        value={formData.company_name}
+                                        onChange={handleInputChange}
+                                        className={getFieldClass('company_name')}
+                                        placeholder={t('clients.companyNamePlaceholder')}
+                                    />
+                                    {getFieldError('company_name') && (
+                                        <p className="mt-1 text-sm text-red-600">{getFieldError('company_name')}</p>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        {t('clients.legalForm')}
+                                    </label>
+                                    <select
+                                        name="legal_form"
+                                        value={formData.legal_form}
+                                        onChange={handleInputChange}
+                                        className={getFieldClass('legal_form')}
+                                    >
+                                        <option value="">{t('clients.selectLegalForm')}</option>
+                                        <option value="SARL">SARL</option>
+                                        <option value="SAS">SAS</option>
+                                        <option value="SA">SA</option>
+                                        <option value="EI">EI</option>
+                                        <option value="EIRL">EIRL</option>
+                                        <option value="EURL">EURL</option>
+                                        <option value="SNC">SNC</option>
+                                        <option value="SCI">SCI</option>
+                                        <option value="Association">Association</option>
+                                        <option value="Other">{t('clients.other')}</option>
+                                    </select>
+                                    {getFieldError('legal_form') && (
+                                        <p className="mt-1 text-sm text-red-600">{getFieldError('legal_form')}</p>
+                                    )}
+                                </div>
+                            </>
                         )}
 
                         <div>
@@ -275,6 +314,23 @@ const CreateClient: React.FC = () => {
                             />
                             {getFieldError('email') && (
                                 <p className="mt-1 text-sm text-red-600">{getFieldError('email')}</p>
+                            )}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                {t('clients.billingEmail')}
+                            </label>
+                            <input
+                                type="email"
+                                name="billing_email"
+                                value={formData.billing_email}
+                                onChange={handleInputChange}
+                                className={getFieldClass('billing_email')}
+                                placeholder={t('clients.billingEmailPlaceholder')}
+                            />
+                            {getFieldError('billing_email') && (
+                                <p className="mt-1 text-sm text-red-600">{getFieldError('billing_email')}</p>
                             )}
                         </div>
 
@@ -309,6 +365,25 @@ const CreateClient: React.FC = () => {
                             />
                             {getFieldError('website') && (
                                 <p className="mt-1 text-sm text-red-600">{getFieldError('website')}</p>
+                            )}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                {t('clients.status')}
+                            </label>
+                            <select
+                                name="status"
+                                value={formData.status}
+                                onChange={handleInputChange}
+                                className={getFieldClass('status')}
+                            >
+                                <option value="prospect">{t('clients.prospect')}</option>
+                                <option value="active">{t('clients.active')}</option>
+                                <option value="inactive">{t('clients.inactive')}</option>
+                            </select>
+                            {getFieldError('status') && (
+                                <p className="mt-1 text-sm text-red-600">{getFieldError('status')}</p>
                             )}
                         </div>
                     </div>
@@ -414,27 +489,148 @@ const CreateClient: React.FC = () => {
                                 )}
                             </div>
 
-                            {formData.is_company && (
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        {t('clients.siretNumber')}
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="siret"
-                                        value={formData.siret}
-                                        onChange={handleInputChange}
-                                        className={getFieldClass('siret')}
-                                        placeholder={t('clients.siretNumberPlaceholder')}
-                                    />
-                                    {getFieldError('siret') && (
-                                        <p className="mt-1 text-sm text-red-600">{getFieldError('siret')}</p>
-                                    )}
-                                </div>
-                            )}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    {t('clients.siretNumber')}
+                                </label>
+                                <input
+                                    type="text"
+                                    name="siret"
+                                    value={formData.siret}
+                                    onChange={handleInputChange}
+                                    className={getFieldClass('siret')}
+                                    placeholder={t('clients.siretNumberPlaceholder')}
+                                />
+                                {getFieldError('siret') && (
+                                    <p className="mt-1 text-sm text-red-600">{getFieldError('siret')}</p>
+                                )}
+                            </div>
+
+                            <div className="flex items-center md:col-span-2">
+                                <input
+                                    type="checkbox"
+                                    name="vat_exempt"
+                                    id="vat_exempt"
+                                    checked={formData.vat_exempt}
+                                    onChange={handleInputChange}
+                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                />
+                                <label htmlFor="vat_exempt" className="ml-2 block text-sm text-gray-700">
+                                    {t('clients.vatExempt')}
+                                </label>
+                            </div>
                         </div>
                     </div>
                 )}
+
+                {/* Payment & Billing Information */}
+                <div className="bg-white rounded-lg shadow p-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <EnvelopeIcon className="h-5 w-5 mr-2" />
+                        {t('clients.paymentBilling')}
+                    </h2>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                {t('clients.paymentMethod')}
+                            </label>
+                            <select
+                                name="payment_method"
+                                value={formData.payment_method}
+                                onChange={handleInputChange}
+                                className={getFieldClass('payment_method')}
+                            >
+                                <option value="bank_transfer">{t('clients.bankTransfer')}</option>
+                                <option value="check">{t('clients.check')}</option>
+                                <option value="cash">{t('clients.cash')}</option>
+                                <option value="card">{t('clients.card')}</option>
+                                <option value="other">{t('clients.other')}</option>
+                            </select>
+                            {getFieldError('payment_method') && (
+                                <p className="mt-1 text-sm text-red-600">{getFieldError('payment_method')}</p>
+                            )}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                {t('clients.paymentTerms')} ({t('clients.days')})
+                            </label>
+                            <input
+                                type="number"
+                                name="payment_terms"
+                                value={formData.payment_terms}
+                                onChange={handleInputChange}
+                                min="0"
+                                className={getFieldClass('payment_terms')}
+                                placeholder="30"
+                            />
+                            {getFieldError('payment_terms') && (
+                                <p className="mt-1 text-sm text-red-600">{getFieldError('payment_terms')}</p>
+                            )}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                {t('clients.discountPercentage')} (%)
+                            </label>
+                            <input
+                                type="number"
+                                name="discount_percentage"
+                                value={formData.discount_percentage}
+                                onChange={handleInputChange}
+                                min="0"
+                                max="100"
+                                step="0.01"
+                                className={getFieldClass('discount_percentage')}
+                                placeholder="0"
+                            />
+                            {getFieldError('discount_percentage') && (
+                                <p className="mt-1 text-sm text-red-600">{getFieldError('discount_percentage')}</p>
+                            )}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                {t('clients.hourlyRate')} ({formData.currency})
+                            </label>
+                            <input
+                                type="number"
+                                name="hourly_rate"
+                                value={formData.hourly_rate}
+                                onChange={handleInputChange}
+                                min="0"
+                                step="0.01"
+                                className={getFieldClass('hourly_rate')}
+                                placeholder="0.00"
+                            />
+                            {getFieldError('hourly_rate') && (
+                                <p className="mt-1 text-sm text-red-600">{getFieldError('hourly_rate')}</p>
+                            )}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                {t('clients.currency')}
+                            </label>
+                            <select
+                                name="currency"
+                                value={formData.currency}
+                                onChange={handleInputChange}
+                                className={getFieldClass('currency')}
+                            >
+                                <option value="EUR">EUR (€)</option>
+                                <option value="USD">USD ($)</option>
+                                <option value="GBP">GBP (£)</option>
+                                <option value="CHF">CHF</option>
+                                <option value="CAD">CAD</option>
+                            </select>
+                            {getFieldError('currency') && (
+                                <p className="mt-1 text-sm text-red-600">{getFieldError('currency')}</p>
+                            )}
+                        </div>
+                    </div>
+                </div>
 
                 {/* Notes */}
                 <div className="bg-white rounded-lg shadow p-6">
