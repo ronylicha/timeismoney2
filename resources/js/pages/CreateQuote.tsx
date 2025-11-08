@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import {
     ArrowLeftIcon,
     DocumentTextIcon,
@@ -32,6 +33,7 @@ interface QuoteFormData {
 }
 
 const CreateQuote: React.FC = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [formData, setFormData] = useState<QuoteFormData>({
         client_id: '',
@@ -78,11 +80,11 @@ const CreateQuote: React.FC = () => {
             return response.data;
         },
         onSuccess: (quote) => {
-            toast.success('Devis créé avec succès');
+            toast.success(t('quotes.createSuccess'));
             navigate(`/quotes/${quote.id}`);
         },
         onError: (error: any) => {
-            const message = error.response?.data?.message || 'Erreur lors de la création du devis';
+            const message = error.response?.data?.message || t('quotes.createError');
             toast.error(message);
         }
     });
@@ -166,23 +168,23 @@ const CreateQuote: React.FC = () => {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (!formData.client_id) {
-            toast.error('Veuillez sélectionner un client');
-            return;
-        }
-        
-        if (!formData.subject.trim()) {
-            toast.error('Le sujet du devis est obligatoire');
+            toast.error(t('quotes.selectClientError'));
             return;
         }
 
-        const hasValidItems = formData.items.some(item => 
+        if (!formData.subject.trim()) {
+            toast.error(t('quotes.subjectRequired'));
+            return;
+        }
+
+        const hasValidItems = formData.items.some(item =>
             item.description.trim() && item.quantity > 0 && item.unit_price > 0
         );
-        
+
         if (!hasValidItems) {
-            toast.error('Veuillez ajouter au moins un article valide');
+            toast.error(t('quotes.validItemRequired'));
             return;
         }
 

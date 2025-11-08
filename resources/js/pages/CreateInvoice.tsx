@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import {
     FileText,
     Plus,
@@ -46,6 +47,7 @@ interface InvoiceFormData {
 }
 
 const CreateInvoice: React.FC = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [formData, setFormData] = useState<InvoiceFormData>({
         client_id: '',
@@ -129,11 +131,11 @@ const CreateInvoice: React.FC = () => {
             return response.data.invoice;
         },
         onSuccess: (invoice) => {
-            toast.success('Invoice created successfully');
+            toast.success(t('invoices.createSuccess'));
             navigate(`/invoices/${invoice.id}`);
         },
         onError: (error: any) => {
-            const message = error.response?.data?.message || 'Failed to create invoice';
+            const message = error.response?.data?.message || t('invoices.createError');
             toast.error(message);
         }
     });
@@ -262,7 +264,7 @@ const CreateInvoice: React.FC = () => {
     // Save as draft
     const saveAsDraft = () => {
         if (!formData.client_id) {
-            toast.error('Please select a client');
+            toast.error(t('invoices.selectClientError'));
             return;
         }
 
@@ -275,7 +277,7 @@ const CreateInvoice: React.FC = () => {
     // Save and send
     const saveAndSend = () => {
         if (!formData.client_id) {
-            toast.error('Please select a client');
+            toast.error(t('invoices.selectClientError'));
             return;
         }
 
@@ -298,10 +300,10 @@ const CreateInvoice: React.FC = () => {
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
                     <h1 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center">
                         <FileText className="mr-2" />
-                        Create New Invoice
+                        {t('invoices.createNewInvoice')}
                     </h1>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                        NF525 Compliant Invoice Generation
+                        {t('invoices.nf525Compliant')}
                     </p>
                 </div>
 
@@ -311,12 +313,12 @@ const CreateInvoice: React.FC = () => {
                         {/* Client and Project Selection */}
                         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
                             <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-                                Client Information
+                                {t('invoices.clientInformation')}
                             </h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        Client *
+                                        {t('invoices.client')} *
                                     </label>
                                     <select
                                         name="client_id"
@@ -325,7 +327,7 @@ const CreateInvoice: React.FC = () => {
                                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                                         required
                                     >
-                                        <option value="">Select a client...</option>
+                                        <option value="">{t('invoices.selectClient')}</option>
                                         {clientsData?.data?.map(client => (
                                             <option key={client.id} value={client.id}>
                                                 {client.name}
@@ -336,7 +338,7 @@ const CreateInvoice: React.FC = () => {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        Project
+                                        {t('invoices.project')}
                                     </label>
                                     <select
                                         name="project_id"
@@ -345,7 +347,7 @@ const CreateInvoice: React.FC = () => {
                                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                                         disabled={!formData.client_id}
                                     >
-                                        <option value="">All projects</option>
+                                        <option value="">{t('invoices.allProjects')}</option>
                                         {projectsData?.data?.map(project => (
                                             <option key={project.id} value={project.id}>
                                                 {project.name}
@@ -359,7 +361,7 @@ const CreateInvoice: React.FC = () => {
                         {/* Invoice Details */}
                         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
                             <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-                                Invoice Details
+                                {t('invoices.invoiceDetails')}
                             </h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>

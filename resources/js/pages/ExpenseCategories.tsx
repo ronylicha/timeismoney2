@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import { PlusIcon, TagIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 
@@ -13,6 +14,7 @@ interface ExpenseCategory {
 }
 
 const ExpenseCategories: React.FC = () => {
+    const { t } = useTranslation();
     const queryClient = useQueryClient();
     const [showAddModal, setShowAddModal] = useState(false);
     const [newCategory, setNewCategory] = useState({ name: '', description: '' });
@@ -32,19 +34,19 @@ const ExpenseCategories: React.FC = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['expense-categories'] });
-            toast.success('Catégorie créée avec succès');
+            toast.success(t('expenses.categoryCreated'));
             setShowAddModal(false);
             setNewCategory({ name: '', description: '' });
         },
         onError: () => {
-            toast.error('Erreur lors de la création de la catégorie');
+            toast.error(t('expenses.categoryCreateError'));
         },
     });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!newCategory.name.trim()) {
-            toast.error('Le nom de la catégorie est requis');
+            toast.error(t('expenses.categoryNameRequired'));
             return;
         }
         createCategoryMutation.mutate(newCategory);
@@ -59,21 +61,21 @@ const ExpenseCategories: React.FC = () => {
                         className="flex items-center text-gray-600 hover:text-gray-900 transition mr-4"
                     >
                         <ArrowLeftIcon className="h-5 w-5 mr-1" />
-                        <span>Retour aux dépenses</span>
+                        <span>{t('expenses.backToExpenses')}</span>
                     </Link>
                 </div>
 
                 <div className="flex justify-between items-center">
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Catégories de dépenses</h1>
-                        <p className="mt-2 text-gray-600">Organisez vos dépenses par catégories</p>
+                        <h1 className="text-3xl font-bold text-gray-900">{t('expenses.categoriesTitle')}</h1>
+                        <p className="mt-2 text-gray-600">{t('expenses.categoriesSubtitle')}</p>
                     </div>
                     <button
                         onClick={() => setShowAddModal(true)}
                         className="flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
                     >
                         <PlusIcon className="h-5 w-5" />
-                        <span>Nouvelle catégorie</span>
+                        <span>{t('expenses.newCategory')}</span>
                     </button>
                 </div>
             </div>
@@ -81,19 +83,19 @@ const ExpenseCategories: React.FC = () => {
             {isLoading ? (
                 <div className="text-center py-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Chargement...</p>
+                    <p className="mt-4 text-gray-600">{t('common.loading')}</p>
                 </div>
             ) : categories?.length === 0 ? (
                 <div className="bg-white rounded-lg shadow p-12 text-center">
                     <TagIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Aucune catégorie</h3>
-                    <p className="text-gray-600 mb-6">Créez votre première catégorie de dépense</p>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">{t('expenses.noCategories')}</h3>
+                    <p className="text-gray-600 mb-6">{t('expenses.noCategoriesDescription')}</p>
                     <button
                         onClick={() => setShowAddModal(true)}
                         className="inline-flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
                     >
                         <PlusIcon className="h-5 w-5" />
-                        <span>Créer une catégorie</span>
+                        <span>{t('expenses.createCategory')}</span>
                     </button>
                 </div>
             ) : (
@@ -119,7 +121,7 @@ const ExpenseCategories: React.FC = () => {
 
                             <div className="pt-4 border-t border-gray-200">
                                 <p className="text-sm text-gray-600">
-                                    {category.expenses_count || 0} dépense(s)
+                                    {category.expenses_count || 0} {t('expenses.expenseCount')}
                                 </p>
                             </div>
                         </div>
@@ -131,11 +133,11 @@ const ExpenseCategories: React.FC = () => {
             {showAddModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-                        <h3 className="text-lg font-bold text-gray-900 mb-4">Nouvelle catégorie</h3>
+                        <h3 className="text-lg font-bold text-gray-900 mb-4">{t('expenses.newCategory')}</h3>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Nom *
+                                    {t('expenses.categoryName')} *
                                 </label>
                                 <input
                                     type="text"
@@ -148,7 +150,7 @@ const ExpenseCategories: React.FC = () => {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Description
+                                    {t('expenses.description')}
                                 </label>
                                 <textarea
                                     value={newCategory.description}
@@ -164,14 +166,14 @@ const ExpenseCategories: React.FC = () => {
                                     onClick={() => setShowAddModal(false)}
                                     className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
                                 >
-                                    Annuler
+                                    {t('common.cancel')}
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={createCategoryMutation.isPending}
                                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
                                 >
-                                    {createCategoryMutation.isPending ? 'Création...' : 'Créer'}
+                                    {createCategoryMutation.isPending ? t('common.creating') : t('common.create')}
                                 </button>
                             </div>
                         </form>

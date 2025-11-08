@@ -25,6 +25,11 @@ const DashboardGrid: React.FC<DashboardGridProps> = ({
     const [isDraggable, setIsDraggable] = useState(editable);
     const [isResizable, setIsResizable] = useState(editable);
 
+    // Sync internal state with external layouts prop
+    useEffect(() => {
+        setLayout(layouts);
+    }, [layouts]);
+
     useEffect(() => {
         setIsDraggable(editable);
         setIsResizable(editable);

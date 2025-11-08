@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { Layout } from 'react-grid-layout';
@@ -115,9 +115,9 @@ const Dashboard: React.FC = () => {
         preferences.customDateRange
     );
 
-    // Get current layout based on preferences
-    const currentLayout = getCurrentLayout();
-    const visibleWidgets = getVisibleWidgets();
+    // Get current layout based on preferences - memoized to prevent new array references
+    const currentLayout = useMemo(() => getCurrentLayout(), [preferences.layoutType, preferences.customLayout]);
+    const visibleWidgets = useMemo(() => getVisibleWidgets(), [preferences.visibleWidgets]);
 
     // Fetch dashboard statistics
     const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
@@ -160,10 +160,14 @@ const Dashboard: React.FC = () => {
         }).format(amount);
     };
 
-    // Handle layout change
-    const handleLayoutChange = (newLayout: Layout[]) => {
-        setCustomLayout(newLayout);
-    };
+    // Handle layout change - prevent infinite loops by comparing layouts
+    const handleLayoutChange = useCallback((newLayout: Layout[]) => {
+        // Only update if layout actually changed
+        const hasChanged = JSON.stringify(newLayout) !== JSON.stringify(currentLayout);
+        if (hasChanged && editMode) {
+            setCustomLayout(newLayout);
+        }
+    }, [currentLayout, setCustomLayout, editMode]);
 
     // Toggle edit mode
     const toggleEditMode = () => {

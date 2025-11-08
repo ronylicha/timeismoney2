@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import {
     ArrowLeftIcon,
@@ -28,6 +29,7 @@ interface ExpenseFormData {
 }
 
 const CreateExpense: React.FC = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [formData, setFormData] = useState<ExpenseFormData>({
         description: '',
@@ -86,11 +88,11 @@ const CreateExpense: React.FC = () => {
             return response.data;
         },
         onSuccess: (expense) => {
-            toast.success('Dépense créée avec succès');
+            toast.success(t('expenses.createSuccess'));
             navigate(`/expenses/${expense.id}`);
         },
         onError: (error: any) => {
-            const message = error.response?.data?.message || 'Erreur lors de la création de la dépense';
+            const message = error.response?.data?.message || t('expenses.createError');
             toast.error(message);
         }
     });
@@ -124,13 +126,13 @@ const CreateExpense: React.FC = () => {
             // Validate file type
             const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
             if (!allowedTypes.includes(file.type)) {
-                toast.error('Veuillez sélectionner une image (JPG, PNG, GIF) ou un fichier PDF');
+                toast.error(t('expenses.invalidFileType'));
                 return;
             }
-            
+
             // Validate file size (5MB max)
             if (file.size > 5 * 1024 * 1024) {
-                toast.error('La taille du fichier ne doit pas dépasser 5MB');
+                toast.error(t('expenses.fileSizeError'));
                 return;
             }
             
@@ -164,17 +166,17 @@ const CreateExpense: React.FC = () => {
         e.preventDefault();
         
         if (!formData.description.trim()) {
-            toast.error('La description est obligatoire');
+            toast.error(t('expenses.descriptionRequired'));
             return;
         }
-        
+
         if (formData.amount <= 0) {
-            toast.error('Le montant doit être supérieur à 0');
+            toast.error(t('expenses.amountRequired'));
             return;
         }
-        
+
         if (!formData.expense_date) {
-            toast.error('La date de dépense est obligatoire');
+            toast.error(t('expenses.dateRequired'));
             return;
         }
 
@@ -191,14 +193,14 @@ const CreateExpense: React.FC = () => {
                         className="flex items-center text-gray-600 hover:text-gray-900 transition mr-4"
                     >
                         <ArrowLeftIcon className="h-5 w-5 mr-1" />
-                        <span>Retour aux dépenses</span>
+                        <span>{t('expenses.backToExpenses')}</span>
                     </Link>
                 </div>
                 <div className="flex items-center">
                     <BanknotesIcon className="h-8 w-8 text-blue-600 mr-3" />
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Nouvelle dépense</h1>
-                        <p className="text-gray-600">Enregistrez une nouvelle dépense professionnelle</p>
+                        <h1 className="text-3xl font-bold text-gray-900">{t('expenses.newExpense')}</h1>
+                        <p className="text-gray-600">{t('expenses.newExpenseDescription')}</p>
                     </div>
                 </div>
             </div>
@@ -207,12 +209,12 @@ const CreateExpense: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Basic Information */}
                 <div className="bg-white rounded-lg shadow p-6">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Informations générales</h2>
-                    
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('expenses.generalInfo')}</h2>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Description *
+                                {t('expenses.description')} *
                             </label>
                             <input
                                 type="text"
@@ -220,14 +222,14 @@ const CreateExpense: React.FC = () => {
                                 value={formData.description}
                                 onChange={handleInputChange}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="Entrez la description de la dépense"
+                                placeholder={t('expenses.descriptionPlaceholder')}
                                 required
                             />
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Montant (€) *
+                                {t('expenses.amount')} (€) *
                             </label>
                             <input
                                 type="number"
@@ -244,7 +246,7 @@ const CreateExpense: React.FC = () => {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Date de dépense *
+                                {t('expenses.expenseDate')} *
                             </label>
                             <input
                                 type="date"
@@ -258,7 +260,7 @@ const CreateExpense: React.FC = () => {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Catégorie
+                                {t('expenses.category')}
                             </label>
                             <input
                                 type="text"
@@ -266,13 +268,13 @@ const CreateExpense: React.FC = () => {
                                 value={formData.category}
                                 onChange={handleInputChange}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="Nom de la catégorie"
+                                placeholder={t('expenses.categoryPlaceholder')}
                             />
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Fournisseur
+                                {t('expenses.vendor')}
                             </label>
                             <input
                                 type="text"
@@ -280,13 +282,13 @@ const CreateExpense: React.FC = () => {
                                 value={formData.vendor}
                                 onChange={handleInputChange}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="Nom du fournisseur"
+                                placeholder={t('expenses.vendorPlaceholder')}
                             />
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Projet
+                                {t('expenses.project')}
                             </label>
                             <select
                                 name="project_id"
@@ -294,7 +296,7 @@ const CreateExpense: React.FC = () => {
                                 onChange={handleInputChange}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             >
-                                <option value="">Sélectionnez un projet...</option>
+                                <option value="">{t('expenses.selectProject')}</option>
                                 {projectsData?.data?.map(project => (
                                     <option key={project.id} value={project.id}>
                                         {project.name}
@@ -307,8 +309,8 @@ const CreateExpense: React.FC = () => {
 
                 {/* Options */}
                 <div className="bg-white rounded-lg shadow p-6">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Options</h2>
-                    
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('expenses.options')}</h2>
+
                     <div className="flex items-center">
                         <input
                             type="checkbox"
@@ -319,7 +321,7 @@ const CreateExpense: React.FC = () => {
                             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         />
                         <label htmlFor="billable" className="ml-2 block text-sm text-gray-900">
-                            Facturable au client
+                            {t('expenses.billableToClient')}
                         </label>
                     </div>
                 </div>
@@ -328,23 +330,23 @@ const CreateExpense: React.FC = () => {
                 <div className="bg-white rounded-lg shadow p-6">
                     <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                         <DocumentIcon className="h-5 w-5 mr-2" />
-                        Reçu
+                        {t('expenses.receipt')}
                     </h2>
-                    
+
                     <div className="space-y-4">
                         {!formData.receipt ? (
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Télécharger un reçu (optionnel)
+                                    {t('expenses.uploadReceipt')}
                                 </label>
                                 <div className="flex items-center justify-center w-full">
                                     <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
                                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
                                             <PhotoIcon className="w-8 h-8 mb-3 text-gray-400" />
                                             <p className="mb-2 text-sm text-gray-500">
-                                                <span className="font-semibold">Cliquez pour télécharger</span> ou glissez-déposez
+                                                <span className="font-semibold">{t('expenses.clickToUpload')}</span> {t('expenses.orDragDrop')}
                                             </p>
-                                            <p className="text-xs text-gray-500">PNG, JPG, GIF ou PDF (MAX. 5MB)</p>
+                                            <p className="text-xs text-gray-500">{t('expenses.fileTypeHint')}</p>
                                         </div>
                                         <input
                                             type="file"
@@ -374,15 +376,15 @@ const CreateExpense: React.FC = () => {
                                         onClick={removeReceipt}
                                         className="text-red-600 hover:text-red-800 transition-colors"
                                     >
-                                        Supprimer
+                                        {t('common.delete')}
                                     </button>
                                 </div>
-                                
+
                                 {receiptPreview && (
                                     <div className="mt-4">
                                         <img
                                             src={receiptPreview}
-                                            alt="Aperçu du reçu"
+                                            alt={t('expenses.receiptPreview')}
                                             className="max-w-full h-auto rounded-lg shadow-md"
                                         />
                                     </div>
@@ -394,11 +396,11 @@ const CreateExpense: React.FC = () => {
 
                 {/* Notes */}
                 <div className="bg-white rounded-lg shadow p-6">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Notes</h2>
-                    
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('expenses.notes')}</h2>
+
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Notes supplémentaires
+                            {t('expenses.additionalNotes')}
                         </label>
                         <textarea
                             name="notes"
@@ -406,7 +408,7 @@ const CreateExpense: React.FC = () => {
                             onChange={handleInputChange}
                             rows={4}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="Ajoutez des notes ou des détails supplémentaires sur cette dépense..."
+                            placeholder={t('expenses.notesPlaceholder')}
                         />
                     </div>
                 </div>
@@ -417,7 +419,7 @@ const CreateExpense: React.FC = () => {
                         to="/expenses"
                         className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
                     >
-                        Annuler
+                        {t('common.cancel')}
                     </Link>
                     <button
                         type="submit"
@@ -427,12 +429,12 @@ const CreateExpense: React.FC = () => {
                         {createExpenseMutation.isPending ? (
                             <>
                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                Création...
+                                {t('common.creating')}
                             </>
                         ) : (
                             <>
                                 <CheckCircleIcon className="h-5 w-5 mr-2" />
-                                Créer la dépense
+                                {t('expenses.createExpense')}
                             </>
                         )}
                     </button>

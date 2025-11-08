@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import {
     ArrowLeftIcon,
     PencilIcon,
@@ -47,6 +48,7 @@ interface InvoiceItem {
 }
 
 const InvoiceDetail: React.FC = () => {
+    const { t } = useTranslation();
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
@@ -72,10 +74,10 @@ const InvoiceDetail: React.FC = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['invoice', id] });
             queryClient.invalidateQueries({ queryKey: ['invoices'] });
-            toast.success('Statut mis à jour');
+            toast.success(t('invoices.statusUpdated'));
         },
         onError: () => {
-            toast.error('Erreur lors de la mise à jour du statut');
+            toast.error(t('invoices.statusUpdateError'));
         },
     });
 
@@ -86,11 +88,11 @@ const InvoiceDetail: React.FC = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['invoices'] });
-            toast.success('Facture supprimée avec succès');
+            toast.success(t('invoices.deleteSuccess'));
             navigate('/invoices');
         },
         onError: () => {
-            toast.error('Erreur lors de la suppression de la facture');
+            toast.error(t('invoices.deleteError'));
         },
     });
 
@@ -110,10 +112,10 @@ const InvoiceDetail: React.FC = () => {
             document.body.appendChild(link);
             link.click();
             link.remove();
-            toast.success('Facture téléchargée');
+            toast.success(t('invoices.downloadSuccess'));
         },
         onError: () => {
-            toast.error('Erreur lors du téléchargement');
+            toast.error(t('invoices.downloadError'));
         },
     });
 
@@ -124,10 +126,10 @@ const InvoiceDetail: React.FC = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['invoice', id] });
-            toast.success('Facture envoyée par email');
+            toast.success(t('invoices.sendSuccess'));
         },
         onError: () => {
-            toast.error('Erreur lors de l\'envoi de la facture');
+            toast.error(t('invoices.sendError'));
         },
     });
 
@@ -141,11 +143,11 @@ const InvoiceDetail: React.FC = () => {
         };
 
         const labels = {
-            draft: 'Brouillon',
-            sent: 'Envoyée',
-            paid: 'Payée',
-            overdue: 'En retard',
-            cancelled: 'Annulée',
+            draft: t('invoices.status.draft'),
+            sent: t('invoices.status.sent'),
+            paid: t('invoices.status.paid'),
+            overdue: t('invoices.status.overdue'),
+            cancelled: t('invoices.status.cancelled'),
         };
 
         return (
@@ -167,14 +169,14 @@ const InvoiceDetail: React.FC = () => {
         return (
             <div className="p-6">
                 <div className="bg-white rounded-lg shadow p-12 text-center">
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Facture non trouvée</h3>
-                    <p className="text-gray-600 mb-6">La facture demandée n'existe pas ou a été supprimée</p>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">{t('invoices.notFound')}</h3>
+                    <p className="text-gray-600 mb-6">{t('invoices.notFoundDescription')}</p>
                     <Link
                         to="/invoices"
                         className="inline-flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
                     >
                         <ArrowLeftIcon className="h-5 w-5" />
-                        <span>Retour aux factures</span>
+                        <span>{t('invoices.backToInvoices')}</span>
                     </Link>
                 </div>
             </div>
@@ -191,7 +193,7 @@ const InvoiceDetail: React.FC = () => {
                         className="flex items-center text-gray-600 hover:text-gray-900 transition mr-4"
                     >
                         <ArrowLeftIcon className="h-5 w-5 mr-1" />
-                        <span>Retour</span>
+                        <span>{t('common.back')}</span>
                     </Link>
                 </div>
 
@@ -209,7 +211,7 @@ const InvoiceDetail: React.FC = () => {
                                     className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm"
                                 >
                                     <PencilIcon className="h-4 w-4" />
-                                    <span>Modifier</span>
+                                    <span>{t('common.edit')}</span>
                                 </Link>
                                 <button
                                     onClick={() => sendInvoiceMutation.mutate()}
@@ -217,7 +219,7 @@ const InvoiceDetail: React.FC = () => {
                                     className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm disabled:opacity-50"
                                 >
                                     <PaperAirplaneIcon className="h-4 w-4" />
-                                    <span>Envoyer</span>
+                                    <span>{t('invoices.send')}</span>
                                 </button>
                             </>
                         )}
@@ -229,7 +231,7 @@ const InvoiceDetail: React.FC = () => {
                                 className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm disabled:opacity-50"
                             >
                                 <CheckCircleIcon className="h-4 w-4" />
-                                <span>Marquer payée</span>
+                                <span>{t('invoices.markAsPaid')}</span>
                             </button>
                         )}
 
@@ -239,7 +241,7 @@ const InvoiceDetail: React.FC = () => {
                             className="flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition text-sm disabled:opacity-50"
                         >
                             <DocumentArrowDownIcon className="h-4 w-4" />
-                            <span>Télécharger PDF</span>
+                            <span>{t('invoices.downloadPDF')}</span>
                         </button>
 
                         <button
@@ -247,7 +249,7 @@ const InvoiceDetail: React.FC = () => {
                             className="flex items-center space-x-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition text-sm"
                         >
                             <PrinterIcon className="h-4 w-4" />
-                            <span>Imprimer</span>
+                            <span>{t('common.print')}</span>
                         </button>
 
                         <button
@@ -255,7 +257,7 @@ const InvoiceDetail: React.FC = () => {
                             className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm"
                         >
                             <TrashIcon className="h-4 w-4" />
-                            <span>Supprimer</span>
+                            <span>{t('common.delete')}</span>
                         </button>
                     </div>
                 </div>
@@ -266,15 +268,15 @@ const InvoiceDetail: React.FC = () => {
                 {/* Header Info */}
                 <div className="flex justify-between mb-8">
                     <div>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-2">FACTURE</h2>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('invoices.invoice')}</h2>
                         <p className="text-gray-600">{invoice.invoice_number}</p>
                     </div>
                     <div className="text-right">
-                        <p className="text-sm text-gray-600">Date d'émission</p>
+                        <p className="text-sm text-gray-600">{t('invoices.issueDate')}</p>
                         <p className="font-semibold text-gray-900">
                             {format(new Date(invoice.issue_date), 'dd MMMM yyyy', { locale: fr })}
                         </p>
-                        <p className="text-sm text-gray-600 mt-2">Date d'échéance</p>
+                        <p className="text-sm text-gray-600 mt-2">{t('invoices.dueDate')}</p>
                         <p className="font-semibold text-gray-900">
                             {format(new Date(invoice.due_date), 'dd MMMM yyyy', { locale: fr })}
                         </p>
@@ -284,7 +286,7 @@ const InvoiceDetail: React.FC = () => {
                 {/* Client Info */}
                 {invoice.client && (
                     <div className="mb-8 p-4 bg-gray-50 rounded-lg">
-                        <h3 className="text-sm font-medium text-gray-600 mb-2">Facturé à</h3>
+                        <h3 className="text-sm font-medium text-gray-600 mb-2">{t('invoices.billedTo')}</h3>
                         <p className="font-semibold text-gray-900">{invoice.client.name}</p>
                         {invoice.client.company && (
                             <p className="text-gray-700">{invoice.client.company}</p>
@@ -301,10 +303,10 @@ const InvoiceDetail: React.FC = () => {
                     <table className="w-full">
                         <thead>
                             <tr className="border-b-2 border-gray-300">
-                                <th className="text-left py-3 text-sm font-semibold text-gray-700">Description</th>
-                                <th className="text-right py-3 text-sm font-semibold text-gray-700">Qté</th>
-                                <th className="text-right py-3 text-sm font-semibold text-gray-700">Prix unitaire</th>
-                                <th className="text-right py-3 text-sm font-semibold text-gray-700">Total</th>
+                                <th className="text-left py-3 text-sm font-semibold text-gray-700">{t('invoices.description')}</th>
+                                <th className="text-right py-3 text-sm font-semibold text-gray-700">{t('invoices.quantity')}</th>
+                                <th className="text-right py-3 text-sm font-semibold text-gray-700">{t('invoices.unitPrice')}</th>
+                                <th className="text-right py-3 text-sm font-semibold text-gray-700">{t('invoices.total')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -334,7 +336,7 @@ const InvoiceDetail: React.FC = () => {
                 <div className="flex justify-end">
                     <div className="w-64 space-y-2">
                         <div className="flex justify-between text-gray-700">
-                            <span>Sous-total</span>
+                            <span>{t('invoices.subtotal')}</span>
                             <span>
                                 {new Intl.NumberFormat('fr-FR', {
                                     style: 'currency',
@@ -343,7 +345,7 @@ const InvoiceDetail: React.FC = () => {
                             </span>
                         </div>
                         <div className="flex justify-between text-gray-700">
-                            <span>TVA ({invoice.tax_rate}%)</span>
+                            <span>{t('invoices.tax', { rate: invoice.tax_rate })}</span>
                             <span>
                                 {new Intl.NumberFormat('fr-FR', {
                                     style: 'currency',
@@ -352,7 +354,7 @@ const InvoiceDetail: React.FC = () => {
                             </span>
                         </div>
                         <div className="flex justify-between text-xl font-bold text-gray-900 pt-2 border-t-2 border-gray-300">
-                            <span>Total</span>
+                            <span>{t('invoices.total')}</span>
                             <span>
                                 {new Intl.NumberFormat('fr-FR', {
                                     style: 'currency',
@@ -366,7 +368,7 @@ const InvoiceDetail: React.FC = () => {
                 {/* Notes */}
                 {invoice.notes && (
                     <div className="mt-8 pt-8 border-t border-gray-200">
-                        <h3 className="text-sm font-medium text-gray-600 mb-2">Notes</h3>
+                        <h3 className="text-sm font-medium text-gray-600 mb-2">{t('invoices.notes')}</h3>
                         <p className="text-gray-700 whitespace-pre-wrap">{invoice.notes}</p>
                     </div>
                 )}
@@ -376,16 +378,16 @@ const InvoiceDetail: React.FC = () => {
             {showDeleteConfirm && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-                        <h3 className="text-lg font-bold text-gray-900 mb-2">Confirmer la suppression</h3>
+                        <h3 className="text-lg font-bold text-gray-900 mb-2">{t('invoices.confirmDelete')}</h3>
                         <p className="text-gray-600 mb-6">
-                            Êtes-vous sûr de vouloir supprimer cette facture ? Cette action est irréversible.
+                            {t('invoices.confirmDeleteMessage')}
                         </p>
                         <div className="flex justify-end space-x-3">
                             <button
                                 onClick={() => setShowDeleteConfirm(false)}
                                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
                             >
-                                Annuler
+                                {t('common.cancel')}
                             </button>
                             <button
                                 onClick={() => {
@@ -395,7 +397,7 @@ const InvoiceDetail: React.FC = () => {
                                 disabled={deleteInvoiceMutation.isPending}
                                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50"
                             >
-                                {deleteInvoiceMutation.isPending ? 'Suppression...' : 'Supprimer'}
+                                {deleteInvoiceMutation.isPending ? t('common.deleting') : t('common.delete')}
                             </button>
                         </div>
                     </div>
