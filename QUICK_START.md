@@ -1,4 +1,4 @@
-# 🚀 Time Is Money 2 - Démarrage Rapide
+# 🚀 Time Is Money - Démarrage Rapide
 
 ## Installation en 1 commande
 

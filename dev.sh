@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Time Is Money 2 - Development Server Launcher
+# Time Is Money - Development Server Launcher
 # Usage: ./dev.sh [command]
 # Commands: start, queue, vite, all
 
@@ -15,7 +15,7 @@ NC='\033[0m' # No Color
 
 # Function to print colored output
 print_status() {
-    echo -e "${BLUE}[Time Is Money 2]${NC} $1"
+    echo -e "${BLUE}[Time Is Money]${NC} $1"
 }
 
 print_success() {
@@ -119,7 +119,7 @@ seed_database() {
 
 # Function to setup application
 setup_app() {
-    print_status "Setting up Time Is Money 2..."
+    print_status "Setting up Time Is Money..."
 
     # Generate app key if not exists
     if ! grep -q "APP_KEY=base64:" .env; then
@@ -186,7 +186,7 @@ optimize_prod() {
 # Display help
 show_help() {
     cat << EOF
-${BLUE}Time Is Money 2 - Development Server Launcher${NC}
+${BLUE}Time Is Money - Development Server Launcher${NC}
 
 ${GREEN}Usage:${NC}
     ./dev.sh [command]

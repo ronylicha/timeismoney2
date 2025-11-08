@@ -1,4 +1,4 @@
-# Time Is Money 2 - Guide de Développement
+# Time Is Money - Guide de Développement
 
 ## 🚀 Démarrage Rapide
 
@@ -90,7 +90,7 @@ Assurez-vous de configurer ces variables dans votre fichier `.env` :
 
 ```env
 # Application
-APP_NAME="Time Is Money 2"
+APP_NAME="Time Is Money"
 APP_ENV=local
 APP_DEBUG=true
 APP_URL=http://localhost:8000

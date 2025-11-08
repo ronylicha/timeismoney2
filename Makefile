@@ -18,7 +18,7 @@ COLOR_BLUE := \033[34m
 
 ## help: Display this help message
 help:
-	@echo "$(COLOR_BOLD)Time Is Money 2 - Makefile Commands$(COLOR_RESET)"
+	@echo "$(COLOR_BOLD)Time Is Money - Makefile Commands$(COLOR_RESET)"
 	@echo ""
 	@echo "$(COLOR_GREEN)Available commands:$(COLOR_RESET)"
 	@sed -n 's/^##//p' ${MAKEFILE_LIST} | column -t -s ':' | sed -e 's/^/ /'
@@ -30,7 +30,7 @@ help:
 
 ## install: Initial setup (install dependencies, migrate, seed)
 install:
-	@echo "$(COLOR_BLUE)→ Installing Time Is Money 2...$(COLOR_RESET)"
+	@echo "$(COLOR_BLUE)→ Installing Time Is Money...$(COLOR_RESET)"
 	@if [ ! -f .env ]; then \
 		echo "$(COLOR_YELLOW)→ Creating .env file...$(COLOR_RESET)"; \
 		cp .env.example .env; \

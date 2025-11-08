@@ -1,4 +1,4 @@
-# ✅ Time Is Money 2 - Configuration Complète
+# ✅ Time Is Money - Configuration Complète
 
 ## 🎉 Installation Réussie !
 

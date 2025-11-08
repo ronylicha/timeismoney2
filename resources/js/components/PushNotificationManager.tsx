@@ -133,7 +133,7 @@ export const PushNotificationManager: React.FC = () => {
             return;
         }
 
-        const notification = new Notification('Time Is Money 2', {
+        const notification = new Notification('Time Is Money', {
             body: 'Test de notification - Tout fonctionne correctement !',
             icon: '/images/icons/icon-192x192.png',
             badge: '/images/icons/badge-72x72.png',

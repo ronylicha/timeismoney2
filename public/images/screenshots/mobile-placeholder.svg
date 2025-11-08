@@ -7,7 +7,7 @@
 
   <!-- Header -->
   <rect y="44" width="750" height="88" fill="#3B82F6"/>
-  <text x="375" y="100" text-anchor="middle" font-family="Inter, sans-serif" font-size="28" font-weight="bold" fill="white">Time Is Money 2</text>
+  <text x="375" y="100" text-anchor="middle" font-family="Inter, sans-serif" font-size="28" font-weight="bold" fill="white">Time Is Money</text>
 
   <!-- Timer Card -->
   <rect x="30" y="160" width="690" height="280" fill="white" rx="16" stroke="#E5E7EB" stroke-width="2"/>

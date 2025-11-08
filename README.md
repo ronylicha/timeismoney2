@@ -1,8 +1,8 @@
-# Time Is Money 2
+# Time Is Money
 
 ## 🚀 Application de Gestion du Temps Multi-tenant
 
-**Time Is Money 2** est une application complète de gestion du temps et de facturation, conçue pour les freelances, équipes et entreprises. Elle offre un suivi du temps précis, une facturation conforme aux normes françaises, et fonctionne même hors ligne.
+**Time Is Money** est une application complète de gestion du temps et de facturation, conçue pour les freelances, équipes et entreprises. Elle offre un suivi du temps précis, une facturation conforme aux normes françaises, et fonctionne même hors ligne.
 
 ## ✨ Fonctionnalités Principales
 
@@ -216,4 +216,4 @@ Ce projet est sous licence MIT - voir le fichier [LICENSE](LICENSE) pour plus de
 
 ---
 
-**Time Is Money 2** - Votre temps a de la valeur, gérez-le efficacement ! ⏰💰
+**Time Is Money** - Votre temps a de la valeur, gérez-le efficacement ! ⏰💰

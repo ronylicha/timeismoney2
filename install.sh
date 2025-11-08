@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Time Is Money 2 - Script d'installation automatique
+# Time Is Money - Script d'installation automatique
 # =====================================================
 
 set -e  # Arrêter le script en cas d'erreur
@@ -27,7 +27,7 @@ log_warning() {
 
 # Banner
 echo "============================================="
-echo "   Time Is Money 2 - Installation"
+echo "   Time Is Money - Installation"
 echo "============================================="
 echo ""
 
@@ -197,5 +197,5 @@ echo ""
 echo "Compte administrateur :"
 echo "  Email : $ADMIN_EMAIL"
 echo ""
-echo "Bonne utilisation de Time Is Money 2 !"
+echo "Bonne utilisation de Time Is Money !"
 echo ""

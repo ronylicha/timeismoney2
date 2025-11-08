@@ -7,14 +7,14 @@
 
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#3B82F6">
-    <meta name="description" content="Time Is Money 2 - Gestion du temps et facturation professionnelle">
+    <meta name="description" content="Time Is Money - Gestion du temps et facturation professionnelle">
 
     <!-- Apple PWA Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="TIM2">
 
-    <title>{{ config('app.name', 'Time Is Money 2') }}</title>
+    <title>{{ config('app.name', 'Time Is Money') }}</title>
 
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json">
