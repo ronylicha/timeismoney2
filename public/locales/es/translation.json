@@ -61,6 +61,7 @@
   },
   "nav": {
     "dashboard": "Panel de Control",
+    "adminDashboard": "Panel de Administración",
     "userDashboard": "Panel de Usuario",
     "time": "Seguimiento de Tiempo",
     "timesheet": "Hoja de Tiempo",
@@ -269,7 +270,17 @@
     "timerStopped": "Cronómetro detenido",
     "timerError": "Error al iniciar el cronómetro",
     "stopError": "Error al detener el cronómetro",
-    "totalToday": "Total hoy"
+    "totalToday": "Total hoy",
+    "timesheet": "Hoja de Tiempo",
+    "noTask": "Sin tarea",
+    "workingOn": "Trabajando en",
+    "startTime": "Hora de Inicio",
+    "endTime": "Hora de Fin",
+    "totalHours": "Total Horas",
+    "editEntry": "Editar Entrada",
+    "deleteEntry": "Eliminar Entrada",
+    "saveEntry": "Guardar Entrada",
+    "addEntry": "Agregar Entrada"
   },
   "projects": {
     "title": "Proyectos",
@@ -292,7 +303,19 @@
     "timeTracked": "Tiempo Seguido",
     "budgetUsed": "Presupuesto Usado",
     "noProjects": "No hay proyectos",
-    "createFirst": "Cree su primer proyecto"
+    "createFirst": "Cree su primer proyecto",
+    "createProject": "Crear Proyecto",
+    "editProject": "Editar Proyecto",
+    "deleteProject": "Eliminar Proyecto",
+    "projectDetails": "Detalles del Proyecto",
+    "viewProject": "Ver Proyecto",
+    "noProjectsFound": "No se encontraron proyectos",
+    "searchProjects": "Buscar proyectos...",
+    "selectClient": "Seleccionar Cliente",
+    "teamMembers": "Miembros del Equipo",
+    "projectCreated": "Proyecto creado con éxito",
+    "projectUpdated": "Proyecto actualizado con éxito",
+    "projectDeleted": "Proyecto eliminado con éxito"
   },
   "tasks": {
     "title": "Tareas",
@@ -341,7 +364,22 @@
     "language": "Idioma",
     "noClients": "No hay clientes",
     "totalProjects": "Total proyectos",
-    "totalInvoiced": "Total facturado"
+    "totalInvoiced": "Total facturado",
+    "managePortfolio": "Gestionar Cartera de Clientes",
+    "totalClients": "Total Clientes",
+    "activeProjects": "Proyectos Activos",
+    "totalRevenue": "Ingresos Totales",
+    "searchClients": "Buscar clientes...",
+    "addFirstClient": "Agregue su primer cliente para comenzar",
+    "addClient": "Agregar Cliente",
+    "editClient": "Editar Cliente",
+    "clientDetails": "Detalles del Cliente",
+    "deleteClient": "Eliminar Cliente",
+    "deleteClientConfirm": "¿Está seguro de que desea eliminar este cliente?",
+    "clientDeleted": "Cliente eliminado con éxito",
+    "clientCreated": "Cliente creado con éxito",
+    "clientUpdated": "Cliente actualizado con éxito",
+    "createClient": "Crear Cliente"
   },
   "invoices": {
     "title": "Facturas",
@@ -383,7 +421,24 @@
     "billTo": "Facturar a",
     "noInvoices": "No hay facturas",
     "paymentLink": "Enlace de Pago",
-    "paymentReceived": "Pago recibido"
+    "paymentReceived": "Pago recibido",
+    "createInvoice": "Crear Factura",
+    "editInvoice": "Editar Factura",
+    "deleteInvoice": "Eliminar Factura",
+    "invoiceDetails": "Detalles de la Factura",
+    "viewInvoice": "Ver Factura",
+    "searchInvoices": "Buscar facturas...",
+    "invoiceCreated": "Factura creada con éxito",
+    "invoiceUpdated": "Factura actualizada con éxito",
+    "invoiceDeleted": "Factura eliminada con éxito",
+    "selectClient": "Seleccionar Cliente",
+    "selectProject": "Seleccionar Proyecto",
+    "addPaymentLink": "Agregar Enlace de Pago",
+    "client": "Cliente",
+    "project": "Proyecto",
+    "invoiceType": "Tipo de Factura",
+    "selectType": "Seleccionar Tipo",
+    "advance": "Anticipo"
   },
   "quotes": {
     "title": "Presupuestos",
@@ -403,7 +458,18 @@
     "items": "Artículos",
     "notes": "Notas",
     "terms": "Términos",
-    "noQuotes": "No hay presupuestos"
+    "noQuotes": "No hay presupuestos",
+    "createQuote": "Crear Presupuesto",
+    "editQuote": "Editar Presupuesto",
+    "deleteQuote": "Eliminar Presupuesto",
+    "quoteDetails": "Detalles del Presupuesto",
+    "viewQuote": "Ver Presupuesto",
+    "searchQuotes": "Buscar presupuestos...",
+    "quoteCreated": "Presupuesto creado con éxito",
+    "quoteUpdated": "Presupuesto actualizado con éxito",
+    "quoteDeleted": "Presupuesto eliminado con éxito",
+    "selectClient": "Seleccionar Cliente",
+    "client": "Cliente"
   },
   "creditNotes": {
     "title": "Notas de Crédito",
@@ -446,7 +512,25 @@
     "rejected": "Rechazado",
     "paid": "Pagado",
     "noExpenses": "No hay gastos",
-    "totalExpenses": "Total gastos"
+    "totalExpenses": "Total gastos",
+    "createExpense": "Crear Gasto",
+    "editExpense": "Editar Gasto",
+    "deleteExpense": "Eliminar Gasto",
+    "expenseDetails": "Detalles del Gasto",
+    "viewExpense": "Ver Gasto",
+    "searchExpenses": "Buscar gastos...",
+    "expenseCreated": "Gasto creado con éxito",
+    "expenseUpdated": "Gasto actualizado con éxito",
+    "expenseDeleted": "Gasto eliminado con éxito",
+    "manageCategories": "Gestionar Categorías",
+    "categoryName": "Nombre de la Categoría",
+    "categoryDescription": "Descripción de la Categoría",
+    "addCategory": "Agregar Categoría",
+    "editCategory": "Editar Categoría",
+    "deleteCategory": "Eliminar Categoría",
+    "categoryCreated": "Categoría creada con éxito",
+    "categoryUpdated": "Categoría actualizada con éxito",
+    "categoryDeleted": "Categoría eliminada con éxito"
   },
   "reports": {
     "title": "Informes",
@@ -558,7 +642,90 @@
     "userManagement": "Gestión de Usuarios",
     "tenantManagement": "Gestión de Organizaciones",
     "statistics": "Estadísticas",
-    "activity": "Actividad"
+    "activity": "Actividad",
+    "dashboard": {
+      "title": "Panel de Administración",
+      "overview": "Resumen del Sistema",
+      "stats": "Estadísticas",
+      "systemHealth": "Estado del Sistema",
+      "activeUsers": "Usuarios Activos",
+      "totalTenants": "Total Organizaciones",
+      "revenueThisMonth": "Ingresos Este Mes",
+      "activeSessions": "Sesiones Activas"
+    },
+    "users": {
+      "title": "Gestión de Usuarios",
+      "totalUsers": "Total Usuarios",
+      "activeUsers": "Usuarios Activos",
+      "newUsers": "Nuevos Usuarios",
+      "searchUsers": "Buscar usuarios...",
+      "addUser": "Agregar Usuario",
+      "editUser": "Editar Usuario",
+      "deleteUser": "Eliminar Usuario",
+      "userDetails": "Detalles del Usuario",
+      "lastLogin": "Último Inicio de Sesión",
+      "createdAt": "Creado el",
+      "status": "Estado",
+      "role": "Rol",
+      "actions": "Acciones"
+    },
+    "tenants": {
+      "title": "Gestión de Organizaciones",
+      "totalTenants": "Total Organizaciones",
+      "activeTenants": "Organizaciones Activas",
+      "searchTenants": "Buscar organizaciones...",
+      "addTenant": "Agregar Organización",
+      "editTenant": "Editar Organización",
+      "deleteTenant": "Eliminar Organización",
+      "tenantDetails": "Detalles de la Organización",
+      "subscription": "Suscripción",
+      "plan": "Plan"
+    },
+    "audit": {
+      "title": "Registros de Auditoría",
+      "searchLogs": "Buscar en registros...",
+      "user": "Usuario",
+      "action": "Acción",
+      "resource": "Recurso",
+      "timestamp": "Marca de Tiempo",
+      "ipAddress": "Dirección IP",
+      "userAgent": "User Agent",
+      "noLogs": "No se encontraron registros de auditoría"
+    },
+    "settings": {
+      "title": "Configuración del Sistema",
+      "general": "Configuración General",
+      "email": "Configuración de Email",
+      "security": "Configuración de Seguridad",
+      "maintenance": "Modo Mantenimiento",
+      "backups": "Copias de Seguridad",
+      "updates": "Actualizaciones"
+    },
+    "monitoring": {
+      "title": "Monitoreo del Sistema",
+      "performance": "Rendimiento",
+      "errors": "Errores",
+      "logs": "Registros",
+      "metrics": "Métricas",
+      "uptime": "Tiempo de Actividad",
+      "responseTime": "Tiempo de Respuesta"
+    },
+    "notifications": {
+      "title": "Notificaciones del Sistema",
+      "sendNotification": "Enviar Notificación",
+      "recipients": "Destinatarios",
+      "message": "Mensaje",
+      "type": "Tipo",
+      "sent": "Enviado",
+      "pending": "Pendiente"
+    },
+    "reports": {
+      "title": "Informes del Sistema",
+      "userActivity": "Actividad de Usuarios",
+      "systemUsage": "Uso del Sistema",
+      "financialReports": "Informes Financieros",
+      "generateReport": "Generar Informe"
+    }
   },
   "notifications": {
     "title": "Notificaciones",
@@ -573,6 +740,17 @@
       "warning": "Advertencia",
       "error": "Error",
       "reminder": "Recordatorio"
+    },
+    "push": {
+      "enable": "Activar Notificaciones Push",
+      "disable": "Desactivar Notificaciones Push",
+      "enabled": "Notificaciones push activadas",
+      "disabled": "Notificaciones push desactivadas",
+      "permissionDenied": "Permiso de notificaciones push denegado",
+      "notSupported": "Las notificaciones push no son compatibles con este navegador",
+      "subscribe": "Suscribirse a Notificaciones",
+      "unsubscribe": "Cancelar Suscripción",
+      "title": "Notificaciones Push"
     }
   },
   "toast": {
@@ -771,6 +949,44 @@
     "dashboard": "Panel de Control",
     "administration": "Administración",
     "logout": "Cerrar Sesión"
+  },
+  "pwa": {
+    "install": {
+      "title": "Instalar TimeIsMoney",
+      "subtitle": "Instale nuestra aplicación para una mejor experiencia",
+      "benefit1": "Acceso rápido desde su pantalla de inicio",
+      "benefit2": "Trabajar sin conexión",
+      "benefit3": "Recibir notificaciones",
+      "installNow": "Instalar Ahora",
+      "later": "Tal Vez Después"
+    },
+    "update": {
+      "available": "Una nueva versión está disponible",
+      "updating": "Actualizando...",
+      "title": "Actualización Disponible",
+      "subtitle": "Una nueva versión de la aplicación está disponible",
+      "updateNow": "Actualizar Ahora",
+      "later": "Después"
+    },
+    "status": {
+      "online": "En línea",
+      "offline": "Sin conexión",
+      "updateAvailable": "Actualización disponible"
+    }
+  },
+  "team": {
+    "title": "Gestión de Equipo",
+    "members": "Miembros del Equipo",
+    "addMember": "Agregar Miembro",
+    "removeMember": "Eliminar Miembro",
+    "inviteMember": "Invitar Miembro del Equipo",
+    "pendingInvitations": "Invitaciones Pendientes",
+    "role": "Rol",
+    "permissions": "Permisos",
+    "noMembers": "Aún no hay miembros del equipo",
+    "memberAdded": "Miembro agregado con éxito",
+    "memberRemoved": "Miembro eliminado con éxito",
+    "invitationSent": "Invitación enviada con éxito"
   },
   "app": {
     "name": "TimeIsMoney",

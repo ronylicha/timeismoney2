@@ -61,6 +61,7 @@
   },
   "nav": {
     "dashboard": "Dashboard",
+    "adminDashboard": "Admin Dashboard",
     "userDashboard": "User Dashboard",
     "time": "Time Tracking",
     "timesheet": "Timesheet",
@@ -269,7 +270,17 @@
     "timerStopped": "Timer stopped",
     "timerError": "Error starting timer",
     "stopError": "Error stopping timer",
-    "totalToday": "Total today"
+    "totalToday": "Total today",
+    "timesheet": "Timesheet",
+    "noTask": "No task",
+    "workingOn": "Working on",
+    "startTime": "Start Time",
+    "endTime": "End Time",
+    "totalHours": "Total Hours",
+    "editEntry": "Edit Entry",
+    "deleteEntry": "Delete Entry",
+    "saveEntry": "Save Entry",
+    "addEntry": "Add Entry"
   },
   "projects": {
     "title": "Projects",
@@ -292,7 +303,19 @@
     "timeTracked": "Time Tracked",
     "budgetUsed": "Budget Used",
     "noProjects": "No projects",
-    "createFirst": "Create your first project"
+    "createFirst": "Create your first project",
+    "createProject": "Create Project",
+    "editProject": "Edit Project",
+    "deleteProject": "Delete Project",
+    "projectDetails": "Project Details",
+    "viewProject": "View Project",
+    "noProjectsFound": "No projects found",
+    "searchProjects": "Search projects...",
+    "selectClient": "Select Client",
+    "teamMembers": "Team Members",
+    "projectCreated": "Project created successfully",
+    "projectUpdated": "Project updated successfully",
+    "projectDeleted": "Project deleted successfully"
   },
   "tasks": {
     "title": "Tasks",
@@ -341,7 +364,22 @@
     "language": "Language",
     "noClients": "No clients",
     "totalProjects": "Total projects",
-    "totalInvoiced": "Total invoiced"
+    "totalInvoiced": "Total invoiced",
+    "managePortfolio": "Manage Client Portfolio",
+    "totalClients": "Total Clients",
+    "activeProjects": "Active Projects",
+    "totalRevenue": "Total Revenue",
+    "searchClients": "Search clients...",
+    "addFirstClient": "Add your first client to get started",
+    "addClient": "Add Client",
+    "editClient": "Edit Client",
+    "clientDetails": "Client Details",
+    "deleteClient": "Delete Client",
+    "deleteClientConfirm": "Are you sure you want to delete this client?",
+    "clientDeleted": "Client deleted successfully",
+    "clientCreated": "Client created successfully",
+    "clientUpdated": "Client updated successfully",
+    "createClient": "Create Client"
   },
   "invoices": {
     "title": "Invoices",
@@ -383,7 +421,24 @@
     "billTo": "Bill To",
     "noInvoices": "No invoices",
     "paymentLink": "Payment Link",
-    "paymentReceived": "Payment received"
+    "paymentReceived": "Payment received",
+    "createInvoice": "Create Invoice",
+    "editInvoice": "Edit Invoice",
+    "deleteInvoice": "Delete Invoice",
+    "invoiceDetails": "Invoice Details",
+    "viewInvoice": "View Invoice",
+    "searchInvoices": "Search invoices...",
+    "invoiceCreated": "Invoice created successfully",
+    "invoiceUpdated": "Invoice updated successfully",
+    "invoiceDeleted": "Invoice deleted successfully",
+    "selectClient": "Select Client",
+    "selectProject": "Select Project",
+    "addPaymentLink": "Add Payment Link",
+    "client": "Client",
+    "project": "Project",
+    "invoiceType": "Invoice Type",
+    "selectType": "Select Type",
+    "advance": "Advance"
   },
   "quotes": {
     "title": "Quotes",
@@ -403,7 +458,18 @@
     "items": "Items",
     "notes": "Notes",
     "terms": "Terms",
-    "noQuotes": "No quotes"
+    "noQuotes": "No quotes",
+    "createQuote": "Create Quote",
+    "editQuote": "Edit Quote",
+    "deleteQuote": "Delete Quote",
+    "quoteDetails": "Quote Details",
+    "viewQuote": "View Quote",
+    "searchQuotes": "Search quotes...",
+    "quoteCreated": "Quote created successfully",
+    "quoteUpdated": "Quote updated successfully",
+    "quoteDeleted": "Quote deleted successfully",
+    "selectClient": "Select Client",
+    "client": "Client"
   },
   "creditNotes": {
     "title": "Credit Notes",
@@ -446,7 +512,25 @@
     "rejected": "Rejected",
     "paid": "Paid",
     "noExpenses": "No expenses",
-    "totalExpenses": "Total expenses"
+    "totalExpenses": "Total expenses",
+    "createExpense": "Create Expense",
+    "editExpense": "Edit Expense",
+    "deleteExpense": "Delete Expense",
+    "expenseDetails": "Expense Details",
+    "viewExpense": "View Expense",
+    "searchExpenses": "Search expenses...",
+    "expenseCreated": "Expense created successfully",
+    "expenseUpdated": "Expense updated successfully",
+    "expenseDeleted": "Expense deleted successfully",
+    "manageCategories": "Manage Categories",
+    "categoryName": "Category Name",
+    "categoryDescription": "Category Description",
+    "addCategory": "Add Category",
+    "editCategory": "Edit Category",
+    "deleteCategory": "Delete Category",
+    "categoryCreated": "Category created successfully",
+    "categoryUpdated": "Category updated successfully",
+    "categoryDeleted": "Category deleted successfully"
   },
   "reports": {
     "title": "Reports",
@@ -558,7 +642,90 @@
     "userManagement": "User Management",
     "tenantManagement": "Organization Management",
     "statistics": "Statistics",
-    "activity": "Activity"
+    "activity": "Activity",
+    "dashboard": {
+      "title": "Admin Dashboard",
+      "overview": "System Overview",
+      "stats": "Statistics",
+      "systemHealth": "System Health",
+      "activeUsers": "Active Users",
+      "totalTenants": "Total Organizations",
+      "revenueThisMonth": "Revenue This Month",
+      "activeSessions": "Active Sessions"
+    },
+    "users": {
+      "title": "User Management",
+      "totalUsers": "Total Users",
+      "activeUsers": "Active Users",
+      "newUsers": "New Users",
+      "searchUsers": "Search users...",
+      "addUser": "Add User",
+      "editUser": "Edit User",
+      "deleteUser": "Delete User",
+      "userDetails": "User Details",
+      "lastLogin": "Last Login",
+      "createdAt": "Created At",
+      "status": "Status",
+      "role": "Role",
+      "actions": "Actions"
+    },
+    "tenants": {
+      "title": "Organization Management",
+      "totalTenants": "Total Organizations",
+      "activeTenants": "Active Organizations",
+      "searchTenants": "Search organizations...",
+      "addTenant": "Add Organization",
+      "editTenant": "Edit Organization",
+      "deleteTenant": "Delete Organization",
+      "tenantDetails": "Organization Details",
+      "subscription": "Subscription",
+      "plan": "Plan"
+    },
+    "audit": {
+      "title": "Audit Logs",
+      "searchLogs": "Search logs...",
+      "user": "User",
+      "action": "Action",
+      "resource": "Resource",
+      "timestamp": "Timestamp",
+      "ipAddress": "IP Address",
+      "userAgent": "User Agent",
+      "noLogs": "No audit logs found"
+    },
+    "settings": {
+      "title": "System Settings",
+      "general": "General Settings",
+      "email": "Email Settings",
+      "security": "Security Settings",
+      "maintenance": "Maintenance Mode",
+      "backups": "Backups",
+      "updates": "Updates"
+    },
+    "monitoring": {
+      "title": "System Monitoring",
+      "performance": "Performance",
+      "errors": "Errors",
+      "logs": "Logs",
+      "metrics": "Metrics",
+      "uptime": "Uptime",
+      "responseTime": "Response Time"
+    },
+    "notifications": {
+      "title": "System Notifications",
+      "sendNotification": "Send Notification",
+      "recipients": "Recipients",
+      "message": "Message",
+      "type": "Type",
+      "sent": "Sent",
+      "pending": "Pending"
+    },
+    "reports": {
+      "title": "System Reports",
+      "userActivity": "User Activity",
+      "systemUsage": "System Usage",
+      "financialReports": "Financial Reports",
+      "generateReport": "Generate Report"
+    }
   },
   "notifications": {
     "title": "Notifications",
@@ -573,6 +740,17 @@
       "warning": "Warning",
       "error": "Error",
       "reminder": "Reminder"
+    },
+    "push": {
+      "enable": "Enable Push Notifications",
+      "disable": "Disable Push Notifications",
+      "enabled": "Push notifications enabled",
+      "disabled": "Push notifications disabled",
+      "permissionDenied": "Push notifications permission denied",
+      "notSupported": "Push notifications are not supported in this browser",
+      "subscribe": "Subscribe to Notifications",
+      "unsubscribe": "Unsubscribe from Notifications",
+      "title": "Push Notifications"
     }
   },
   "toast": {
@@ -771,6 +949,44 @@
     "dashboard": "Dashboard",
     "administration": "Administration",
     "logout": "Logout"
+  },
+  "pwa": {
+    "install": {
+      "title": "Install TimeIsMoney",
+      "subtitle": "Install our app for a better experience",
+      "benefit1": "Quick access from your home screen",
+      "benefit2": "Work offline",
+      "benefit3": "Receive notifications",
+      "installNow": "Install Now",
+      "later": "Maybe Later"
+    },
+    "update": {
+      "available": "A new version is available",
+      "updating": "Updating...",
+      "title": "Update Available",
+      "subtitle": "A new version of the app is available",
+      "updateNow": "Update Now",
+      "later": "Later"
+    },
+    "status": {
+      "online": "Online",
+      "offline": "Offline",
+      "updateAvailable": "Update available"
+    }
+  },
+  "team": {
+    "title": "Team Management",
+    "members": "Team Members",
+    "addMember": "Add Member",
+    "removeMember": "Remove Member",
+    "inviteMember": "Invite Team Member",
+    "pendingInvitations": "Pending Invitations",
+    "role": "Role",
+    "permissions": "Permissions",
+    "noMembers": "No team members yet",
+    "memberAdded": "Team member added successfully",
+    "memberRemoved": "Team member removed successfully",
+    "invitationSent": "Invitation sent successfully"
   },
   "app": {
     "name": "TimeIsMoney",
