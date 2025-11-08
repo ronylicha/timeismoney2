@@ -1,4 +1,4 @@
-import React, { useEffect, Suspense } from 'react';
+import React, { useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
@@ -9,63 +9,47 @@ import 'react-toastify/dist/ReactToastify.css';
 // i18n configuration
 import i18n from './i18n/config';
 
-// Layout Components
+// Layout Components (keep eagerly loaded for better UX)
 import MainLayout from './layouts/MainLayout';
 import AuthLayout from './layouts/AuthLayout';
 
-// Auth Components
+// Auth Components (keep eagerly loaded for better UX)
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import TwoFactorAuth from './pages/auth/TwoFactorAuth';
 
-// Dashboard
-import Dashboard from './pages/Dashboard';
-
-// Time Tracking
-import TimeTracking from './pages/TimeTracking';
-import TimeSheet from './pages/TimeSheet';
-
-// Projects & Tasks
-import Projects from './pages/Projects';
-import ProjectDetail from './pages/ProjectDetail';
-import Tasks from './pages/Tasks';
-import KanbanBoard from './pages/KanbanBoard';
-
-// Clients
-import Clients from './pages/Clients';
-import ClientDetail from './pages/ClientDetail';
-
-// Invoicing
-import Invoices from './pages/Invoices';
-import InvoiceDetail from './pages/InvoiceDetail';
-import CreateInvoice from './pages/CreateInvoice';
-import Quotes from './pages/Quotes';
-import QuoteDetail from './pages/QuoteDetail';
-
-// Expenses
-import Expenses from './pages/Expenses';
-import ExpenseCategories from './pages/ExpenseCategories';
-
-// Reports & Analytics
-import Reports from './pages/Reports';
-import Analytics from './pages/Analytics';
-
-// Settings
-import Settings from './pages/Settings';
-import Profile from './pages/Profile';
-import TeamManagement from './pages/TeamManagement';
-import Integrations from './pages/Integrations';
-
-// Admin
-import AdminDashboard from './pages/Admin/AdminDashboard';
-import AdminUsers from './pages/Admin/UserManagement';
-import AdminTenants from './pages/Admin/TenantManagement';
-import AdminSettings from './pages/Admin/SystemSettings';
-import AdminAuditLogs from './pages/Admin/AuditLogs';
-import AdminMonitoring from './pages/Admin/Monitoring';
-import AdminNotifications from './pages/Admin/Notifications';
-import AdminReports from './pages/Admin/Reports';
+// Lazy load all other pages for code splitting
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const TimeTracking = lazy(() => import('./pages/TimeTracking'));
+const TimeSheet = lazy(() => import('./pages/TimeSheet'));
+const Projects = lazy(() => import('./pages/Projects'));
+const ProjectDetail = lazy(() => import('./pages/ProjectDetail'));
+const Tasks = lazy(() => import('./pages/Tasks'));
+const KanbanBoard = lazy(() => import('./pages/KanbanBoard'));
+const Clients = lazy(() => import('./pages/Clients'));
+const ClientDetail = lazy(() => import('./pages/ClientDetail'));
+const Invoices = lazy(() => import('./pages/Invoices'));
+const InvoiceDetail = lazy(() => import('./pages/InvoiceDetail'));
+const CreateInvoice = lazy(() => import('./pages/CreateInvoice'));
+const Quotes = lazy(() => import('./pages/Quotes'));
+const QuoteDetail = lazy(() => import('./pages/QuoteDetail'));
+const Expenses = lazy(() => import('./pages/Expenses'));
+const ExpenseCategories = lazy(() => import('./pages/ExpenseCategories'));
+const Reports = lazy(() => import('./pages/Reports'));
+const Analytics = lazy(() => import('./pages/Analytics'));
+const Settings = lazy(() => import('./pages/Settings'));
+const Profile = lazy(() => import('./pages/Profile'));
+const TeamManagement = lazy(() => import('./pages/TeamManagement'));
+const Integrations = lazy(() => import('./pages/Integrations'));
+const AdminDashboard = lazy(() => import('./pages/Admin/AdminDashboard'));
+const AdminUsers = lazy(() => import('./pages/Admin/UserManagement'));
+const AdminTenants = lazy(() => import('./pages/Admin/TenantManagement'));
+const AdminSettings = lazy(() => import('./pages/Admin/SystemSettings'));
+const AdminAuditLogs = lazy(() => import('./pages/Admin/AuditLogs'));
+const AdminMonitoring = lazy(() => import('./pages/Admin/Monitoring'));
+const AdminNotifications = lazy(() => import('./pages/Admin/Notifications'));
+const AdminReports = lazy(() => import('./pages/Admin/Reports'));
 
 // Contexts
 import { AuthProvider } from './contexts/AuthContext';
@@ -134,6 +118,9 @@ axios.interceptors.request.use(
 );
 
 // Handle auth errors globally
+// Flag to prevent multiple redirects
+let isRedirecting = false;
+
 axios.interceptors.response.use(
     (response) => response,
     (error) => {
@@ -144,20 +131,21 @@ axios.interceptors.response.use(
             const isLoginRequest = error.config?.url?.includes('/login') ||
                                    error.config?.url?.includes('/register');
 
-            // Don't redirect if we're on an auth page or making an auth request
-            if (!authPaths.includes(currentPath) && !isLoginRequest) {
+            // Don't redirect if we're on an auth page or making an auth request or already redirecting
+            if (!authPaths.includes(currentPath) && !isLoginRequest && !isRedirecting) {
                 // Only clear and redirect if we actually have an invalid token
                 const hasToken = localStorage.getItem('auth_token');
 
                 if (hasToken) {
-                    console.error('Authentication failed - clearing session');
+                    isRedirecting = true;
+                    if (import.meta.env.DEV) {
+                        console.error('Authentication failed - clearing session');
+                    }
                     localStorage.removeItem('auth_token');
                     localStorage.removeItem('user');
 
-                    // Use a small delay to avoid race conditions
-                    setTimeout(() => {
-                        window.location.href = '/login';
-                    }, 100);
+                    // Redirect immediately without delay
+                    window.location.href = '/login';
                 }
             }
         }
@@ -174,7 +162,9 @@ function App() {
 
         // Setup offline detection
         const handleOnline = () => {
-            console.log('Application is online');
+            if (import.meta.env.DEV) {
+                console.log('Application is online');
+            }
             queryClient.refetchQueries();
         };
 
@@ -191,9 +181,19 @@ function App() {
         };
     }, []);
 
+    // Loading component for Suspense fallback
+    const LoadingFallback = () => (
+        <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
+            <div className="text-center">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+            </div>
+        </div>
+    );
+
     return (
         <I18nextProvider i18n={i18n}>
-            <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+            <Suspense fallback={<LoadingFallback />}>
                 <QueryClientProvider client={queryClient}>
                     <Router>
                         <LanguageProvider>

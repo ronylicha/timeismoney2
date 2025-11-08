@@ -166,24 +166,10 @@ export const useTimer = (): UseTimerReturn => {
         [deleteTimerMutation]
     );
 
-    // Set up auto-save for active timer description
-    useEffect(() => {
-        if (!activeTimer || activeTimer.ended_at) return;
-
-        const interval = setInterval(() => {
-            // Auto-save description every minute if changed
-            const descriptionInput = document.querySelector<HTMLInputElement>('input[placeholder*="task description"]');
-            if (descriptionInput && descriptionInput.value !== activeTimer.description) {
-                axios.patch(`/api/time-entries/${activeTimer.id}`, {
-                    description: descriptionInput.value,
-                }).catch((error) => {
-                    console.error('Failed to auto-save description:', error);
-                });
-            }
-        }, 60000); // Every minute
-
-        return () => clearInterval(interval);
-    }, [activeTimer]);
+    // NOTE: Auto-save for timer description has been removed from this hook.
+    // This should be handled in the Timer component using refs or controlled inputs
+    // to avoid direct DOM manipulation, which is an anti-pattern in React.
+    // The Timer component should manage its own description state and auto-save.
 
     return {
         activeTimer,

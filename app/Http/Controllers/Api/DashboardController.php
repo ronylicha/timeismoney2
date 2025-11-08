@@ -117,7 +117,7 @@ class DashboardController extends Controller
 
         $paidThisMonth = Invoice::where('tenant_id', $tenantId)
             ->where('status', 'paid')
-            ->whereBetween('paid_at', [$startOfMonth, $endOfMonth])
+            ->whereBetween('payment_date', [$startOfMonth, $endOfMonth])
             ->get();
 
         $invoiceStats = [
@@ -131,17 +131,25 @@ class DashboardController extends Controller
 
         // Task stats
         $taskStats = [
-            'todo' => Task::where('tenant_id', $tenantId)
+            'todo' => Task::whereHas('project', function ($query) use ($tenantId) {
+                    $query->where('tenant_id', $tenantId);
+                })
                 ->where('status', 'todo')
                 ->count(),
-            'in_progress' => Task::where('tenant_id', $tenantId)
+            'in_progress' => Task::whereHas('project', function ($query) use ($tenantId) {
+                    $query->where('tenant_id', $tenantId);
+                })
                 ->where('status', 'in_progress')
                 ->count(),
-            'completed' => Task::where('tenant_id', $tenantId)
+            'completed' => Task::whereHas('project', function ($query) use ($tenantId) {
+                    $query->where('tenant_id', $tenantId);
+                })
                 ->where('status', 'done')
                 ->whereBetween('completed_at', [$startOfMonth, $endOfMonth])
                 ->count(),
-            'overdue' => Task::where('tenant_id', $tenantId)
+            'overdue' => Task::whereHas('project', function ($query) use ($tenantId) {
+                    $query->where('tenant_id', $tenantId);
+                })
                 ->whereIn('status', ['todo', 'in_progress'])
                 ->where('due_date', '<', Carbon::now())
                 ->count(),
@@ -348,12 +356,12 @@ class DashboardController extends Controller
             $monthEnd = $now->copy()->subMonths($i)->endOfMonth();
 
             $invoiced = Invoice::where('tenant_id', $tenantId)
-                ->whereBetween('invoice_date', [$monthStart, $monthEnd])
+                ->whereBetween('date', [$monthStart, $monthEnd])
                 ->sum('total');
 
             $paid = Invoice::where('tenant_id', $tenantId)
                 ->where('status', 'paid')
-                ->whereBetween('paid_at', [$monthStart, $monthEnd])
+                ->whereBetween('payment_date', [$monthStart, $monthEnd])
                 ->sum('total');
 
             $monthlyRevenue[] = [

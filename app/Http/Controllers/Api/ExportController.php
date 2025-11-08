@@ -38,7 +38,7 @@ class ExportController extends Controller
 
         // Get all invoices in the period
         $invoices = Invoice::where('tenant_id', $tenantId)
-            ->whereBetween('invoice_date', [$startDate, $endDate])
+            ->whereBetween('date', [$startDate, $endDate])
             ->with(['client', 'items', 'payments'])
             ->get();
 
@@ -48,13 +48,13 @@ class ExportController extends Controller
                 'JournalCode' => 'VTE', // Ventes
                 'JournalLib' => 'Journal des ventes',
                 'EcritureNum' => $invoice->sequential_number,
-                'EcritureDate' => $invoice->invoice_date->format('Ymd'),
+                'EcritureDate' => $invoice->date->format('Ymd'),
                 'CompteNum' => '411' . str_pad($invoice->client_id, 5, '0', STR_PAD_LEFT), // Client account
                 'CompteLib' => 'Client - ' . $invoice->client->name,
                 'CompAuxNum' => $invoice->client->siret ?? '',
                 'CompAuxLib' => $invoice->client->name,
                 'PieceRef' => $invoice->invoice_number,
-                'PieceDate' => $invoice->invoice_date->format('Ymd'),
+                'PieceDate' => $invoice->date->format('Ymd'),
                 'EcritureLib' => 'Facture ' . $invoice->invoice_number . ' - ' . $invoice->client->name,
                 'Debit' => number_format($invoice->total, 2, '.', ''),
                 'Credit' => '0.00',
@@ -63,7 +63,7 @@ class ExportController extends Controller
                 'ValidDate' => $invoice->created_at->format('Ymd'),
                 'Montantdevise' => '',
                 'Idevise' => '',
-                'DateRglt' => $invoice->paid_at ? Carbon::parse($invoice->paid_at)->format('Ymd') : '',
+                'DateRglt' => $invoice->payment_date ? Carbon::parse($invoice->payment_date)->format('Ymd') : '',
                 'ModeRglt' => $invoice->status === 'paid' ? 'VIR' : '',
                 'NatOp' => '',
                 'IdClient' => $invoice->client_id
@@ -74,13 +74,13 @@ class ExportController extends Controller
                 'JournalCode' => 'VTE',
                 'JournalLib' => 'Journal des ventes',
                 'EcritureNum' => $invoice->sequential_number,
-                'EcritureDate' => $invoice->invoice_date->format('Ymd'),
+                'EcritureDate' => $invoice->date->format('Ymd'),
                 'CompteNum' => '706000', // Services revenue
                 'CompteLib' => 'Prestations de services',
                 'CompAuxNum' => '',
                 'CompAuxLib' => '',
                 'PieceRef' => $invoice->invoice_number,
-                'PieceDate' => $invoice->invoice_date->format('Ymd'),
+                'PieceDate' => $invoice->date->format('Ymd'),
                 'EcritureLib' => 'Facture ' . $invoice->invoice_number . ' - Prestations',
                 'Debit' => '0.00',
                 'Credit' => number_format($invoice->subtotal, 2, '.', ''),
@@ -101,13 +101,13 @@ class ExportController extends Controller
                     'JournalCode' => 'VTE',
                     'JournalLib' => 'Journal des ventes',
                     'EcritureNum' => $invoice->sequential_number,
-                    'EcritureDate' => $invoice->invoice_date->format('Ymd'),
+                    'EcritureDate' => $invoice->date->format('Ymd'),
                     'CompteNum' => '445710', // TVA collectée
                     'CompteLib' => 'TVA collectée',
                     'CompAuxNum' => '',
                     'CompAuxLib' => '',
                     'PieceRef' => $invoice->invoice_number,
-                    'PieceDate' => $invoice->invoice_date->format('Ymd'),
+                    'PieceDate' => $invoice->date->format('Ymd'),
                     'EcritureLib' => 'Facture ' . $invoice->invoice_number . ' - TVA',
                     'Debit' => '0.00',
                     'Credit' => number_format($invoice->tax_amount, 2, '.', ''),
@@ -349,7 +349,7 @@ class ExportController extends Controller
 
         $query = Invoice::where('tenant_id', auth()->user()->tenant_id)
             ->with(['client', 'items'])
-            ->whereBetween('invoice_date', [
+            ->whereBetween('date', [
                 $validated['start_date'],
                 $validated['end_date']
             ]);
@@ -391,7 +391,7 @@ class ExportController extends Controller
             foreach ($invoices as $invoice) {
                 fputcsv($file, [
                     $invoice->invoice_number,
-                    $invoice->invoice_date->format('Y-m-d'),
+                    $invoice->date->format('Y-m-d'),
                     $invoice->due_date->format('Y-m-d'),
                     $invoice->client->name,
                     $invoice->status,

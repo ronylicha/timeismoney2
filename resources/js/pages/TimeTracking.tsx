@@ -55,7 +55,9 @@ const TimeTracking: React.FC = () => {
             const response = await axios.get('/time-entries/current');
             return response.data.timer;
         },
-        refetchInterval: 1000, // Refresh every second
+        // Only refetch every 30 seconds if timer is running, not every second
+        // The UI timer ticks are handled locally in the component
+        refetchInterval: (data) => data ? 30000 : false,
     });
 
     // Fetch projects

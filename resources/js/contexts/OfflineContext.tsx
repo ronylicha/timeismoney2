@@ -37,7 +37,9 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
     useEffect(() => {
         const initDB = async () => {
             try {
-                console.log('Initializing offline database...');
+                if (import.meta.env.DEV) {
+                    console.log('Initializing offline database...');
+                }
                 const db = await initOfflineDB();
                 setOfflineDB(db);
                 setIsInitialized(true);
@@ -46,7 +48,9 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 const pending = await db.countPendingChanges();
                 setPendingChanges(pending);
 
-                console.log('Offline database initialized with', pending, 'pending changes');
+                if (import.meta.env.DEV) {
+                    console.log('Offline database initialized with', pending, 'pending changes');
+                }
             } catch (error) {
                 console.error('Failed to initialize offline database:', error);
                 toast.error('Offline mode initialization failed');
@@ -54,35 +58,6 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
         };
 
         initDB();
-    }, []);
-
-    // Setup network listeners
-    useEffect(() => {
-        const cleanup = setupNetworkListeners(
-            () => {
-                setIsOnlineState(true);
-                toast.success('Back online! Syncing data...');
-
-                // Trigger sync after coming online
-                if (syncTimeoutRef.current) {
-                    clearTimeout(syncTimeoutRef.current);
-                }
-                syncTimeoutRef.current = setTimeout(() => {
-                    syncNow();
-                }, 2000); // Wait 2 seconds before syncing
-            },
-            () => {
-                setIsOnlineState(false);
-                toast.info('You are offline. Changes will be saved locally.');
-            }
-        );
-
-        return () => {
-            cleanup();
-            if (syncTimeoutRef.current) {
-                clearTimeout(syncTimeoutRef.current);
-            }
-        };
     }, []);
 
     // Sync data with server
@@ -94,7 +69,9 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setIsSyncing(true);
 
         try {
-            console.log('Starting sync...');
+            if (import.meta.env.DEV) {
+                console.log('Starting sync...');
+            }
 
             // Get all pending changes
             const pendingTimeEntries = await offlineDB.getPendingTimeEntries();
@@ -123,7 +100,9 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
                         errorCount++;
                     }
                 } catch (error) {
-                    console.error('Failed to sync time entry:', error);
+                    if (import.meta.env.DEV) {
+                        console.error('Failed to sync time entry:', error);
+                    }
                     errorCount++;
                 }
             }
@@ -147,7 +126,9 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
                         errorCount++;
                     }
                 } catch (error) {
-                    console.error('Failed to sync invoice:', error);
+                    if (import.meta.env.DEV) {
+                        console.error('Failed to sync invoice:', error);
+                    }
                     errorCount++;
                 }
             }
@@ -171,7 +152,9 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
                         errorCount++;
                     }
                 } catch (error) {
-                    console.error('Failed to sync expense:', error);
+                    if (import.meta.env.DEV) {
+                        console.error('Failed to sync expense:', error);
+                    }
                     errorCount++;
                 }
             }
@@ -187,7 +170,9 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 toast.warning(`Failed to sync ${errorCount} items`);
             }
 
-            console.log('Sync completed:', { syncedCount, errorCount, remaining });
+            if (import.meta.env.DEV) {
+                console.log('Sync completed:', { syncedCount, errorCount, remaining });
+            }
 
             // Request background sync if there are still pending items
             if (remaining > 0) {
@@ -195,12 +180,43 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
             }
 
         } catch (error) {
-            console.error('Sync failed:', error);
+            if (import.meta.env.DEV) {
+                console.error('Sync failed:', error);
+            }
             toast.error('Failed to sync data');
         } finally {
             setIsSyncing(false);
         }
     }, [isOnlineState, offlineDB, isSyncing]);
+
+    // Setup network listeners
+    useEffect(() => {
+        const cleanup = setupNetworkListeners(
+            () => {
+                setIsOnlineState(true);
+                toast.success('Back online! Syncing data...');
+
+                // Trigger sync after coming online
+                if (syncTimeoutRef.current) {
+                    clearTimeout(syncTimeoutRef.current);
+                }
+                syncTimeoutRef.current = setTimeout(() => {
+                    syncNow();
+                }, 2000); // Wait 2 seconds before syncing
+            },
+            () => {
+                setIsOnlineState(false);
+                toast.info('You are offline. Changes will be saved locally.');
+            }
+        );
+
+        return () => {
+            cleanup();
+            if (syncTimeoutRef.current) {
+                clearTimeout(syncTimeoutRef.current);
+            }
+        };
+    }, [syncNow]);
 
     // Clear all offline data
     const clearOfflineData = useCallback(async () => {
@@ -211,7 +227,9 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
             setPendingChanges(0);
             toast.success('Offline data cleared');
         } catch (error) {
-            console.error('Failed to clear offline data:', error);
+            if (import.meta.env.DEV) {
+                console.error('Failed to clear offline data:', error);
+            }
             toast.error('Failed to clear offline data');
         }
     }, [offlineDB]);
@@ -239,7 +257,9 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 }, 5000); // Wait 5 seconds before syncing
             }
         } catch (error) {
-            console.error('Failed to save offline:', error);
+            if (import.meta.env.DEV) {
+                console.error('Failed to save offline:', error);
+            }
             throw error;
         }
     }, [offlineDB, isOnlineState, syncNow]);

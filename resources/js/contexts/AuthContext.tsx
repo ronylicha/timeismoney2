@@ -37,7 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Check if user is authenticated on mount
     useEffect(() => {
         checkAuth();
-    }, []);
+    }, [checkAuth]);
 
     const checkAuth = useCallback(async () => {
         try {
@@ -45,20 +45,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const token = localStorage.getItem('auth_token');
 
             if (!token) {
-                console.log('No auth token found');
+                if (import.meta.env.DEV) {
+                    console.log('No auth token found');
+                }
                 setUser(null);
                 setIsLoading(false);
                 return;
             }
 
-            console.log('Checking auth with token:', token.substring(0, 20) + '...');
+            if (import.meta.env.DEV) {
+                console.log('Checking auth with token:', token.substring(0, 20) + '...');
+            }
             const response = await axios.get('/user');
-            console.log('Auth check successful, user:', response.data);
+            if (import.meta.env.DEV) {
+                console.log('Auth check successful, user:', response.data);
+            }
             setUser(response.data);
         } catch (error: any) {
-            console.error('Auth check failed:', error);
-            console.error('Error response:', error.response?.data);
-            console.error('Error status:', error.response?.status);
+            if (import.meta.env.DEV) {
+                console.error('Auth check failed:', error);
+                console.error('Error response:', error.response?.data);
+                console.error('Error status:', error.response?.status);
+            }
             localStorage.removeItem('auth_token');
             setUser(null);
         } finally {
@@ -72,7 +80,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             // No need for CSRF token since we're using Bearer tokens
             const response = await axios.post('/login', credentials);
-            console.log('Login response:', response.data);
+            if (import.meta.env.DEV) {
+                console.log('Login response:', response.data);
+            }
             const { user, token, requires_2fa } = response.data;
 
             if (requires_2fa) {
@@ -82,7 +92,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 return;
             }
 
-            console.log('Storing auth token:', token.substring(0, 20) + '...');
+            if (import.meta.env.DEV) {
+                console.log('Storing auth token:', token.substring(0, 20) + '...');
+            }
             localStorage.setItem('auth_token', token);
             setUser(user);
 

@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Play, Pause, Square, Clock, DollarSign, Calendar } from 'lucide-react';
+import axios from 'axios';
 import { useTimer } from '../../hooks/useTimer';
 import { useProjects } from '../../hooks/useProjects';
 import { useTasks } from '../../hooks/useTasks';
@@ -43,6 +44,35 @@ export const Timer: React.FC<TimerProps> = ({ onTimerStop }) => {
             loadTasks();
         }
     }, [selectedProject, loadTasks]);
+
+    // Auto-save description when timer is running and description changes
+    const autoSaveTimeoutRef = useRef<NodeJS.Timeout>();
+    useEffect(() => {
+        // Only auto-save if timer is running and description is different from active timer
+        if (activeTimer && !activeTimer.ended_at && description !== activeTimer.description) {
+            // Clear previous timeout
+            if (autoSaveTimeoutRef.current) {
+                clearTimeout(autoSaveTimeoutRef.current);
+            }
+
+            // Auto-save after 2 seconds of inactivity
+            autoSaveTimeoutRef.current = setTimeout(() => {
+                axios.patch(`/api/time-entries/${activeTimer.id}`, {
+                    description
+                }).catch((error) => {
+                    if (import.meta.env.DEV) {
+                        console.error('Failed to auto-save description:', error);
+                    }
+                });
+            }, 2000);
+        }
+
+        return () => {
+            if (autoSaveTimeoutRef.current) {
+                clearTimeout(autoSaveTimeoutRef.current);
+            }
+        };
+    }, [activeTimer, description]);
 
     const handleStart = async () => {
         if (!selectedProject) {

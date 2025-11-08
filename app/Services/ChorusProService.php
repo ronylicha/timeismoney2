@@ -220,7 +220,7 @@ class ChorusProService
             'formatFacture' => 'PDF_SIGNE',
             'typeFacture' => 'FACTURE',
             'numeroFactureFournisseur' => $invoice->invoice_number,
-            'dateFacture' => $invoice->invoice_date->format('Y-m-d'),
+            'dateFacture' => $invoice->date->format('Y-m-d'),
             'dateEcheance' => $invoice->due_date->format('Y-m-d'),
 
             // Emetteur (fournisseur)

@@ -20,7 +20,7 @@ class Invoice extends Model
         'project_id',
         'invoice_number',
         'sequential_number',
-        'invoice_date',
+        'date',
         'due_date',
         'status',
         'subtotal',
@@ -36,7 +36,7 @@ class Invoice extends Model
         'footer',
         'sent_at',
         'viewed_at',
-        'paid_at',
+        'payment_date',
         'cancelled_at',
         'cancellation_reason',
         'hash',
@@ -52,7 +52,7 @@ class Invoice extends Model
     ];
 
     protected $casts = [
-        'invoice_date' => 'date',
+        'date' => 'date',
         'due_date' => 'date',
         'subtotal' => 'decimal:2',
         'tax_amount' => 'decimal:2',
@@ -62,7 +62,7 @@ class Invoice extends Model
         'payment_terms' => 'integer',
         'sent_at' => 'datetime',
         'viewed_at' => 'datetime',
-        'paid_at' => 'datetime',
+        'payment_date' => 'datetime',
         'cancelled_at' => 'datetime',
         'is_locked' => 'boolean',
         'chorus_sent_at' => 'datetime',
@@ -168,8 +168,8 @@ class Invoice extends Model
         $month = str_pad(now()->month, 2, '0', STR_PAD_LEFT);
 
         $lastInvoice = static::where('tenant_id', $this->tenant_id)
-            ->whereYear('invoice_date', $year)
-            ->whereMonth('invoice_date', now()->month)
+            ->whereYear('date', $year)
+            ->whereMonth('date', now()->month)
             ->orderBy('sequential_number', 'desc')
             ->first();
 
@@ -208,7 +208,7 @@ class Invoice extends Model
         $dataToHash = implode('|', [
             $this->sequential_number,
             $this->invoice_number,
-            $this->invoice_date->format('Y-m-d'),
+            $this->date->format('Y-m-d'),
             $this->total,
             $this->tax_amount,
             $this->client_id,

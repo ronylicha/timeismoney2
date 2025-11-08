@@ -48,14 +48,14 @@ class InvoiceController extends Controller
 
         // Filter by date range
         if ($request->start_date) {
-            $query->where('invoice_date', '>=', $request->start_date);
+            $query->where('date', '>=', $request->start_date);
         }
         if ($request->end_date) {
-            $query->where('invoice_date', '<=', $request->end_date);
+            $query->where('date', '<=', $request->end_date);
         }
 
         // Sort
-        $sortBy = $request->sort_by ?? 'invoice_date';
+        $sortBy = $request->sort_by ?? 'date';
         $sortOrder = $request->sort_order ?? 'desc';
         $query->orderBy($sortBy, $sortOrder);
 
@@ -70,8 +70,8 @@ class InvoiceController extends Controller
         $validated = $request->validate([
             'client_id' => 'required|exists:clients,id',
             'project_id' => 'nullable|exists:projects,id',
-            'invoice_date' => 'required|date',
-            'due_date' => 'required|date|after_or_equal:invoice_date',
+            'date' => 'required|date',
+            'due_date' => 'required|date|after_or_equal:date',
             'status' => 'required|in:draft,pending,sent,viewed,paid,overdue,cancelled',
             'payment_terms' => 'nullable|integer|min:0',
             'discount_amount' => 'nullable|numeric|min:0',
@@ -188,7 +188,7 @@ class InvoiceController extends Controller
                 'tenant_id' => auth()->user()->tenant_id,
                 'client_id' => $validated['client_id'],
                 'project_id' => $validated['project_id'],
-                'invoice_date' => $validated['invoice_date'],
+                'date' => $validated['date'],
                 'due_date' => $validated['due_date'],
                 'status' => $validated['status'],
                 'subtotal' => $subtotal,
@@ -267,8 +267,8 @@ class InvoiceController extends Controller
         }
 
         $validated = $request->validate([
-            'invoice_date' => 'date',
-            'due_date' => 'date|after_or_equal:invoice_date',
+            'date' => 'date',
+            'due_date' => 'date|after_or_equal:date',
             'payment_terms' => 'nullable|integer|min:0',
             'notes' => 'nullable|string',
             'footer' => 'nullable|string'
