@@ -108,7 +108,7 @@ const Dashboard: React.FC = () => {
     const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
         queryKey: ['dashboardStats'],
         queryFn: async () => {
-            const response = await axios.get('/api/dashboard/stats');
+            const response = await axios.get('/dashboard/stats');
             return response.data;
         },
         refetchInterval: 60000, // Refresh every minute
@@ -118,7 +118,7 @@ const Dashboard: React.FC = () => {
     const { data: activities } = useQuery<RecentActivity[]>({
         queryKey: ['recentActivity'],
         queryFn: async () => {
-            const response = await axios.get('/api/dashboard/activity');
+            const response = await axios.get('/dashboard/activity');
             return response.data;
         },
         refetchInterval: 30000, // Refresh every 30 seconds
@@ -128,7 +128,7 @@ const Dashboard: React.FC = () => {
     const { data: chartData } = useQuery<ChartData>({
         queryKey: ['dashboardCharts', dateRange],
         queryFn: async () => {
-            const response = await axios.get(`/api/dashboard/charts?range=${dateRange}`);
+            const response = await axios.get(`/dashboard/charts?range=${dateRange}`);
             return response.data;
         },
     });

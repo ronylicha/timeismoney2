@@ -47,7 +47,7 @@ class AdminController extends Controller
                 'total' => User::count(),
                 'active' => User::where('is_active', true)->count(),
                 'new_this_month' => User::whereMonth('created_at', Carbon::now()->month)->count(),
-                'growth' => $this->calculateGrowth('users', $startDate)
+                'growth' => $this->calculateGrowth('user', $startDate)
             ];
 
             // Tenant stats
@@ -119,7 +119,7 @@ class AdminController extends Controller
         $data = Invoice::where('created_at', '>=', $startDate)
             ->where('status', 'paid')
             ->selectRaw('DATE(created_at) as date, SUM(total) as revenue')
-            ->groupBy('date')
+            ->groupBy(DB::raw('DATE(created_at)'))
             ->orderBy('date')
             ->get();
 
@@ -155,7 +155,7 @@ class AdminController extends Controller
 
         $data = User::where('created_at', '>=', $startDate)
             ->selectRaw('DATE(created_at) as date, COUNT(*) as count')
-            ->groupBy('date')
+            ->groupBy(DB::raw('DATE(created_at)'))
             ->orderBy('date')
             ->get();
 
