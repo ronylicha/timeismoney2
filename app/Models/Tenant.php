@@ -40,6 +40,9 @@ class Tenant extends Model
         'vat_threshold_year_total',
         'vat_threshold_exceeded_at',
         'auto_apply_vat_on_threshold',
+        'vat_alert_80_sent_at',
+        'vat_alert_90_sent_at',
+        'vat_alert_100_sent_at',
         'address_line1',
         'address_line2',
         'postal_code',
@@ -83,6 +86,9 @@ class Tenant extends Model
         'vat_threshold_year_total' => 'decimal:2',
         'vat_threshold_exceeded_at' => 'date',
         'auto_apply_vat_on_threshold' => 'boolean',
+        'vat_alert_80_sent_at' => 'datetime',
+        'vat_alert_90_sent_at' => 'datetime',
+        'vat_alert_100_sent_at' => 'datetime',
         'stripe_enabled' => 'boolean',
         'stripe_settings' => 'array',
         'stripe_connected_at' => 'datetime',
@@ -305,5 +311,99 @@ class Tenant extends Model
         $yearlyRevenue = $this->vat_threshold_year_total ?? $this->calculateYearlyRevenue();
 
         return $yearlyRevenue >= ($threshold * 0.9);
+    }
+
+    /**
+     * Check VAT threshold and send alerts if needed
+     * This method should be called after each invoice is created/updated
+     */
+    public function checkAndSendVatThresholdAlerts(): void
+    {
+        // Only check for franchise_base regime
+        if (!$this->hasVatThresholds() || $this->vat_subject) {
+            return;
+        }
+
+        // Calculate yearly revenue and percentage
+        $yearlyRevenue = $this->calculateYearlyRevenue();
+        $threshold = match($this->business_type) {
+            'services' => $this->vat_threshold_services ?? 36800,
+            'goods' => $this->vat_threshold_goods ?? 91900,
+            'mixed' => min($this->vat_threshold_services ?? 36800, $this->vat_threshold_goods ?? 91900),
+            default => $this->vat_threshold_services ?? 36800,
+        };
+
+        $percentage = $threshold > 0 ? ($yearlyRevenue / $threshold) * 100 : 0;
+        $thresholdType = $this->business_type ?? 'services';
+
+        // Update yearly total
+        $this->update(['vat_threshold_year_total' => $yearlyRevenue]);
+
+        // Send alerts based on percentage thresholds
+        if ($percentage >= 100 && !$this->vat_alert_100_sent_at) {
+            // 100% threshold - CRITICAL
+            $this->sendVatThresholdAlert(100, $yearlyRevenue, $threshold, $thresholdType);
+            $this->update(['vat_alert_100_sent_at' => now()]);
+            
+            // Also trigger the automatic VAT application if enabled
+            if ($this->auto_apply_vat_on_threshold) {
+                $this->update([
+                    'vat_subject' => true,
+                    'vat_exemption_reason' => null,
+                    'vat_threshold_exceeded_at' => now(),
+                ]);
+            }
+        } elseif ($percentage >= 90 && !$this->vat_alert_90_sent_at) {
+            // 90% threshold - WARNING
+            $this->sendVatThresholdAlert(90, $yearlyRevenue, $threshold, $thresholdType);
+            $this->update(['vat_alert_90_sent_at' => now()]);
+        } elseif ($percentage >= 80 && !$this->vat_alert_80_sent_at) {
+            // 80% threshold - INFO
+            $this->sendVatThresholdAlert(80, $yearlyRevenue, $threshold, $thresholdType);
+            $this->update(['vat_alert_80_sent_at' => now()]);
+        }
+    }
+
+    /**
+     * Send VAT threshold alert email
+     */
+    private function sendVatThresholdAlert(int $percentage, float $yearlyRevenue, float $threshold, string $thresholdType): void
+    {
+        if (!$this->email) {
+            return;
+        }
+
+        try {
+            \Illuminate\Support\Facades\Mail::to($this->email)
+                ->send(new \App\Mail\VatThresholdAlert(
+                    $this,
+                    $percentage,
+                    $yearlyRevenue,
+                    $threshold,
+                    $thresholdType
+                ));
+
+            // Log the notification
+            \App\Models\NotificationLog::create([
+                'tenant_id' => $this->id,
+                'type' => 'vat_threshold_alert',
+                'channel' => 'email',
+                'recipient' => $this->email,
+                'status' => 'sent',
+                'data' => [
+                    'percentage' => $percentage,
+                    'yearly_revenue' => $yearlyRevenue,
+                    'threshold' => $threshold,
+                    'threshold_type' => $thresholdType,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            // Log the error
+            \Illuminate\Support\Facades\Log::error('Failed to send VAT threshold alert', [
+                'tenant_id' => $this->id,
+                'percentage' => $percentage,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

@@ -21,6 +21,8 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { InvoiceType } from '../types';
 import PaymentModal, { PaymentData } from '../components/PaymentModal';
+import DownloadFacturXButton from '../components/Invoice/DownloadFacturXButton';
+import CreateCreditNoteButton from '../components/Invoice/CreateCreditNoteButton';
 
 interface Invoice {
     id: number;
@@ -273,14 +275,29 @@ const InvoiceDetail: React.FC = () => {
                         )}
 
                         {invoice.status === 'sent' && (
-                            <button
-                                onClick={() => setShowPaymentModal(true)}
-                                disabled={markAsPaidMutation.isPending}
-                                className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm disabled:opacity-50"
-                            >
-                                <CheckCircleIcon className="h-4 w-4" />
-                                <span>{t('invoices.markAsPaid')}</span>
-                            </button>
+                            <>
+                                <button
+                                    onClick={() => setShowPaymentModal(true)}
+                                    disabled={markAsPaidMutation.isPending}
+                                    className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm disabled:opacity-50"
+                                >
+                                    <CheckCircleIcon className="h-4 w-4" />
+                                    <span>{t('invoices.markAsPaid')}</span>
+                                </button>
+                                <CreateCreditNoteButton
+                                    invoiceId={invoice.id}
+                                    invoiceNumber={invoice.invoice_number}
+                                    invoiceTotal={invoice.total_amount || invoice.total || 0}
+                                />
+                            </>
+                        )}
+
+                        {invoice.status === 'paid' && (
+                            <CreateCreditNoteButton
+                                invoiceId={invoice.id}
+                                invoiceNumber={invoice.invoice_number}
+                                invoiceTotal={invoice.total_amount || invoice.total || 0}
+                            />
                         )}
 
                         <button
@@ -292,6 +309,12 @@ const InvoiceDetail: React.FC = () => {
                             <span>{t('invoices.downloadPDF')}</span>
                         </button>
 
+                        <DownloadFacturXButton
+                            invoiceId={invoice.id}
+                            invoiceNumber={invoice.invoice_number}
+                            variant="secondary"
+                        />
+
                         <button
                             onClick={() => window.print()}
                             className="flex items-center space-x-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition text-sm"
@@ -300,13 +323,16 @@ const InvoiceDetail: React.FC = () => {
                             <span>{t('common.print')}</span>
                         </button>
 
-                        <button
-                            onClick={() => setShowDeleteConfirm(true)}
-                            className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm"
-                        >
-                            <TrashIcon className="h-4 w-4" />
-                            <span>{t('common.delete')}</span>
-                        </button>
+                        {/* Suppression autorisée uniquement pour les brouillons (conformité fiscale) */}
+                        {invoice.status === 'draft' && (
+                            <button
+                                onClick={() => setShowDeleteConfirm(true)}
+                                className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm"
+                            >
+                                <TrashIcon className="h-4 w-4" />
+                                <span>{t('common.delete')}</span>
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>

@@ -16,9 +16,9 @@ interface Quote {
     quote_number: string;
     client_id: number;
     status: string;
-    issue_date: string;
+    quote_date: string; // Changed from issue_date
     valid_until: string;
-    total_amount: number;
+    total: number; // Changed from total_amount
     client?: {
         name: string;
     };
@@ -169,16 +169,16 @@ const Quotes: React.FC = () => {
                                         {quote.client?.name || '-'}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                        {format(new Date(quote.issue_date), 'dd MMM yyyy', { locale: fr })}
+                                        {quote.quote_date ? format(new Date(quote.quote_date), 'dd MMM yyyy', { locale: fr }) : '-'}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                        {format(new Date(quote.valid_until), 'dd MMM yyyy', { locale: fr })}
+                                        {quote.valid_until ? format(new Date(quote.valid_until), 'dd MMM yyyy', { locale: fr }) : '-'}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
                                         {new Intl.NumberFormat('fr-FR', {
                                             style: 'currency',
                                             currency: 'EUR',
-                                        }).format(quote.total_amount)}
+                                        }).format(quote.total || 0)}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         {getStatusBadge(quote.status)}

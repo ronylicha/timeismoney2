@@ -101,7 +101,19 @@ const EditQuote: React.FC = () => {
     // Update quote mutation
     const updateQuoteMutation = useMutation({
         mutationFn: async (data: QuoteFormData) => {
-            const response = await axios.put(`/quotes/${id}`, data);
+            // Map frontend field names to backend field names
+            const backendData = {
+                ...data,
+                description: data.subject,
+                quote_date: data.issue_date,
+                terms_conditions: data.terms,
+            };
+            
+            delete (backendData as any).subject;
+            delete (backendData as any).issue_date;
+            delete (backendData as any).terms;
+            
+            const response = await axios.put(`/quotes/${id}`, backendData);
             return response.data;
         },
         onSuccess: (updatedQuote) => {

@@ -208,4 +208,54 @@ class TenantSettingsController extends Controller
             'message' => 'Logo deleted successfully',
         ]);
     }
+
+    /**
+     * Get VAT threshold status for dashboard widget
+     */
+    public function getVatThresholdStatus(Request $request): JsonResponse
+    {
+        $tenant = $request->user()->tenant;
+
+        // Check if tenant has VAT thresholds (franchise_base only)
+        if ($tenant->vat_regime !== 'franchise_base') {
+            return response()->json([
+                'regime' => $tenant->vat_regime,
+                'applies' => false,
+            ]);
+        }
+
+        // Calculate yearly revenue and check threshold
+        $yearlyRevenue = $tenant->calculateYearlyRevenue();
+        
+        // Determine applicable threshold
+        $threshold = match($tenant->business_type) {
+            'services' => $tenant->vat_threshold_services ?? 36800,
+            'goods' => $tenant->vat_threshold_goods ?? 91900,
+            'mixed' => min($tenant->vat_threshold_services ?? 36800, $tenant->vat_threshold_goods ?? 91900),
+            default => $tenant->vat_threshold_services ?? 36800,
+        };
+
+        $percentage = $threshold > 0 ? ($yearlyRevenue / $threshold) * 100 : 0;
+
+        // Get threshold label
+        $thresholdLabel = match($tenant->business_type) {
+            'services' => 'Prestations de services',
+            'goods' => 'Vente de marchandises',
+            'mixed' => 'Activité mixte',
+            default => 'Prestations de services',
+        };
+
+        return response()->json([
+            'regime' => $tenant->vat_regime,
+            'subject' => $tenant->vat_subject,
+            'businessType' => $tenant->business_type ?? 'services',
+            'yearlyRevenue' => round($yearlyRevenue, 2),
+            'threshold' => $threshold,
+            'percentage' => round($percentage, 2),
+            'exceededAt' => $tenant->vat_threshold_exceeded_at?->toDateString(),
+            'autoApply' => $tenant->auto_apply_vat_on_threshold ?? true,
+            'thresholdLabel' => $thresholdLabel,
+            'applies' => true,
+        ]);
+    }
 }

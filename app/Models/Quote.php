@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class Quote extends Model
 {
@@ -25,7 +26,7 @@ class Quote extends Model
         'valid_until',
         'status',
         'description',
-        'items',
+        // 'items' removed - use items() relation instead
         'subtotal',
         'tax_amount',
         'discount_amount',
@@ -57,13 +58,19 @@ class Quote extends Model
         'recovery_indemnity',
         'early_payment_discount',
         'converted_to_invoice_id',
-        'created_by'
+        'created_by',
+        'signature_token',
+        'cancellation_reason',
+        'signature_data',
+        'signer_name',
+        'signer_email',
+        'signer_position'
     ];
 
     protected $casts = [
         'quote_date' => 'date',
         'valid_until' => 'date',
-        'items' => 'array',
+        // 'items' removed - use items() relation instead
         'subtotal' => 'decimal:2',
         'tax_amount' => 'decimal:2',
         'discount_amount' => 'decimal:2',
@@ -206,5 +213,58 @@ class Quote extends Model
         // Un devis peut être édité tant qu'il n'est pas accepté ou verrouillé
         return !$this->is_locked &&
                in_array($this->status, ['draft', 'sent']);
+    }
+
+    /**
+     * Generate a unique signature token for public signing
+     */
+    public function generateSignatureToken(): string
+    {
+        $token = Str::random(64);
+        $this->update(['signature_token' => $token]);
+        return $token;
+    }
+
+    /**
+     * Get the public signature URL
+     */
+    public function getSignatureUrl(): string
+    {
+        if (!$this->signature_token) {
+            $this->generateSignatureToken();
+        }
+        return url("/quote/sign/{$this->signature_token}");
+    }
+
+    /**
+     * Check if quote can be cancelled
+     */
+    public function canBeCancelled(): bool
+    {
+        return in_array($this->status, ['draft', 'sent']) && !$this->cancelled_at;
+    }
+
+    /**
+     * Check if quote can be deleted
+     */
+    public function canBeDeleted(): bool
+    {
+        return $this->status === 'draft' && !$this->cancelled_at;
+    }
+
+    /**
+     * Cancel the quote
+     */
+    public function cancel(string $reason = null): void
+    {
+        if (!$this->canBeCancelled()) {
+            throw new \Exception('This quote cannot be cancelled.');
+        }
+
+        $this->update([
+            'status' => 'cancelled',
+            'cancelled_at' => now(),
+            'cancellation_reason' => $reason
+        ]);
     }
 }

@@ -116,6 +116,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/invoices/{invoice}/send-reminder', [InvoiceController::class, 'sendReminder']);
     Route::post('/invoices/{invoice}/mark-paid', [InvoiceController::class, 'markAsPaid']);
     Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf']);
+    Route::get('/invoices/{invoice}/facturx', [InvoiceController::class, 'downloadFacturX']);
+    Route::post('/invoices/{invoice}/generate-facturx', [InvoiceController::class, 'generateFacturX']);
     Route::post('/invoices/{invoice}/chorus', [InvoiceController::class, 'sendToChorus']);
     Route::get('/invoices/{invoice}/audit-log', [InvoiceController::class, 'auditLog']);
 
@@ -145,6 +147,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/quotes/{quote}/send', [QuoteController::class, 'send']);
     Route::post('/quotes/{quote}/accept', [QuoteController::class, 'accept']);
     Route::post('/quotes/{quote}/reject', [QuoteController::class, 'reject']);
+    Route::post('/quotes/{quote}/cancel', [QuoteController::class, 'cancel']);
     Route::post('/quotes/{quote}/convert', [QuoteController::class, 'convertToInvoice']);
     Route::get('/quotes/{quote}/pdf', [QuoteController::class, 'downloadPdf']);
 
@@ -209,6 +212,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/settings/billing', [TenantSettingsController::class, 'updateBillingSettings']);
     Route::post('/settings/billing/logo', [TenantSettingsController::class, 'uploadLogo']);
     Route::delete('/settings/billing/logo', [TenantSettingsController::class, 'deleteLogo']);
+    
+    // VAT Threshold Status (for dashboard widget)
+    Route::get('/tenant/vat-threshold-status', [TenantSettingsController::class, 'getVatThresholdStatus']);
 
     // VAT threshold status
     Route::get('/vat/status', function () {

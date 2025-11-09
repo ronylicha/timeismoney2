@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Models\CreditNote;
+use App\Models\Invoice;
 use App\Observers\CreditNoteObserver;
+use App\Observers\InvoiceObserver;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
@@ -26,6 +28,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // Register observers
         CreditNote::observe(CreditNoteObserver::class);
+        Invoice::observe(InvoiceObserver::class);
 
         // Configure rate limiters
         RateLimiter::for('api', function (Request $request) {

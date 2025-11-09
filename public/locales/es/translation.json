@@ -883,7 +883,10 @@
         "date": "Fecha",
         "quotes": "Presupuestos",
         "manageQuotes": "Gestionar Presupuestos",
-        "amount": "Monto"
+        "amount": "Monto",
+        "subtotal": "Subtotal",
+        "tax": "Impuesto",
+        "downloadPDF": "Descargar PDF"
     },
     "creditNotes": {
         "title": "Notas de Crédito",

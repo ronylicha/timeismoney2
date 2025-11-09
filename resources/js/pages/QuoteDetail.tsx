@@ -1,20 +1,26 @@
 import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeftIcon, DocumentArrowDownIcon, CheckCircleIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, DocumentArrowDownIcon, CheckCircleIcon, PencilIcon, XCircleIcon, TrashIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'react-toastify';
 import SignatureModal from '../components/SignatureModal';
+import SendQuoteModal from '../components/SendQuoteModal';
 
 const QuoteDetail: React.FC = () => {
     const { t } = useTranslation();
     const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
     const queryClient = useQueryClient();
     const isNewQuote = !id || id === 'new';
     const [showSignatureModal, setShowSignatureModal] = useState(false);
+    const [showSendModal, setShowSendModal] = useState(false);
+    const [showCancelModal, setShowCancelModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [cancellationReason, setCancellationReason] = useState('');
 
     const { data: quote, isLoading } = useQuery({
         queryKey: ['quote', id],
@@ -52,6 +58,88 @@ const QuoteDetail: React.FC = () => {
             signatory_name: quote?.client?.name || '',
             accepted_terms: acceptedTerms,
         });
+    };
+
+    const handleDownloadPdf = async () => {
+        try {
+            const response = await axios.get(`/quotes/${id}/pdf`, {
+                responseType: 'blob',
+            });
+            
+            // Create blob link to download
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `devis-${quote?.quote_number || id}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode?.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            
+            toast.success('PDF téléchargé avec succès');
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Erreur lors du téléchargement du PDF');
+        }
+    };
+
+    // Cancel quote mutation
+    const cancelQuoteMutation = useMutation({
+        mutationFn: async (reason: string) => {
+            const response = await axios.post(`/quotes/${id}/cancel`, { reason });
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['quote', id] });
+            setShowCancelModal(false);
+            setCancellationReason('');
+            toast.success('Devis annulé avec succès');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Erreur lors de l\'annulation du devis');
+        },
+    });
+
+    // Delete quote mutation
+    const deleteQuoteMutation = useMutation({
+        mutationFn: async () => {
+            const response = await axios.delete(`/quotes/${id}`);
+            return response.data;
+        },
+        onSuccess: () => {
+            toast.success('Devis supprimé avec succès');
+            navigate('/quotes');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Erreur lors de la suppression du devis');
+        },
+    });
+
+    const handleCancelQuote = () => {
+        cancelQuoteMutation.mutate(cancellationReason);
+    };
+
+    const handleDeleteQuote = () => {
+        deleteQuoteMutation.mutate();
+    };
+
+    // Send quote mutation
+    const sendQuoteMutation = useMutation({
+        mutationFn: async (email: string) => {
+            const response = await axios.post(`/quotes/${id}/send`, { recipient_email: email });
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['quote', id] });
+            setShowSendModal(false);
+            toast.success('Devis envoyé avec succès par email');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Erreur lors de l\'envoi du devis');
+        },
+    });
+
+    const handleSendQuote = (email: string) => {
+        sendQuoteMutation.mutate(email);
     };
 
     const getStatusBadge = (status: string) => {
@@ -119,12 +207,23 @@ const QuoteDetail: React.FC = () => {
                         {getStatusBadge(quote.status)}
                     </div>
 
-                    <div className="flex items-center gap-3 mt-4 md:mt-0">
+                    <div className="flex items-center gap-3 mt-4 md:mt-0 flex-wrap">
+                        {/* Send Quote Button (only if status is draft) */}
+                        {quote.status === 'draft' && (
+                            <button
+                                onClick={() => setShowSendModal(true)}
+                                className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm"
+                            >
+                                <PaperAirplaneIcon className="h-4 w-4" />
+                                <span>Envoyer</span>
+                            </button>
+                        )}
+
                         {/* Edit Quote Button (only if status is draft or sent) */}
                         {(quote.status === 'draft' || quote.status === 'sent') && (
                             <Link
                                 to={`/quotes/${id}/edit`}
-                                className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm"
+                                className="flex items-center space-x-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition text-sm"
                             >
                                 <PencilIcon className="h-4 w-4" />
                                 <span>{t('common.edit')}</span>
@@ -142,7 +241,32 @@ const QuoteDetail: React.FC = () => {
                             </button>
                         )}
 
-                        <button className="flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition text-sm">
+                        {/* Cancel Quote Button (only if status is draft or sent) */}
+                        {(quote.status === 'draft' || quote.status === 'sent') && !quote.cancelled_at && (
+                            <button
+                                onClick={() => setShowCancelModal(true)}
+                                className="flex items-center space-x-2 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition text-sm"
+                            >
+                                <XCircleIcon className="h-4 w-4" />
+                                <span>Annuler</span>
+                            </button>
+                        )}
+
+                        {/* Delete Quote Button (only if status is draft) */}
+                        {quote.status === 'draft' && !quote.cancelled_at && (
+                            <button
+                                onClick={() => setShowDeleteModal(true)}
+                                className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm"
+                            >
+                                <TrashIcon className="h-4 w-4" />
+                                <span>Supprimer</span>
+                            </button>
+                        )}
+
+                        <button 
+                            onClick={handleDownloadPdf}
+                            className="flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition text-sm"
+                        >
                             <DocumentArrowDownIcon className="h-4 w-4" />
                             <span>{t('quotes.downloadPDF')}</span>
                         </button>
@@ -159,7 +283,7 @@ const QuoteDetail: React.FC = () => {
                     <div className="text-right">
                         <p className="text-sm text-gray-600">{t('quotes.issueDate')}</p>
                         <p className="font-semibold text-gray-900">
-                            {format(new Date(quote.issue_date), 'dd MMMM yyyy', { locale: fr })}
+                            {quote.quote_date ? format(new Date(quote.quote_date), 'dd MMMM yyyy', { locale: fr }) : '-'}
                         </p>
                         <p className="text-sm text-gray-600 mt-2">{t('quotes.validUntil')}</p>
                         <p className="font-semibold text-gray-900">
@@ -235,7 +359,7 @@ const QuoteDetail: React.FC = () => {
                                 {new Intl.NumberFormat('fr-FR', {
                                     style: 'currency',
                                     currency: 'EUR',
-                                }).format(quote.total_amount)}
+                                }).format(quote.total || 0)}
                             </span>
                         </div>
                     </div>
@@ -309,6 +433,17 @@ const QuoteDetail: React.FC = () => {
                 )}
             </div>
 
+            {/* Send Quote Modal */}
+            <SendQuoteModal
+                isOpen={showSendModal}
+                onClose={() => setShowSendModal(false)}
+                onConfirm={handleSendQuote}
+                defaultEmail={quote?.client?.email || ''}
+                quoteNumber={quote?.quote_number || ''}
+                clientName={quote?.client?.name || ''}
+                isPending={sendQuoteMutation.isPending}
+            />
+
             {/* Signature Modal */}
             <SignatureModal
                 isOpen={showSignatureModal}
@@ -316,8 +451,77 @@ const QuoteDetail: React.FC = () => {
                 onConfirm={handleSignatureConfirm}
                 quoteNumber={quote?.quote_number || ''}
                 clientName={quote?.client?.name || ''}
-                total={quote?.total_amount || 0}
+                total={quote?.total || 0}
             />
+
+            {/* Cancel Modal */}
+            {showCancelModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Annuler le devis</h3>
+                        <p className="text-gray-600 mb-4">
+                            Êtes-vous sûr de vouloir annuler ce devis ? Cette action est irréversible.
+                        </p>
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Raison de l'annulation (optionnel)
+                            </label>
+                            <textarea
+                                value={cancellationReason}
+                                onChange={(e) => setCancellationReason(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                rows={3}
+                                placeholder="Expliquez pourquoi vous annulez ce devis..."
+                            />
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => {
+                                    setShowCancelModal(false);
+                                    setCancellationReason('');
+                                }}
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                            >
+                                Retour
+                            </button>
+                            <button
+                                onClick={handleCancelQuote}
+                                disabled={cancelQuoteMutation.isPending}
+                                className="flex-1 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition disabled:opacity-50"
+                            >
+                                {cancelQuoteMutation.isPending ? 'Annulation...' : 'Confirmer l\'annulation'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Modal */}
+            {showDeleteModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Supprimer le devis</h3>
+                        <p className="text-gray-600 mb-6">
+                            Êtes-vous sûr de vouloir supprimer définitivement ce devis ? Cette action est irréversible.
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowDeleteModal(false)}
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                            >
+                                Annuler
+                            </button>
+                            <button
+                                onClick={handleDeleteQuote}
+                                disabled={deleteQuoteMutation.isPending}
+                                className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition disabled:opacity-50"
+                            >
+                                {deleteQuoteMutation.isPending ? 'Suppression...' : 'Supprimer définitivement'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

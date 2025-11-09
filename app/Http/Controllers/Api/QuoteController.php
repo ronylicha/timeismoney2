@@ -28,7 +28,7 @@ class QuoteController extends Controller
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('quote_number', 'like', "%{$search}%")
-                  ->orWhere('subject', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
                   ->orWhereHas('client', function($q) use ($search) {
                       $q->where('name', 'like', "%{$search}%");
                   });
@@ -47,10 +47,10 @@ class QuoteController extends Controller
 
         // Date range filter
         if ($request->has('date_from')) {
-            $query->whereDate('issue_date', '>=', $request->date_from);
+            $query->whereDate('quote_date', '>=', $request->date_from);
         }
         if ($request->has('date_to')) {
-            $query->whereDate('issue_date', '<=', $request->date_to);
+            $query->whereDate('quote_date', '<=', $request->date_to);
         }
 
         // Sorting
@@ -70,11 +70,11 @@ class QuoteController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'client_id' => 'required|exists:clients,id',
-            'subject' => 'required|string|max:255',
-            'issue_date' => 'required|date',
-            'valid_until' => 'required|date|after:issue_date',
+            'description' => 'nullable|string',
+            'quote_date' => 'nullable|date',
+            'valid_until' => 'required|date',
             'notes' => 'nullable|string',
-            'terms' => 'nullable|string',
+            'terms_conditions' => 'nullable|string',
             'items' => 'required|array|min:1',
             'items.*.description' => 'required|string',
             'items.*.quantity' => 'required|numeric|min:0',
@@ -124,15 +124,17 @@ class QuoteController extends Controller
                 'tenant_id' => $tenant->id,
                 'client_id' => $request->client_id,
                 'quote_number' => $quoteNumber,
-                'subject' => $request->subject,
-                'issue_date' => $request->issue_date,
+                'description' => $request->description,
+                'quote_date' => $request->quote_date ?? now(),
                 'valid_until' => $request->valid_until,
                 'status' => 'draft',
                 'subtotal' => $subtotal,
                 'tax_amount' => $totalTax,
-                'total_amount' => $total,
+                'total' => $total,
                 'notes' => $request->notes,
-                'terms' => $request->terms,
+                'terms_conditions' => $request->terms_conditions,
+                'created_by' => auth()->id(),
+                'sequence_number' => $nextNumber,
             ]);
 
             // Create quote items
@@ -204,11 +206,11 @@ class QuoteController extends Controller
 
         $validator = Validator::make($request->all(), [
             'client_id' => 'sometimes|required|exists:clients,id',
-            'subject' => 'sometimes|required|string|max:255',
-            'issue_date' => 'sometimes|required|date',
+            'description' => 'nullable|string',
+            'quote_date' => 'sometimes|required|date',
             'valid_until' => 'sometimes|required|date',
             'notes' => 'nullable|string',
-            'terms' => 'nullable|string',
+            'terms_conditions' => 'nullable|string',
             'items' => 'sometimes|required|array|min:1',
         ]);
 
@@ -223,7 +225,7 @@ class QuoteController extends Controller
         try {
             // Update quote
             $quote->update($request->only([
-                'client_id', 'subject', 'issue_date', 'valid_until', 'notes', 'terms'
+                'client_id', 'description', 'quote_date', 'valid_until', 'notes', 'terms_conditions'
             ]));
 
             // Update items if provided
@@ -519,5 +521,45 @@ class QuoteController extends Controller
             ->findOrFail($id);
 
         return $pdfService->generateQuotePdf($quote, download: true);
+    }
+
+    /**
+     * Cancel a quote
+     */
+    public function cancel(Request $request, $id)
+    {
+        $quote = Quote::where('tenant_id', auth()->user()->tenant_id)
+            ->findOrFail($id);
+
+        if (!$quote->canBeCancelled()) {
+            return response()->json([
+                'message' => 'This quote cannot be cancelled. Current status: ' . $quote->status
+            ], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'reason' => 'nullable|string|max:500'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $quote->cancel($request->input('reason'));
+
+            return response()->json([
+                'message' => 'Quote cancelled successfully',
+                'data' => $quote->load(['client', 'items'])
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to cancel quote',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

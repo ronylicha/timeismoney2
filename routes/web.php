@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PublicQuoteController;
 
 // Landing page - serve static HTML
 Route::get('/', function () {
@@ -24,7 +25,13 @@ Route::get('/app-manifest-v3.json', function () {
         ]);
 });
 
-// Catch-all route for React SPA (except root)
+// Public quote signature routes (no auth required)
+Route::prefix('quote/sign')->group(function () {
+    Route::get('/{token}', [PublicQuoteController::class, 'show'])->name('quote.public.show');
+    Route::post('/{token}', [PublicQuoteController::class, 'sign'])->name('quote.public.sign');
+});
+
+// Catch-all route for React SPA (except root and public routes)
 Route::get('/{path}', function () {
     return view('app');
-})->where('path', '.*');
+})->where('path', '(?!quote/sign).*');

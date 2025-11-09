@@ -59,6 +59,8 @@ const AdminMonitoring = lazy(() => import('./pages/Admin/Monitoring'));
 const AdminNotifications = lazy(() => import('./pages/Admin/Notifications'));
 const AdminReports = lazy(() => import('./pages/Admin/Reports'));
 const Compliance = lazy(() => import('./pages/Compliance'));
+const FecExport = lazy(() => import('./pages/FecExport'));
+const CreditNotes = lazy(() => import('./pages/CreditNotes'));
 
 // Contexts
 import { AuthProvider } from './contexts/AuthContext';
@@ -255,6 +257,7 @@ function App() {
                                         <Route path="/invoices/new" element={<CreateInvoice />} />
                                         <Route path="/invoices/:id/edit" element={<CreateInvoice />} />
                                         <Route path="/invoices/:id" element={<InvoiceDetail />} />
+                                        <Route path="/credit-notes" element={<CreditNotes />} />
                                         <Route path="/quotes" element={<Quotes />} />
                                         <Route path="/quotes/new" element={<CreateQuote />} />
                                         <Route path="/quotes/:id/edit" element={<CreateQuote />} />
@@ -271,6 +274,7 @@ function App() {
 
                                         {/* Compliance */}
                                         <Route path="/compliance" element={<Compliance />} />
+                                        <Route path="/compliance/fec-export" element={<FecExport />} />
 
                                         {/* Settings */}
                                         <Route path="/settings" element={<Settings />} />

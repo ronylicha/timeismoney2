@@ -29,6 +29,7 @@ interface InvoiceFormData {
     type: 'invoice' | 'advance' | 'final';
     client_id: string;
     project_id?: string;
+    quote_id?: string;
     date: string;
     due_date: string;
     payment_terms: number;
@@ -223,6 +224,23 @@ const CreateInvoice: React.FC = () => {
             setAvailableAdvances(advancesData);
         }
     }, [advancesData]);
+
+    // Fetch accepted quotes for the selected client
+    const { data: acceptedQuotes } = useQuery({
+        queryKey: ['accepted-quotes', formData.client_id],
+        queryFn: async () => {
+            if (!formData.client_id) return { data: [] };
+            const response = await axios.get('/quotes', {
+                params: {
+                    client_id: formData.client_id,
+                    status: 'accepted',
+                    per_page: 100
+                }
+            });
+            return response.data;
+        },
+        enabled: !!formData.client_id,
+    });
 
     // Create/Update invoice mutation
     const createInvoiceMutation = useMutation({
@@ -486,6 +504,7 @@ const CreateInvoice: React.FC = () => {
             payload = {
                 client_id: formData.client_id,
                 project_id: formData.project_id,
+                quote_id: formData.quote_id,
                 date: formData.date,
                 due_date: formData.due_date,
                 payment_terms: formData.payment_terms,
@@ -513,6 +532,7 @@ const CreateInvoice: React.FC = () => {
             payload = {
                 client_id: formData.client_id,
                 project_id: formData.project_id,
+                quote_id: formData.quote_id,
                 date: formData.date,
                 due_date: formData.due_date,
                 payment_terms: formData.payment_terms,
@@ -772,6 +792,28 @@ const CreateInvoice: React.FC = () => {
                                     label={t('invoices.project')}
                                     placeholder={t('invoices.selectProject') || 'Sélectionner un projet...'}
                                 />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Devis de référence (optionnel)
+                                </label>
+                                <select
+                                    value={formData.quote_id || ''}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, quote_id: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    disabled={!formData.client_id}
+                                >
+                                    <option value="">Aucun devis sélectionné</option>
+                                    {acceptedQuotes?.data?.map((quote: any) => (
+                                        <option key={quote.id} value={quote.id}>
+                                            {quote.quote_number} - {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(quote.total)}
+                                        </option>
+                                    ))}
+                                </select>
+                                {formData.client_id && acceptedQuotes?.data?.length === 0 && (
+                                    <p className="text-xs text-gray-500 mt-1">Aucun devis accepté pour ce client</p>
+                                )}
                             </div>
 
                             <div>

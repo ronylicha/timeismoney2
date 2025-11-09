@@ -151,18 +151,32 @@ const CreateQuote: React.FC = () => {
     // Create quote mutation
     const createQuoteMutation = useMutation({
         mutationFn: async (data: QuoteFormData) => {
+            // Map frontend field names to backend field names
+            const backendData = {
+                ...data,
+                description: data.subject, // subject → description
+                quote_date: data.issue_date, // issue_date → quote_date
+                terms_conditions: data.terms, // terms → terms_conditions
+            };
+            
+            // Remove old field names
+            delete (backendData as any).subject;
+            delete (backendData as any).issue_date;
+            delete (backendData as any).terms;
+            
             if (isEditMode) {
-                const response = await axios.put(`/quotes/${id}`, data);
+                const response = await axios.put(`/quotes/${id}`, backendData);
                 return response.data;
             } else {
-                const response = await axios.post('/quotes', data);
+                const response = await axios.post('/quotes', backendData);
                 return response.data;
             }
         },
         onSuccess: (response) => {
             const successMessage = isEditMode ? 'Devis mis à jour avec succès' : t('quotes.createSuccess');
             toast.success(successMessage);
-            const quoteId = isEditMode ? id : response.quote.id;
+            // The backend returns { message, data: quote }
+            const quoteId = isEditMode ? id : (response.data?.id || response.quote?.id);
             navigate(`/quotes/${quoteId}`);
         },
         onError: (error: any) => {

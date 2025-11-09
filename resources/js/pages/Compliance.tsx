@@ -1,5 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { 
     CheckCircle, 
@@ -11,6 +12,7 @@ import {
     QrCode,
     AlertCircle
 } from 'lucide-react';
+import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next';
 
 interface ComplianceMetrics {
@@ -87,12 +89,23 @@ export default function Compliance() {
         <div className="p-6 space-y-6">
             {/* Header */}
             <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900">
-                    Conformité Facturation Française
-                </h1>
-                <p className="mt-2 text-gray-600">
-                    Vérification automatique de la conformité légale de vos factures
-                </p>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <h1 className="text-3xl font-bold text-gray-900">
+                            Conformité Facturation Française
+                        </h1>
+                        <p className="mt-2 text-gray-600">
+                            Vérification automatique de la conformité légale de vos factures
+                        </p>
+                    </div>
+                    <Link
+                        to="/compliance/fec-export"
+                        className="flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
+                    >
+                        <ArrowDownTrayIcon className="h-5 w-5" />
+                        <span>Export FEC</span>
+                    </Link>
+                </div>
             </div>
 
             {/* Métriques principales */}

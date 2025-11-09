@@ -905,9 +905,9 @@
         "quotes": "Devis",
         "manageQuotes": "Gérer les devis",
         "amount": "Montant",
-        "status": {
-            "label": "Statut"
-        }
+        "subtotal": "Sous-total",
+        "tax": "Taxe",
+        "downloadPDF": "Télécharger PDF"
     },
     "creditNotes": {
         "title": "Avoirs",

@@ -82,10 +82,14 @@ class FacturXService
         $client = $invoice->client;
         
         // En-tête du document
+        $invoiceDate = is_string($invoice->date) 
+            ? new \DateTime($invoice->date) 
+            : $invoice->date;
+            
         $document->setDocumentInformation(
             $invoice->invoice_number,
             ZugferdInvoiceType::INVOICE,
-            $invoice->date->format('Ymd'),
+            $invoiceDate,
             $invoice->currency ?? 'EUR'
         );
         
@@ -108,8 +112,14 @@ class FacturXService
             $document->setDocumentSellerTaxRegistration('VA', $tenant->legal_mention_tva_intracom);
         }
         
-        if ($tenant->email) {
-            $document->setDocumentSellerContact('', '', '', $tenant->email);
+        if ($tenant->email || $tenant->phone) {
+            $document->setDocumentSellerContact(
+                $tenant->contact_name ?? '',           // Nom contact
+                $tenant->department ?? '',              // Département
+                $tenant->phone ?? '',                   // Téléphone
+                $tenant->fax ?? '',                     // Fax
+                $tenant->email ?? ''                    // Email
+            );
         }
         
         // Informations acheteur (client)
@@ -131,32 +141,54 @@ class FacturXService
             $document->setDocumentBuyerTaxRegistration('VA', $client->vat_number);
         }
         
-        if ($client->email) {
-            $document->setDocumentBuyerContact('', '', '', $client->email);
-        }
-        
-        // Conditions de paiement
-        $document->setDocumentPaymentTerm(
-            $invoice->payment_conditions ?? "Paiement à {$invoice->payment_terms} jours"
-        );
-        
-        // Échéance
-        if ($invoice->due_date) {
-            $document->setDocumentPaymentTerm(
-                "Échéance: {$invoice->due_date->format('d/m/Y')}"
+        if ($client->email || $client->phone) {
+            $document->setDocumentBuyerContact(
+                $client->contact_name ?? '',            // Nom contact
+                '',                                      // Département
+                $client->phone ?? '',                    // Téléphone
+                '',                                      // Fax
+                $client->email ?? ''                     // Email
             );
         }
         
-        // Moyen de paiement
-        $paymentMeansCode = $this->getPaymentMeansCode($invoice->payment_method);
-        $document->addDocumentPaymentMean(
-            $paymentMeansCode,
-            $invoice->payment_method ?? 'Virement'
+        // Conditions de paiement et échéance
+        $dueDate = null;
+        if ($invoice->due_date) {
+            $dueDate = is_string($invoice->due_date) 
+                ? new \DateTime($invoice->due_date) 
+                : $invoice->due_date;
+        }
+        
+        $paymentDescription = $invoice->payment_conditions 
+            ?? "Paiement à {$invoice->payment_terms} jours";
+            
+        if ($dueDate) {
+            $paymentDescription .= " - Échéance: {$dueDate->format('d/m/Y')}";
+        }
+        
+        $document->addDocumentPaymentTerm(
+            $paymentDescription,
+            $dueDate,
+            null,  // directDebitMandateID
+            null   // partialPaymentAmount
         );
         
-        // Ajouter IBAN si disponible
-        if ($tenant->iban) {
-            $document->setDocumentPaymentMeanToFinancialAccount($tenant->iban);
+        // Moyen de paiement
+        if ($tenant->iban && strtolower($invoice->payment_method ?? 'bank_transfer') === 'bank_transfer') {
+            // Virement bancaire avec IBAN
+            $document->addDocumentPaymentMeanToCreditTransfer(
+                $tenant->iban,
+                $tenant->company_name ?? $tenant->name ?? null,  // Nom du compte
+                null,  // Propriétaire ID
+                $tenant->bic ?? null  // BIC si disponible
+            );
+        } else {
+            // Autre moyen de paiement
+            $paymentMeansCode = $this->getPaymentMeansCode($invoice->payment_method);
+            $document->addDocumentPaymentMean(
+                $paymentMeansCode,
+                $invoice->payment_method ?? 'Virement'
+            );
         }
         
         // Lignes de facture
@@ -268,10 +300,14 @@ class FacturXService
         $invoice = $creditNote->invoice;
         
         // En-tête du document - Type 381 = Credit Note
+        $creditNoteDate = is_string($creditNote->credit_note_date) 
+            ? new \DateTime($creditNote->credit_note_date) 
+            : $creditNote->credit_note_date;
+            
         $document->setDocumentInformation(
             $creditNote->credit_note_number,
             ZugferdInvoiceType::CREDITNOTE,
-            $creditNote->credit_note_date->format('Ymd'),
+            $creditNoteDate,
             $creditNote->currency ?? 'EUR'
         );
         
@@ -324,11 +360,21 @@ class FacturXService
         }
         
         // Moyen de paiement (remboursement)
-        $paymentMeansCode = $this->getPaymentMeansCode($creditNote->payment_method);
-        $document->addDocumentPaymentMean(
-            $paymentMeansCode,
-            $creditNote->payment_method ?? 'Virement'
-        );
+        if ($tenant->iban && strtolower($creditNote->payment_method ?? 'bank_transfer') === 'bank_transfer') {
+            // Virement bancaire avec IBAN
+            $document->addDocumentPaymentMeanToCreditTransfer(
+                $tenant->iban,
+                $tenant->company_name ?? $tenant->name ?? null,
+                null,
+                $tenant->bic ?? null
+            );
+        } else {
+            $paymentMeansCode = $this->getPaymentMeansCode($creditNote->payment_method);
+            $document->addDocumentPaymentMean(
+                $paymentMeansCode,
+                $creditNote->payment_method ?? 'Virement'
+            );
+        }
         
         // Lignes de l'avoir
         foreach ($creditNote->items as $item) {

@@ -843,6 +843,8 @@
         "accepted": "Accepted",
         "rejected": "Rejected",
         "expired": "Expired",
+        "subtotal": "Subtotal",
+        "tax": "Tax",
         "convertToInvoice": "Convert to Invoice",
         "accept": "Accept",
         "reject": "Reject",
@@ -905,9 +907,9 @@
         "quotes": "Quotes",
         "manageQuotes": "Manage Quotes",
         "amount": "Amount",
-        "status": {
-            "label": "Status"
-        }
+        "subtotal": "Subtotal",
+        "tax": "Tax",
+        "downloadPDF": "Download PDF"
     },
     "creditNotes": {
         "title": "Credit Notes",

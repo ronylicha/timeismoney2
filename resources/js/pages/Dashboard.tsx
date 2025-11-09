@@ -4,7 +4,6 @@ import axios from 'axios';
 import {
     Clock,
     TrendingUp,
-    DollarSign,
     FileText,
     AlertCircle,
     Briefcase,
@@ -24,6 +23,7 @@ import {
     QuickActionsWidget,
     TasksSummaryWidget,
     UserManagementWidget,
+    VatThresholdWidget,
 } from '../components/Dashboard/Widgets';
 
 interface DashboardStats {
@@ -82,7 +82,7 @@ interface ChartData {
 const Dashboard: React.FC = () => {
     const { t } = useTranslation();
     const { user } = useAuth();
-    const { activeTimer, isRunning } = useTimer();
+    const { } = useTimer();
 
     // Fetch dashboard statistics
     const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
@@ -236,6 +236,11 @@ const Dashboard: React.FC = () => {
                     <UserManagementWidget />
                 </div>
             )}
+
+            {/* VAT Threshold Widget (if applicable) */}
+            <div className="mb-8">
+                <VatThresholdWidget />
+            </div>
 
             {/* Bottom Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

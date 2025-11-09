@@ -55,7 +55,22 @@
     @endif
 
     <p style="margin-top: 30px;">
-        Le devis complet est joint à cet email au format PDF. Pour l'accepter, merci de nous le retourner signé avec la mention "Bon pour accord".
+        Le devis complet est joint à cet email au format PDF.
+    </p>
+
+    <div style="text-align: center; margin: 30px 0;">
+        <a href="{{ $signatureUrl }}" 
+           style="display: inline-block; padding: 15px 40px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+            📝 Signer le devis en ligne
+        </a>
+        <p style="margin-top: 15px; font-size: 14px; color: #6b7280;">
+            Vous pouvez accepter ce devis en le signant directement en ligne<br>
+            (signature électronique sécurisée, aucune inscription requise)
+        </p>
+    </div>
+
+    <p style="margin-top: 20px; font-size: 14px; color: #6b7280;">
+        Alternativement, vous pouvez nous retourner le PDF joint signé avec la mention "Bon pour accord".
     </p>
 
     <p>

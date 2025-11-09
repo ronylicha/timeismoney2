@@ -22,7 +22,10 @@ class QuoteSent extends Mailable
         public Quote $quote,
         private PdfGeneratorService $pdfService
     ) {
-        //
+        // Generate signature token if not exists
+        if (!$this->quote->signature_token) {
+            $this->quote->generateSignatureToken();
+        }
     }
 
     /**
@@ -46,6 +49,7 @@ class QuoteSent extends Mailable
                 'quote' => $this->quote,
                 'client' => $this->quote->client,
                 'tenant' => $this->quote->tenant,
+                'signatureUrl' => $this->quote->getSignatureUrl(),
             ],
         );
     }
