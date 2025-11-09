@@ -61,7 +61,7 @@ const EditQuote: React.FC = () => {
     const { data: quote, isLoading: isLoadingQuote } = useQuery<Quote>({
         queryKey: ['quote', id],
         queryFn: async () => {
-            const response = await axios.get(`/api/quotes/${id}`);
+            const response = await axios.get(`/quotes/${id}`);
             return response.data;
         },
         enabled: !!id
@@ -71,7 +71,7 @@ const EditQuote: React.FC = () => {
     const { data: clientsData } = useQuery<PaginatedResponse<Client>>({
         queryKey: ['clients'],
         queryFn: async () => {
-            const response = await axios.get('/api/clients');
+            const response = await axios.get('/clients');
             return response.data;
         }
     });
@@ -80,7 +80,7 @@ const EditQuote: React.FC = () => {
     const { data: projectsData } = useQuery<PaginatedResponse<Project>>({
         queryKey: ['projects', formData.client_id],
         queryFn: async () => {
-            const response = await axios.get(`/api/projects?client_id=${formData.client_id}`);
+            const response = await axios.get(`/projects?client_id=${formData.client_id}`);
             return response.data;
         },
         enabled: !!formData.client_id
@@ -119,7 +119,7 @@ const EditQuote: React.FC = () => {
     // Update quote mutation
     const updateQuoteMutation = useMutation({
         mutationFn: async (data: QuoteFormData) => {
-            const response = await axios.put(`/api/quotes/${id}`, data);
+            const response = await axios.put(`/quotes/${id}`, data);
             return response.data;
         },
         onSuccess: (updatedQuote) => {

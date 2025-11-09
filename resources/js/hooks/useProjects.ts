@@ -40,7 +40,7 @@ export const useProjects = (initialFilters?: ProjectFilters): UseProjectsReturn 
                 page: currentPage.toString(),
                 ...filters,
             });
-            const response = await axios.get(`/api/projects?${params}`);
+            const response = await axios.get(`/projects?${params}`);
             return response.data;
         },
         staleTime: 5 * 60 * 1000, // 5 minutes
@@ -49,7 +49,7 @@ export const useProjects = (initialFilters?: ProjectFilters): UseProjectsReturn 
     // Create project mutation
     const createProjectMutation = useMutation({
         mutationFn: async (data: Partial<Project>) => {
-            const response = await axios.post('/api/projects', data);
+            const response = await axios.post('/projects', data);
             return response.data.project;
         },
         onSuccess: (data) => {
@@ -65,7 +65,7 @@ export const useProjects = (initialFilters?: ProjectFilters): UseProjectsReturn 
     // Update project mutation
     const updateProjectMutation = useMutation({
         mutationFn: async ({ id, data }: { id: string; data: Partial<Project> }) => {
-            const response = await axios.put(`/api/projects/${id}`, data);
+            const response = await axios.put(`/projects/${id}`, data);
             return response.data.project;
         },
         onSuccess: (data) => {
@@ -82,7 +82,7 @@ export const useProjects = (initialFilters?: ProjectFilters): UseProjectsReturn 
     // Delete project mutation
     const deleteProjectMutation = useMutation({
         mutationFn: async (id: string) => {
-            await axios.delete(`/api/projects/${id}`);
+            await axios.delete(`/projects/${id}`);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['projects'] });
@@ -140,7 +140,7 @@ export const useProjects = (initialFilters?: ProjectFilters): UseProjectsReturn 
                 const cachedProject = queryClient.getQueryData<Project>(['project', id]);
                 if (cachedProject) return cachedProject;
 
-                const response = await axios.get(`/api/projects/${id}`);
+                const response = await axios.get(`/projects/${id}`);
                 const project = response.data;
 
                 queryClient.setQueryData(['project', id], project);
@@ -173,7 +173,7 @@ export const useProject = (projectId: string) => {
     const { data, isLoading, error } = useQuery<Project>({
         queryKey: ['project', projectId],
         queryFn: async () => {
-            const response = await axios.get(`/api/projects/${projectId}`);
+            const response = await axios.get(`/projects/${projectId}`);
             return response.data;
         },
         enabled: !!projectId,

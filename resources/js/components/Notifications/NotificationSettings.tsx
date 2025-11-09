@@ -45,7 +45,7 @@ const NotificationSettings: React.FC = () => {
     const { data: preferencesData, isLoading: loadingPreferences } = useQuery({
         queryKey: ['notification-preferences'],
         queryFn: async () => {
-            const response = await axios.get('/api/notifications/preferences');
+            const response = await axios.get('/notifications/preferences');
             return response.data;
         }
     });
@@ -54,7 +54,7 @@ const NotificationSettings: React.FC = () => {
     const { data: subscriptions = [], isLoading: loadingSubscriptions } = useQuery({
         queryKey: ['push-subscriptions'],
         queryFn: async () => {
-            const response = await axios.get('/api/notifications/subscriptions');
+            const response = await axios.get('/notifications/subscriptions');
             return response.data.subscriptions;
         }
     });
@@ -62,7 +62,7 @@ const NotificationSettings: React.FC = () => {
     // Update preferences mutation
     const updatePreferencesMutation = useMutation({
         mutationFn: async (preferences: NotificationPreference[]) => {
-            await axios.put('/api/notifications/preferences', { preferences });
+            await axios.put('/notifications/preferences', { preferences });
         },
         onSuccess: () => {
             toast.success('Préférences mises à jour');
@@ -76,7 +76,7 @@ const NotificationSettings: React.FC = () => {
     // Delete subscription mutation
     const deleteSubscriptionMutation = useMutation({
         mutationFn: async (id: number) => {
-            await axios.delete(`/api/notifications/subscriptions/${id}`);
+            await axios.delete(`/notifications/subscriptions/${id}`);
         },
         onSuccess: () => {
             toast.success('Appareil supprimé');
@@ -87,7 +87,7 @@ const NotificationSettings: React.FC = () => {
     // Test notification mutation
     const testNotificationMutation = useMutation({
         mutationFn: async (type: 'push' | 'email') => {
-            await axios.post('/api/notifications/test', { type });
+            await axios.post('/notifications/test', { type });
         },
         onSuccess: (_, type) => {
             toast.success(`Test ${type === 'push' ? 'push' : 'email'} envoyé`);
@@ -120,7 +120,7 @@ const NotificationSettings: React.FC = () => {
             const registration = await navigator.serviceWorker.ready;
 
             // Get VAPID public key
-            const { data: { public_key } } = await axios.get('/api/notifications/vapid-key');
+            const { data: { public_key } } = await axios.get('/notifications/vapid-key');
 
             // Subscribe to push
             const subscription = await registration.pushManager.subscribe({
@@ -129,7 +129,7 @@ const NotificationSettings: React.FC = () => {
             });
 
             // Send subscription to server
-            await axios.post('/api/notifications/subscribe', {
+            await axios.post('/notifications/subscribe', {
                 subscription: subscription.toJSON()
             });
 

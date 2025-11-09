@@ -49,7 +49,7 @@ const CreateExpense: React.FC = () => {
     const { data: categoriesData } = useQuery<PaginatedResponse<ExpenseCategory>>({
         queryKey: ['expense-categories'],
         queryFn: async () => {
-            const response = await axios.get('/api/expense-categories');
+            const response = await axios.get('/expense-categories');
             return response.data;
         }
     });
@@ -58,7 +58,7 @@ const CreateExpense: React.FC = () => {
     const { data: projectsData } = useQuery<PaginatedResponse<Project>>({
         queryKey: ['projects'],
         queryFn: async () => {
-            const response = await axios.get('/api/projects');
+            const response = await axios.get('/projects');
             return response.data;
         }
     });
@@ -80,7 +80,7 @@ const CreateExpense: React.FC = () => {
                 formDataToSend.append('receipt', data.receipt);
             }
             
-            const response = await axios.post('/api/expenses', formDataToSend, {
+            const response = await axios.post('/expenses', formDataToSend, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },

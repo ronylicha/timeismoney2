@@ -84,7 +84,7 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
             // Sync time entries
             for (const entry of pendingTimeEntries) {
                 try {
-                    const response = await fetch('/api/time-entries', {
+                    const response = await fetch('/time-entries', {
                         method: entry.id ? 'PUT' : 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -110,7 +110,7 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
             // Sync invoices
             for (const invoice of pendingInvoices) {
                 try {
-                    const response = await fetch('/api/invoices', {
+                    const response = await fetch('/invoices', {
                         method: invoice.id ? 'PUT' : 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -136,7 +136,7 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
             // Sync expenses
             for (const expense of pendingExpenses) {
                 try {
-                    const response = await fetch('/api/expenses', {
+                    const response = await fetch('/expenses', {
                         method: expense.id ? 'PUT' : 'POST',
                         headers: {
                             'Content-Type': 'application/json',

@@ -6,10 +6,6 @@ import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 import {
     ArrowLeftIcon,
-    FolderIcon,
-    UserGroupIcon,
-    CurrencyEuroIcon,
-    CalendarIcon,
     CheckCircleIcon
 } from '@heroicons/react/24/outline';
 import { Project, Client, PaginatedResponse } from '../types';
@@ -18,11 +14,16 @@ interface ProjectFormData {
     name: string;
     description: string;
     client_id: string;
-    status: 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled';
-    type: 'fixed' | 'hourly' | 'retainer' | 'maintenance';
+    status: 'active' | 'on_hold' | 'completed' | 'cancelled' | 'archived';
+    billing_type: 'hourly' | 'fixed' | 'retainer' | 'maintenance';
     hourly_rate: number;
-    budget_amount: number;
+    daily_rate: number;
+    budget: number;
     estimated_hours: number;
+    estimated_days: number;
+    monthly_amount: number;
+    contract_duration: number;
+    billing_frequency: 'monthly' | 'quarterly' | 'yearly';
     start_date: string;
     end_date: string;
     color: string;
@@ -39,11 +40,16 @@ const EditProject: React.FC = () => {
         name: '',
         description: '',
         client_id: '',
-        status: 'planning',
-        type: 'hourly',
+        status: 'active',
+        billing_type: 'hourly',
         hourly_rate: 0,
-        budget_amount: 0,
+        daily_rate: 0,
+        budget: 0,
         estimated_hours: 0,
+        estimated_days: 0,
+        monthly_amount: 0,
+        contract_duration: 0,
+        billing_frequency: 'monthly',
         start_date: '',
         end_date: '',
         color: '#3B82F6',
@@ -54,7 +60,7 @@ const EditProject: React.FC = () => {
     const { data: project, isLoading: isLoadingProject } = useQuery<Project>({
         queryKey: ['project', id],
         queryFn: async () => {
-            const response = await axios.get(`/api/projects/${id}`);
+            const response = await axios.get(`/projects/${id}`);
             return response.data;
         },
         enabled: !!id
@@ -64,7 +70,7 @@ const EditProject: React.FC = () => {
     const { data: clientsData } = useQuery<PaginatedResponse<Client>>({
         queryKey: ['clients'],
         queryFn: async () => {
-            const response = await axios.get('/api/clients');
+            const response = await axios.get('/clients');
             return response.data;
         }
     });
@@ -76,11 +82,16 @@ const EditProject: React.FC = () => {
                 name: project.name || '',
                 description: project.description || '',
                 client_id: project.client_id?.toString() || '',
-                status: project.status || 'planning',
-                type: project.type || 'hourly',
+                status: project.status || 'active',
+                billing_type: project.billing_type || 'hourly',
                 hourly_rate: project.hourly_rate || 0,
-                budget_amount: project.budget_amount || 0,
+                daily_rate: project.daily_rate || 0,
+                budget: project.budget || 0,
                 estimated_hours: project.estimated_hours || 0,
+                estimated_days: project.estimated_days || 0,
+                monthly_amount: project.monthly_amount || 0,
+                contract_duration: project.contract_duration || 0,
+                billing_frequency: project.billing_frequency || 'monthly',
                 start_date: project.start_date || '',
                 end_date: project.end_date || '',
                 color: project.color || '#3B82F6',
@@ -92,14 +103,14 @@ const EditProject: React.FC = () => {
     // Update project mutation
     const updateProjectMutation = useMutation({
         mutationFn: async (data: ProjectFormData) => {
-            const response = await axios.put(`/api/projects/${id}`, data);
+            const response = await axios.put(`/projects/${id}`, data);
             return response.data;
         },
-        onSuccess: (updatedProject) => {
+        onSuccess: (response) => {
             toast.success(t('projects.updateSuccess'));
             queryClient.invalidateQueries({ queryKey: ['project', id] });
             queryClient.invalidateQueries({ queryKey: ['projects'] });
-            navigate(`/projects/${updatedProject.id}`);
+            navigate(`/projects/${id}`);
         },
         onError: (error: any) => {
             const message = error.response?.data?.message || t('projects.updateError');
@@ -160,12 +171,12 @@ const EditProject: React.FC = () => {
                 <div>
                     <Link
                         to="/projects"
-                        className="inline-flex items-center text-blue-600 hover:text-blue-800 dark:text-blue-400 mb-2"
+                        className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-2"
                     >
                         <ArrowLeftIcon className="w-4 h-4 mr-1" />
                         {t('common.back')}
                     </Link>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                    <h1 className="text-3xl font-bold text-gray-900">
                         {t('projects.editProject')}
                     </h1>
                 </div>
@@ -174,13 +185,13 @@ const EditProject: React.FC = () => {
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Basic Information */}
-                <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                        {t('projects.basicInformation')}
+                <div className="bg-white shadow rounded-lg p-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                        {t('projects.generalInfo')}
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
                                 {t('projects.projectName')} *
                             </label>
                             <input
@@ -188,13 +199,13 @@ const EditProject: React.FC = () => {
                                 name="name"
                                 value={formData.name}
                                 onChange={handleInputChange}
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                 required
                             />
                         </div>
 
                         <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
                                 {t('projects.description')}
                             </label>
                             <textarea
@@ -202,19 +213,19 @@ const EditProject: React.FC = () => {
                                 value={formData.description}
                                 onChange={handleInputChange}
                                 rows={4}
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
                                 {t('projects.client')} *
                             </label>
                             <select
                                 name="client_id"
                                 value={formData.client_id}
                                 onChange={handleInputChange}
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                 required
                             >
                                 <option value="">{t('projects.selectClient')}</option>
@@ -227,42 +238,42 @@ const EditProject: React.FC = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
                                 {t('projects.status')}
                             </label>
                             <select
                                 name="status"
                                 value={formData.status}
                                 onChange={handleInputChange}
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                             >
-                                <option value="planning">{t('projects.statusPlanning')}</option>
-                                <option value="active">{t('projects.statusActive')}</option>
-                                <option value="on_hold">{t('projects.statusOnHold')}</option>
-                                <option value="completed">{t('projects.statusCompleted')}</option>
-                                <option value="cancelled">{t('projects.statusCancelled')}</option>
+                                <option value="active">{t('projects.active')}</option>
+                                <option value="on_hold">{t('projects.onHold')}</option>
+                                <option value="completed">{t('projects.completed')}</option>
+                                <option value="cancelled">{t('projects.cancelled')}</option>
+                                <option value="archived">{t('projects.archived')}</option>
                             </select>
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                {t('projects.type')}
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                {t('projects.billingType')}
                             </label>
                             <select
-                                name="type"
-                                value={formData.type}
+                                name="billing_type"
+                                value={formData.billing_type}
                                 onChange={handleInputChange}
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                             >
-                                <option value="fixed">{t('projects.typeFixed')}</option>
-                                <option value="hourly">{t('projects.typeHourly')}</option>
-                                <option value="retainer">{t('projects.typeRetainer')}</option>
-                                <option value="maintenance">{t('projects.typeMaintenance')}</option>
+                                <option value="hourly">{t('projects.hourly')}</option>
+                                <option value="fixed">{t('projects.fixed')}</option>
+                                <option value="retainer">{t('projects.retainer')}</option>
+                                <option value="maintenance">{t('projects.maintenance')}</option>
                             </select>
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
                                 {t('projects.color')}
                             </label>
                             <input
@@ -270,64 +281,229 @@ const EditProject: React.FC = () => {
                                 name="color"
                                 value={formData.color}
                                 onChange={handleInputChange}
-                                className="w-full h-10 px-1 py-1 border border-gray-300 dark:border-gray-600 rounded-lg"
+                                className="w-full h-10 px-1 py-1 border border-gray-300 rounded-lg"
                             />
                         </div>
                     </div>
                 </div>
 
-                {/* Financial Information */}
-                <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                {/* Financial Information - Dynamic based on billing_type */}
+                <div className="bg-white shadow rounded-lg p-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">
                         {t('projects.financialInformation')}
                     </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                {t('projects.hourlyRate')} (€)
-                            </label>
-                            <input
-                                type="number"
-                                name="hourly_rate"
-                                value={formData.hourly_rate}
-                                onChange={handleInputChange}
-                                step="0.01"
-                                min="0"
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                            />
-                        </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Hourly */}
+                        {formData.billing_type === 'hourly' && (
+                            <>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        {t('projects.hourlyRate')} (€) *
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="hourly_rate"
+                                        value={formData.hourly_rate}
+                                        onChange={handleInputChange}
+                                        step="0.01"
+                                        min="0"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                {t('projects.budget')} (€)
-                            </label>
-                            <input
-                                type="number"
-                                name="budget_amount"
-                                value={formData.budget_amount}
-                                onChange={handleInputChange}
-                                step="0.01"
-                                min="0"
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                            />
-                        </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        {t('projects.estimatedHours')}
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="estimated_hours"
+                                        value={formData.estimated_hours}
+                                        onChange={handleInputChange}
+                                        step="0.5"
+                                        min="0"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                {t('projects.estimatedHours')}
-                            </label>
-                            <input
-                                type="number"
-                                name="estimated_hours"
-                                value={formData.estimated_hours}
-                                onChange={handleInputChange}
-                                step="0.5"
-                                min="0"
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                            />
-                        </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        {t('projects.budget')} (€)
+                                        <span className="text-xs text-gray-500 ml-2">({t('projects.optionalBudget')})</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="budget"
+                                        value={formData.budget}
+                                        onChange={handleInputChange}
+                                        step="0.01"
+                                        min="0"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                            </>
+                        )}
 
-                        <div className="md:col-span-3">
+                        {/* Fixed/TJM */}
+                        {formData.billing_type === 'fixed' && (
+                            <>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        {t('projects.dailyRate')} (€) *
+                                        <span className="text-xs text-gray-500 ml-2">({t('projects.tjmHelp')})</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="daily_rate"
+                                        value={formData.daily_rate}
+                                        onChange={handleInputChange}
+                                        step="0.01"
+                                        min="0"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        {t('projects.estimatedDays')}
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="estimated_days"
+                                        value={formData.estimated_days}
+                                        onChange={handleInputChange}
+                                        step="0.5"
+                                        min="0"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        {t('projects.totalBudget')} (€)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="budget"
+                                        value={formData.budget}
+                                        onChange={handleInputChange}
+                                        step="0.01"
+                                        min="0"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                            </>
+                        )}
+
+                        {/* Retainer */}
+                        {formData.billing_type === 'retainer' && (
+                            <>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        {t('projects.monthlyAmount')} (€) *
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="monthly_amount"
+                                        value={formData.monthly_amount}
+                                        onChange={handleInputChange}
+                                        step="0.01"
+                                        min="0"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        {t('projects.contractDuration')}
+                                        <span className="text-xs text-gray-500 ml-2">({t('projects.months')})</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="contract_duration"
+                                        value={formData.contract_duration}
+                                        onChange={handleInputChange}
+                                        step="1"
+                                        min="0"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        {t('projects.billingFrequency')}
+                                    </label>
+                                    <select
+                                        name="billing_frequency"
+                                        value={formData.billing_frequency}
+                                        onChange={handleInputChange}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    >
+                                        <option value="monthly">{t('projects.monthly')}</option>
+                                        <option value="quarterly">{t('projects.quarterly')}</option>
+                                        <option value="yearly">{t('projects.yearly')}</option>
+                                    </select>
+                                </div>
+                            </>
+                        )}
+
+                        {/* Maintenance */}
+                        {formData.billing_type === 'maintenance' && (
+                            <>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        {t('projects.maintenanceFee')} (€) *
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="monthly_amount"
+                                        value={formData.monthly_amount}
+                                        onChange={handleInputChange}
+                                        step="0.01"
+                                        min="0"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        {t('projects.billingFrequency')}
+                                    </label>
+                                    <select
+                                        name="billing_frequency"
+                                        value={formData.billing_frequency}
+                                        onChange={handleInputChange}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    >
+                                        <option value="monthly">{t('projects.monthly')}</option>
+                                        <option value="quarterly">{t('projects.quarterly')}</option>
+                                        <option value="yearly">{t('projects.yearly')}</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        {t('projects.estimatedHours')}
+                                        <span className="text-xs text-gray-500 ml-2">({t('projects.monthlyHoursHelp')})</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="estimated_hours"
+                                        value={formData.estimated_hours}
+                                        onChange={handleInputChange}
+                                        step="0.5"
+                                        min="0"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                            </>
+                        )}
+
+                        <div className="md:col-span-2">
                             <label className="flex items-center">
                                 <input
                                     type="checkbox"
@@ -336,7 +512,7 @@ const EditProject: React.FC = () => {
                                     onChange={handleInputChange}
                                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                 />
-                                <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                                <span className="ml-2 text-sm text-gray-700">
                                     {t('projects.billable')}
                                 </span>
                             </label>
@@ -345,13 +521,13 @@ const EditProject: React.FC = () => {
                 </div>
 
                 {/* Timeline */}
-                <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                        {t('projects.timeline')}
+                <div className="bg-white shadow rounded-lg p-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                        {t('projects.planning')}
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
                                 {t('projects.startDate')}
                             </label>
                             <input
@@ -359,12 +535,12 @@ const EditProject: React.FC = () => {
                                 name="start_date"
                                 value={formData.start_date}
                                 onChange={handleInputChange}
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
                                 {t('projects.endDate')}
                             </label>
                             <input
@@ -372,7 +548,7 @@ const EditProject: React.FC = () => {
                                 name="end_date"
                                 value={formData.end_date}
                                 onChange={handleInputChange}
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
                     </div>
@@ -382,7 +558,7 @@ const EditProject: React.FC = () => {
                 <div className="flex justify-end space-x-4">
                     <Link
                         to="/projects"
-                        className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                        className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
                     >
                         {t('common.cancel')}
                     </Link>

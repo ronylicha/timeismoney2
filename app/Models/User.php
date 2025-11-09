@@ -266,6 +266,14 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Alias for hasPermissionTo() for backward compatibility
+     */
+    public function hasPermission(string $permission): bool
+    {
+        return $this->hasPermissionTo($permission);
+    }
+
+    /**
      * Get the user's primary role name (for frontend compatibility)
      * Returns the first role name or null
      */

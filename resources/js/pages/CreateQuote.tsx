@@ -72,7 +72,7 @@ const CreateQuote: React.FC = () => {
     const { data: projectsData } = useQuery<PaginatedResponse<Project>>({
         queryKey: ['projects', formData.client_id],
         queryFn: async () => {
-            const response = await axios.get(`/api/projects?client_id=${formData.client_id}`);
+            const response = await axios.get(`/projects?client_id=${formData.client_id}`);
             return response.data;
         },
         enabled: !!formData.client_id
@@ -81,7 +81,7 @@ const CreateQuote: React.FC = () => {
     // Create quote mutation
     const createQuoteMutation = useMutation({
         mutationFn: async (data: QuoteFormData) => {
-            const response = await axios.post('/api/quotes', data);
+            const response = await axios.post('/quotes', data);
             return response.data;
         },
         onSuccess: (quote) => {

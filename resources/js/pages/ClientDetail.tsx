@@ -33,6 +33,7 @@ interface Client {
     notes: string | null;
     projects?: Project[];
     invoices?: Invoice[];
+    quotes?: Quote[];
 }
 
 interface Project {
@@ -51,6 +52,15 @@ interface Invoice {
     total_amount: number;
     issue_date: string;
     due_date: string;
+}
+
+interface Quote {
+    id: number;
+    quote_number: string;
+    status: string;
+    total: number;
+    quote_date: string;
+    valid_until: string;
 }
 
 const ClientDetail: React.FC = () => {
@@ -113,6 +123,23 @@ const ClientDetail: React.FC = () => {
         return (
             <span className={`px-2 py-1 text-xs font-medium rounded-full ${colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800'}`}>
                 {t(`invoices.status.${status}`)}
+            </span>
+        );
+    };
+
+    const getQuoteStatusBadge = (status: string) => {
+        const colors = {
+            draft: 'bg-gray-100 text-gray-800',
+            sent: 'bg-blue-100 text-blue-800',
+            accepted: 'bg-green-100 text-green-800',
+            rejected: 'bg-red-100 text-red-800',
+            expired: 'bg-orange-100 text-orange-800',
+            converted: 'bg-purple-100 text-purple-800',
+        };
+
+        return (
+            <span className={`px-2 py-1 text-xs font-medium rounded-full ${colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800'}`}>
+                {t(`quotes.status.${status}`)}
             </span>
         );
     };
@@ -351,6 +378,62 @@ const ClientDetail: React.FC = () => {
                                                 style: 'currency',
                                                 currency: 'EUR',
                                             }).format(project.budget)}
+                                        </p>
+                                    </div>
+                                </div>
+                            </Link>
+                        ))
+                    )}
+                </div>
+            </div>
+
+            {/* Quotes Section */}
+            <div className="bg-white rounded-lg shadow mb-8">
+                <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                    <h2 className="text-lg font-semibold text-gray-900">{t('clients.quotes')}</h2>
+                    <Link
+                        to={`/quotes/new?client_id=${id}`}
+                        className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm"
+                    >
+                        <PlusIcon className="h-4 w-4" />
+                        <span>{t('quotes.newQuote')}</span>
+                    </Link>
+                </div>
+
+                <div className="divide-y divide-gray-200">
+                    {client.quotes?.length === 0 ? (
+                        <div className="p-8 text-center text-gray-500">
+                            <DocumentTextIcon className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                            <p>{t('clients.noQuotesForClient')}</p>
+                        </div>
+                    ) : (
+                        client.quotes?.map((quote: Quote) => (
+                            <Link
+                                key={quote.id}
+                                to={`/quotes/${quote.id}`}
+                                className="p-6 hover:bg-gray-50 transition block"
+                            >
+                                <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                        <div className="flex items-center space-x-3 mb-2">
+                                            <h3 className="font-medium text-gray-900">{quote.quote_number}</h3>
+                                            {getQuoteStatusBadge(quote.status)}
+                                        </div>
+                                        <div className="flex items-center space-x-4 text-sm text-gray-500">
+                                            <span>
+                                                {t('quotes.date')}: {format(new Date(quote.quote_date), 'dd MMM yyyy', { locale: fr })}
+                                            </span>
+                                            <span>
+                                                {t('quotes.validUntil')}: {format(new Date(quote.valid_until), 'dd MMM yyyy', { locale: fr })}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="font-semibold text-gray-900">
+                                            {new Intl.NumberFormat('fr-FR', {
+                                                style: 'currency',
+                                                currency: 'EUR',
+                                            }).format(quote.total)}
                                         </p>
                                     </div>
                                 </div>

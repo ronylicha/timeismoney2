@@ -67,16 +67,19 @@ class ProjectController extends Controller
             'client_id' => 'required|exists:clients,id',
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'required|in:planning,active,on_hold,completed,cancelled',
-            'type' => 'nullable|in:fixed,hourly,retainer,maintenance',
+            'status' => 'required|in:active,on_hold,completed,cancelled,archived',
+            'billing_type' => 'required|in:hourly,fixed,retainer,maintenance',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'deadline' => 'nullable|date',
-            'budget_type' => 'nullable|in:hours,amount,both',
-            'budget_hours' => 'nullable|numeric|min:0',
-            'budget_amount' => 'nullable|numeric|min:0',
+            'budget' => 'nullable|numeric|min:0',
             'hourly_rate' => 'nullable|numeric|min:0',
+            'daily_rate' => 'nullable|numeric|min:0',
             'estimated_hours' => 'nullable|numeric|min:0',
+            'estimated_days' => 'nullable|numeric|min:0',
+            'monthly_amount' => 'nullable|numeric|min:0',
+            'contract_duration' => 'nullable|integer|min:0',
+            'billing_frequency' => 'nullable|in:monthly,quarterly,yearly',
             'color' => 'nullable|string|size:7',
             'is_billable' => 'boolean',
             'user_ids' => 'nullable|array',
@@ -86,6 +89,7 @@ class ProjectController extends Controller
         // Generate project code
         $validated['code'] = $this->generateProjectCode($validated['name']);
         $validated['tenant_id'] = auth()->user()->tenant_id;
+        $validated['created_by'] = auth()->id();
 
         // Create project
         $project = Project::create($validated);
@@ -148,16 +152,19 @@ class ProjectController extends Controller
         $validated = $request->validate([
             'name' => 'string|max:255',
             'description' => 'nullable|string',
-            'status' => 'in:planning,active,on_hold,completed,cancelled',
-            'type' => 'nullable|in:fixed,hourly,retainer,maintenance',
+            'status' => 'in:active,on_hold,completed,cancelled,archived',
+            'billing_type' => 'nullable|in:hourly,fixed,retainer,maintenance',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'deadline' => 'nullable|date',
-            'budget_type' => 'nullable|in:hours,amount,both',
-            'budget_hours' => 'nullable|numeric|min:0',
-            'budget_amount' => 'nullable|numeric|min:0',
+            'budget' => 'nullable|numeric|min:0',
             'hourly_rate' => 'nullable|numeric|min:0',
+            'daily_rate' => 'nullable|numeric|min:0',
             'estimated_hours' => 'nullable|numeric|min:0',
+            'estimated_days' => 'nullable|numeric|min:0',
+            'monthly_amount' => 'nullable|numeric|min:0',
+            'contract_duration' => 'nullable|integer|min:0',
+            'billing_frequency' => 'nullable|in:monthly,quarterly,yearly',
             'color' => 'nullable|string|size:7',
             'is_billable' => 'boolean'
         ]);

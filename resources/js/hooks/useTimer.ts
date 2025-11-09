@@ -26,7 +26,7 @@ export const useTimer = (): UseTimerReturn => {
         queryKey: ['activeTimer'],
         queryFn: async () => {
             try {
-                const response = await axios.get('/api/time-entries/current');
+                const response = await axios.get('/time-entries/current');
                 return response.data.data || null;
             } catch (error: any) {
                 if (error.response?.status === 404) {
@@ -42,7 +42,7 @@ export const useTimer = (): UseTimerReturn => {
     // Start timer mutation
     const startTimerMutation = useMutation({
         mutationFn: async (data: TimerStartData) => {
-            const response = await axios.post('/api/time-entries/start', data);
+            const response = await axios.post('/time-entries/start', data);
             return response.data.timer;
         },
         onSuccess: (data) => {
@@ -51,7 +51,7 @@ export const useTimer = (): UseTimerReturn => {
             toast.success('Timer started successfully');
 
             // Send timer started notification
-            axios.post('/api/notifications/timer-started', {
+            axios.post('/notifications/timer-started', {
                 timer_id: data.id,
                 project_name: data.project?.name || 'Unknown Project',
                 task_name: data.task?.name || null
@@ -69,7 +69,7 @@ export const useTimer = (): UseTimerReturn => {
     // Stop timer mutation
     const stopTimerMutation = useMutation({
         mutationFn: async (description?: string) => {
-            const response = await axios.post('/api/time-entries/stop', { description });
+            const response = await axios.post('/time-entries/stop', { description });
             return response.data.timer;
         },
         onSuccess: (data) => {
@@ -80,7 +80,7 @@ export const useTimer = (): UseTimerReturn => {
 
             // Send timer stopped notification
             if (data) {
-                axios.post('/api/notifications/timer-stopped', {
+                axios.post('/notifications/timer-stopped', {
                     timer_id: data.id,
                     project_name: data.project?.name || 'Unknown Project',
                     task_name: data.task?.name || null,
@@ -101,7 +101,7 @@ export const useTimer = (): UseTimerReturn => {
     // Pause timer mutation
     const pauseTimerMutation = useMutation({
         mutationFn: async () => {
-            const response = await axios.post('/api/time-entries/pause');
+            const response = await axios.post('/time-entries/pause');
             return response.data;
         },
         onSuccess: () => {
@@ -118,7 +118,7 @@ export const useTimer = (): UseTimerReturn => {
     // Resume timer mutation
     const resumeTimerMutation = useMutation({
         mutationFn: async () => {
-            const response = await axios.post('/api/time-entries/resume');
+            const response = await axios.post('/time-entries/resume');
             return response.data;
         },
         onSuccess: () => {
@@ -135,7 +135,7 @@ export const useTimer = (): UseTimerReturn => {
     // Delete timer mutation
     const deleteTimerMutation = useMutation({
         mutationFn: async (id: string) => {
-            await axios.delete(`/api/time-entries/${id}`);
+            await axios.delete(`/time-entries/${id}`);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['timeEntries'] });

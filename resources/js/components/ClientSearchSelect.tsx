@@ -41,7 +41,7 @@ const ClientSearchSelect: React.FC<ClientSearchSelectProps> = ({
         queryKey: ['client', value],
         queryFn: async () => {
             const response = await axios.get(`/clients/${value}`);
-            return response.data;
+            return response.data.data;
         },
         enabled: !!value && value !== ''
     });

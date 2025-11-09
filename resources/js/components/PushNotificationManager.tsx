@@ -93,7 +93,7 @@ export const PushNotificationManager: React.FC = () => {
 
     const sendSubscriptionToServer = async (subscription: PushSubscription) => {
         try {
-            const response = await fetch('/api/push-subscriptions', {
+            const response = await fetch('/push-subscriptions', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -112,7 +112,7 @@ export const PushNotificationManager: React.FC = () => {
 
     const removeSubscriptionFromServer = async (subscription: PushSubscription) => {
         try {
-            const response = await fetch('/api/push-subscriptions', {
+            const response = await fetch('/push-subscriptions', {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',

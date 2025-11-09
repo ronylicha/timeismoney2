@@ -95,7 +95,7 @@ const TimeSheet: React.FC = () => {
                 ...(showBillableOnly && { billable_only: 'true' }),
             });
 
-            const response = await axios.get(`/api/time-entries/timesheet?${params}`);
+            const response = await axios.get(`/time-entries/timesheet?${params}`);
             return response.data;
         },
     });
@@ -144,7 +144,7 @@ const TimeSheet: React.FC = () => {
                 ...(showBillableOnly && { billable_only: 'true' }),
             });
 
-            const response = await axios.get(`/api/time-entries/export?${params}`, {
+            const response = await axios.get(`/time-entries/export?${params}`, {
                 responseType: 'blob',
             });
 
@@ -170,7 +170,7 @@ const TimeSheet: React.FC = () => {
         }
 
         try {
-            await axios.delete(`/api/time-entries/${id}`);
+            await axios.delete(`/time-entries/${id}`);
             toast.success(t('time.deleteSuccess'));
             refetch();
         } catch (error) {
@@ -205,7 +205,7 @@ const TimeSheet: React.FC = () => {
 
     // Render day view
     const renderDayView = () => {
-        const entries = data?.by_date[formatDateForApi(currentDate)] || [];
+        const entries = data?.by_date?.[formatDateForApi(currentDate)] || [];
 
         return (
             <div className="space-y-4">

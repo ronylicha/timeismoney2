@@ -33,7 +33,7 @@ const AdvanceSelector: React.FC<AdvanceSelectorProps> = ({
         queryKey: ['available-advances', clientId],
         queryFn: async () => {
             if (!clientId) return [];
-            const response = await axios.get(`/api/invoices/available-advances/${clientId}`);
+            const response = await axios.get(`/invoices/available-advances/${clientId}`);
             return response.data;
         },
         enabled: !!clientId,

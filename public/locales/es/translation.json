@@ -424,7 +424,8 @@
         "totalAmount": "Monto total",
         "week": "Semana",
         "month": "Mes",
-        "year": "Año"
+        "year": "Año",
+        "day": "Día"
     },
     "projects": {
         "title": "Proyectos",
@@ -489,7 +490,51 @@
         "dates": "Fechas",
         "creating": "Creando...",
         "start": "Inicio",
-        "end": "Fin"
+        "end": "Fin",
+        "manageDescription": "Gestione sus proyectos y siga su progreso",
+        "startByCreating": "Comience creando su primer proyecto",
+        "allStatuses": "Todos los Estados",
+        "dailyRate": "Tarifa Diaria",
+        "estimatedDays": "Días Estimados",
+        "totalBudget": "Presupuesto Total",
+        "monthlyAmount": "Importe Mensual",
+        "contractDuration": "Duración del Contrato",
+        "months": "meses",
+        "billingFrequency": "Frecuencia de Facturación",
+        "monthly": "Mensual",
+        "quarterly": "Trimestral",
+        "yearly": "Anual",
+        "maintenanceFee": "Tarifa de Mantenimiento",
+        "monthlyHoursHelp": "Número de horas incluidas por mes",
+        "notFound": "Proyecto no encontrado",
+        "notFoundDescription": "Este proyecto no existe o ha sido eliminado",
+        "tasks": "Tareas",
+        "kanban": "Kanban",
+        "notDefined": "No definido",
+        "hour": "Hora",
+        "noTasks": "Sin tareas",
+        "team": "Equipo",
+        "recentTimeEntries": "Entradas de tiempo recientes",
+        "noTimeEntries": "Sin entradas de tiempo",
+        "addMember": "Añadir Miembro",
+        "selectUser": "Seleccionar Usuario",
+        "chooseUser": "Elegir un usuario",
+        "role": "Rol",
+        "member": "Miembro",
+        "manager": "Jefe de Proyecto",
+        "viewer": "Observador",
+        "optional": "opcional",
+        "defaultHourlyRate": "Tarifa predeterminada del usuario",
+        "leaveEmptyForDefault": "Dejar vacío para usar la tarifa predeterminada del usuario",
+        "memberAdded": "Miembro añadido con éxito",
+        "addMemberError": "Error al añadir miembro",
+        "adding": "Añadiendo...",
+        "noMembers": "Sin miembros",
+        "deleteSuccess": "Proyecto eliminado con éxito",
+        "deleteError": "Error al eliminar proyecto",
+        "confirmDelete": "Confirmar Eliminación",
+        "deleteWarning": "¿Está seguro de que desea eliminar este proyecto? Esta acción no se puede deshacer.",
+        "deleting": "Eliminando..."
     },
     "tasks": {
         "title": "Tareas",
@@ -610,7 +655,20 @@
         "noInvoicesForClient": "No hay facturas para este cliente",
         "confirmDeleteMessage": "Esta acción es irreversible. El cliente y todos los datos asociados serán eliminados.",
         "clientDeletedSuccess": "Cliente eliminado con éxito",
-        "clientDeletedError": "Error al eliminar el cliente"
+        "clientDeletedError": "Error al eliminar el cliente",
+        "companyName": "Nombre de la Empresa",
+        "billingEmail": "Email de Facturación",
+        "billingEmailPlaceholder": "facturacion@empresa.com",
+        "status": "Estado",
+        "prospect": "Prospecto",
+        "active": "Activo",
+        "inactive": "Inactivo",
+        "paymentMethod": "Método de Pago",
+        "bankTransfer": "Transferencia Bancaria",
+        "check": "Cheque",
+        "cash": "Efectivo",
+        "card": "Tarjeta",
+        "other": "Otro"
     },
     "invoices": {
         "title": "Facturas",
@@ -759,8 +817,13 @@
             "sent": "Enviado",
             "accepted": "Aceptado",
             "rejected": "Rechazado",
-            "expired": "Expirado"
-        }
+            "expired": "Expirado",
+            "label": "Estado"
+        },
+        "date": "Fecha",
+        "quotes": "Presupuestos",
+        "manageQuotes": "Gestionar Presupuestos",
+        "amount": "Monto"
     },
     "creditNotes": {
         "title": "Notas de Crédito",
@@ -821,7 +884,9 @@
         "deleteCategory": "Eliminar Categoría",
         "categoryCreated": "Categoría creada con éxito",
         "categoryUpdated": "Categoría actualizada con éxito",
-        "categoryDeleted": "Categoría eliminada con éxito"
+        "categoryDeleted": "Categoría eliminada con éxito",
+        "subtitle": "Gestione todos sus gastos en un solo lugar",
+        "searchPlaceholder": "Buscar gastos..."
     },
     "reports": {
         "title": "Informes",
@@ -858,7 +923,25 @@
         "exportPdf": "Exportar a PDF",
         "exportCsv": "Exportar a CSV",
         "exportExcel": "Exportar a Excel",
-        "noData": "No hay datos para este período"
+        "noData": "No hay datos para este período",
+        "subtitle": "Genere informes detallados de su actividad",
+        "invoiceSummary": "Resumen de Facturas",
+        "invoiceSummaryDescription": "Vea el resumen de todas sus facturas",
+        "expenseSummary": "Resumen de Gastos",
+        "expenseSummaryDescription": "Analice sus gastos por categoría y período",
+        "projectProfitability": "Rentabilidad de Proyectos",
+        "projectProfitabilityDescription": "Evalúe la rentabilidad de cada proyecto",
+        "userProductivity": "Productividad de Usuarios",
+        "userProductivityDescription": "Analice el rendimiento y productividad del equipo",
+        "startDate": "Fecha de Inicio",
+        "endDate": "Fecha de Fin",
+        "projectOptional": "Proyecto (opcional)",
+        "allProjects": "Todos los proyectos",
+        "userOptional": "Usuario (opcional)",
+        "allUsers": "Todos los usuarios",
+        "clientOptional": "Cliente (opcional)",
+        "allClients": "Todos los clientes",
+        "exportFEC": "Exportar FEC"
     },
     "integrations": {
         "title": "Integraciones",
@@ -1718,7 +1801,22 @@
         "projects": {
             "active": "Activos",
             "completed": "Completados",
-            "onHold": "En Espera"
+            "onHold": "En Espera",
+            "archived": "Archivados",
+            "dailyRate": "Tarifa Diaria",
+            "tjmHelp": "Tarifa Diaria Media (TDM)",
+            "estimatedDays": "Días Estimados",
+            "totalBudget": "Presupuesto Total",
+            "monthlyAmount": "Importe Mensual",
+            "contractDuration": "Duración del Contrato",
+            "months": "meses",
+            "billingFrequency": "Frecuencia de Facturación",
+            "monthly": "Mensual",
+            "quarterly": "Trimestral",
+            "yearly": "Anual",
+            "maintenanceFee": "Tarifa de Mantenimiento",
+            "monthlyHoursHelp": "Horas mensuales incluidas",
+            "optionalBudget": "Presupuesto máximo opcional"
         }
     },
     "userManagement": {

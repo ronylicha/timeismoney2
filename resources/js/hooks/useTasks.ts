@@ -68,7 +68,7 @@ export const useTasks = (projectId?: string, initialFilters?: TaskFilters): UseT
                 }, {} as Record<string, string>),
             });
 
-            const response = await axios.get(`/api/tasks?${params}`);
+            const response = await axios.get(`/tasks?${params}`);
             return response.data;
         },
         enabled: !!filters.project_id,
@@ -78,7 +78,7 @@ export const useTasks = (projectId?: string, initialFilters?: TaskFilters): UseT
     // Create task mutation
     const createTaskMutation = useMutation({
         mutationFn: async (data: Partial<Task>) => {
-            const response = await axios.post('/api/tasks', data);
+            const response = await axios.post('/tasks', data);
             return response.data.task;
         },
         onSuccess: (data) => {
@@ -94,7 +94,7 @@ export const useTasks = (projectId?: string, initialFilters?: TaskFilters): UseT
     // Update task mutation
     const updateTaskMutation = useMutation({
         mutationFn: async ({ id, data }: { id: string; data: Partial<Task> }) => {
-            const response = await axios.put(`/api/tasks/${id}`, data);
+            const response = await axios.put(`/tasks/${id}`, data);
             return response.data.task;
         },
         onSuccess: (data) => {
@@ -111,7 +111,7 @@ export const useTasks = (projectId?: string, initialFilters?: TaskFilters): UseT
     // Delete task mutation
     const deleteTaskMutation = useMutation({
         mutationFn: async (id: string) => {
-            await axios.delete(`/api/tasks/${id}`);
+            await axios.delete(`/tasks/${id}`);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -134,7 +134,7 @@ export const useTasks = (projectId?: string, initialFilters?: TaskFilters): UseT
             status: Task['status'];
             position?: number;
         }) => {
-            const response = await axios.patch(`/api/tasks/${id}/move`, { status, position });
+            const response = await axios.patch(`/tasks/${id}/move`, { status, position });
             return response.data.task;
         },
         onMutate: async ({ id, status, position }) => {
@@ -240,7 +240,7 @@ export const useTasks = (projectId?: string, initialFilters?: TaskFilters): UseT
                 const cachedTask = queryClient.getQueryData<Task>(['task', id]);
                 if (cachedTask) return cachedTask;
 
-                const response = await axios.get(`/api/tasks/${id}`);
+                const response = await axios.get(`/tasks/${id}`);
                 const task = response.data;
 
                 queryClient.setQueryData(['task', id], task);
@@ -277,7 +277,7 @@ export const useKanbanTasks = (projectId: string) => {
     const { data, isLoading, error } = useQuery<Record<Task['status'], Task[]>>({
         queryKey: ['kanbanTasks', projectId],
         queryFn: async () => {
-            const response = await axios.get(`/api/projects/${projectId}/kanban-tasks`);
+            const response = await axios.get(`/projects/${projectId}/kanban-tasks`);
             return response.data;
         },
         enabled: !!projectId,
@@ -294,7 +294,7 @@ export const useKanbanTasks = (projectId: string) => {
             status: Task['status'];
             position: number;
         }) => {
-            const response = await axios.patch(`/api/tasks/${taskId}/move`, {
+            const response = await axios.patch(`/tasks/${taskId}/move`, {
                 status,
                 position,
             });

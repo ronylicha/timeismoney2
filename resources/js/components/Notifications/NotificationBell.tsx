@@ -32,7 +32,7 @@ const NotificationBell: React.FC = () => {
         queryKey: ['notification-unread-count'],
         queryFn: async () => {
             try {
-                const response = await axios.get('/api/notifications/unread-count');
+                const response = await axios.get('/notifications/unread-count');
                 return response.data?.unread_count ?? 0;
             } catch (error) {
                 console.error('Failed to fetch unread count:', error);
@@ -48,7 +48,7 @@ const NotificationBell: React.FC = () => {
         queryKey: ['recent-notifications'],
         queryFn: async () => {
             try {
-                const response = await axios.get('/api/notifications/history', {
+                const response = await axios.get('/notifications/history', {
                     params: { per_page: 10, unread_only: false }
                 });
                 return response.data?.data ?? [];
@@ -64,7 +64,7 @@ const NotificationBell: React.FC = () => {
     // Mark as read mutation
     const markAsReadMutation = useMutation({
         mutationFn: async (id: number) => {
-            await axios.put(`/api/notifications/${id}/read`);
+            await axios.put(`/notifications/${id}/read`);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['notification-unread-count'] });
@@ -75,7 +75,7 @@ const NotificationBell: React.FC = () => {
     // Mark all as read mutation
     const markAllAsReadMutation = useMutation({
         mutationFn: async () => {
-            await axios.put('/api/notifications/read-all');
+            await axios.put('/notifications/read-all');
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['notification-unread-count'] });

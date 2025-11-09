@@ -136,7 +136,7 @@ class ClientController extends Controller
     public function show(Client $client)
     {
         return response()->json([
-            'data' => $client->load(['contacts', 'projects', 'invoices'])
+            'data' => $client->load(['contacts', 'projects', 'invoices', 'quotes'])
         ]);
     }
 

@@ -21,32 +21,44 @@ class Project extends Model
         'name',
         'description',
         'status',
-        'type',
+        'billing_type',
+        'visibility',
         'start_date',
         'end_date',
         'deadline',
-        'budget_type',
-        'budget_hours',
-        'budget_amount',
+        'budget',
         'hourly_rate',
+        'daily_rate',
         'estimated_hours',
+        'estimated_days',
+        'monthly_amount',
+        'contract_duration',
+        'billing_frequency',
         'color',
         'is_billable',
         'is_template',
-        'settings'
+        'progress',
+        'settings',
+        'custom_fields',
+        'created_by'
     ];
 
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
         'deadline' => 'date',
-        'budget_hours' => 'decimal:2',
-        'budget_amount' => 'decimal:2',
+        'budget' => 'decimal:2',
         'hourly_rate' => 'decimal:2',
+        'daily_rate' => 'decimal:2',
         'estimated_hours' => 'decimal:2',
+        'estimated_days' => 'decimal:2',
+        'monthly_amount' => 'decimal:2',
+        'contract_duration' => 'integer',
         'is_billable' => 'boolean',
         'is_template' => 'boolean',
-        'settings' => 'array'
+        'progress' => 'integer',
+        'settings' => 'array',
+        'custom_fields' => 'array'
     ];
 
     /**

@@ -87,7 +87,7 @@ const CreateInvoice: React.FC = () => {
     const { data: projectsData } = useQuery<PaginatedResponse<Project>>({
         queryKey: ['projects', formData.client_id],
         queryFn: async () => {
-            const response = await axios.get(`/api/projects?client_id=${formData.client_id}`);
+            const response = await axios.get(`/projects?client_id=${formData.client_id}`);
             return response.data;
         },
         enabled: !!formData.client_id
@@ -103,7 +103,7 @@ const CreateInvoice: React.FC = () => {
                 ...(formData.client_id && { client_id: formData.client_id }),
                 ...(formData.project_id && { project_id: formData.project_id })
             });
-            const response = await axios.get(`/api/time-entries?${params}`);
+            const response = await axios.get(`/time-entries?${params}`);
             return response.data.data;
         },
         enabled: !!formData.client_id
@@ -119,7 +119,7 @@ const CreateInvoice: React.FC = () => {
                 ...(formData.client_id && { client_id: formData.client_id }),
                 ...(formData.project_id && { project_id: formData.project_id })
             });
-            const response = await axios.get(`/api/expenses?${params}`);
+            const response = await axios.get(`/expenses?${params}`);
             return response.data.data;
         },
         enabled: !!formData.client_id
@@ -128,7 +128,7 @@ const CreateInvoice: React.FC = () => {
     // Create invoice mutation
     const createInvoiceMutation = useMutation({
         mutationFn: async (data: InvoiceFormData & { status: 'draft' | 'sent' }) => {
-            const response = await axios.post('/api/invoices', {
+            const response = await axios.post('/invoices', {
                 ...data,
                 time_entry_ids: Array.from(selectedTimeEntries),
                 expense_ids: Array.from(selectedExpenses)

@@ -39,7 +39,7 @@ export const Timer: React.FC<TimerProps> = ({ onTimerStop }) => {
                 if (!longRunningChecked && elapsed >= 14400) {
                     longRunningChecked = true;
                     // Send long-running timer notification
-                    axios.post('/api/notifications/timer-long-running', {
+                    axios.post('/notifications/timer-long-running', {
                         timer_id: activeTimer.id,
                         project_name: activeTimer.project?.name || 'Unknown Project',
                         duration_hours: Math.floor(elapsed / 3600)
@@ -74,7 +74,7 @@ export const Timer: React.FC<TimerProps> = ({ onTimerStop }) => {
 
             // Auto-save after 2 seconds of inactivity
             autoSaveTimeoutRef.current = setTimeout(() => {
-                axios.patch(`/api/time-entries/${activeTimer.id}`, {
+                axios.patch(`/time-entries/${activeTimer.id}`, {
                     description
                 }).catch((error) => {
                     if (import.meta.env.DEV) {

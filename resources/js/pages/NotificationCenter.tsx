@@ -72,7 +72,7 @@ const NotificationCenter: React.FC = () => {
             if (selectedType !== 'all') params.type = selectedType;
             if (searchQuery) params.search = searchQuery;
 
-            const response = await axios.get('/api/notifications/history', { params });
+            const response = await axios.get('/notifications/history', { params });
             return response.data;
         }
     });
@@ -83,7 +83,7 @@ const NotificationCenter: React.FC = () => {
     // Mark as read mutation
     const markAsReadMutation = useMutation({
         mutationFn: async (ids: number[]) => {
-            await Promise.all(ids.map(id => axios.put(`/api/notifications/${id}/read`)));
+            await Promise.all(ids.map(id => axios.put(`/notifications/${id}/read`)));
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['notifications-center'] });
@@ -96,7 +96,7 @@ const NotificationCenter: React.FC = () => {
     // Mark all as read mutation
     const markAllAsReadMutation = useMutation({
         mutationFn: async () => {
-            await axios.put('/api/notifications/read-all');
+            await axios.put('/notifications/read-all');
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['notifications-center'] });
@@ -108,7 +108,7 @@ const NotificationCenter: React.FC = () => {
     // Delete notifications mutation
     const deleteNotificationsMutation = useMutation({
         mutationFn: async (ids: number[]) => {
-            await Promise.all(ids.map(id => axios.delete(`/api/notifications/${id}`)));
+            await Promise.all(ids.map(id => axios.delete(`/notifications/${id}`)));
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['notifications-center'] });
