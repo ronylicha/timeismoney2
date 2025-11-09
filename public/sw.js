@@ -1,8 +1,8 @@
 // Service Worker for TimeIsMoney PWA
-const CACHE_NAME = 'timeismoney-v7';
+const CACHE_NAME = 'timeismoney-app-v1';
 const urlsToCache = [
   '/login',
-  '/manifest.json?v=3.1.0',
+  '/app-manifest-v3.json',
   '/images/icons/icon-192x192-v3.png',
   '/images/icons/icon-512x512-v3.png',
   '/images/icons/icon-144x144-v3.png',
