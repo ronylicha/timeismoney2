@@ -118,10 +118,8 @@ const Register: React.FC = () => {
                 {/* Logo and Header */}
                 <div className="text-center">
                     <div className="flex justify-center">
-                        <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-                            <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
+                        <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg p-2">
+                            <img src="/images/logo/logo-96x96.png" alt="TimeIsMoney" className="w-full h-full object-contain" />
                         </div>
                     </div>
                     <h2 className="mt-6 text-3xl font-extrabold text-gray-900">

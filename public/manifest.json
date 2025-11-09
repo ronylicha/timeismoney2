@@ -1,8 +1,9 @@
 {
     "name": "TimeIsMoney",
     "short_name": "TIM",
+    "version": "2.0.0",
     "description": "Application complète de gestion du temps et de facturation",
-    "start_url": "/",
+    "start_url": "/login",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#3B82F6",
@@ -79,7 +80,7 @@
             "name": "Start Timer",
             "short_name": "Timer",
             "description": "Start tracking time",
-            "url": "/time",
+            "url": "/dashboard/time",
             "icons": [
                 {
                     "src": "/images/icons/timer-96x96.png",
@@ -91,7 +92,7 @@
             "name": "Create Invoice",
             "short_name": "Invoice",
             "description": "Create a new invoice",
-            "url": "/invoices/new",
+            "url": "/dashboard/invoices",
             "icons": [
                 {
                     "src": "/images/icons/invoice-96x96.png",
@@ -103,7 +104,7 @@
             "name": "TimeSheet",
             "short_name": "TimeSheet",
             "description": "View your timesheet",
-            "url": "/timesheet",
+            "url": "/dashboard/timesheet",
             "icons": [
                 {
                     "src": "/images/icons/timesheet-96x96.png",

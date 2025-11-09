@@ -79,8 +79,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
                 <div className={`fixed inset-y-0 left-0 flex flex-col w-64 bg-white transform transition-transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                     <div className="flex items-center justify-between h-16 px-4 bg-gradient-to-r from-blue-600 to-purple-600">
                         <div className="flex items-center">
-                            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-                                <ClockIcon className="w-5 h-5 text-blue-600" />
+                            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center p-1">
+                                <img src="/images/logo/logo-32x32.png" alt="TimeIsMoney" className="w-full h-full object-contain" />
                             </div>
                             <span className="ml-2 text-white font-bold">TimeIsMoney</span>
                         </div>
@@ -113,8 +113,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
             <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
                 <div className="flex flex-col flex-grow bg-white border-r border-gray-200 overflow-y-auto">
                     <div className="flex items-center h-16 px-4 bg-gradient-to-r from-blue-600 to-purple-600">
-                        <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-                            <ClockIcon className="w-5 h-5 text-blue-600" />
+                        <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center p-1">
+                            <img src="/images/logo/logo-32x32.png" alt="TimeIsMoney" className="w-full h-full object-contain" />
                         </div>
                         <span className="ml-2 text-white font-bold">TimeIsMoney</span>
                     </div>
