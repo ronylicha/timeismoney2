@@ -103,4 +103,72 @@ class QualifiedTimestampService
     {
         throw new \Exception('Universign provider requires API credentials. Configure in config/timestamp.php');
     }
+
+    /**
+     * Vérifie l'intégrité d'un timestamp
+     */
+    public function verifyIntegrity(QualifiedTimestamp $timestamp): bool
+    {
+        try {
+            // Récupérer le modèle associé
+            $model = $timestamp->timestampable;
+            
+            if (!$model) {
+                Log::warning('Timestamped model not found', ['timestamp_id' => $timestamp->id]);
+                return false;
+            }
+            
+            // Recalculer le hash
+            $currentHash = $this->calculateModelHash($model);
+            
+            // Comparer avec le hash stocké
+            if ($currentHash !== $timestamp->hash_value) {
+                Log::warning('Timestamp integrity check failed: hash mismatch', [
+                    'timestamp_id' => $timestamp->id,
+                    'expected' => $timestamp->hash_value,
+                    'actual' => $currentHash
+                ]);
+                return false;
+            }
+            
+            // Si timestamp qualifié, vérifier le token
+            if ($timestamp->tsa_provider !== 'simple' && empty($timestamp->timestamp_token)) {
+                Log::warning('Qualified timestamp has no token', ['timestamp_id' => $timestamp->id]);
+                return false;
+            }
+            
+            return true;
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to verify timestamp integrity', [
+                'timestamp_id' => $timestamp->id,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Récupère tous les timestamps pour un modèle
+     */
+    public function getTimestamps(Model $model): \Illuminate\Database\Eloquent\Collection
+    {
+        return QualifiedTimestamp::where('timestampable_type', get_class($model))
+            ->where('timestampable_id', $model->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
+
+    /**
+     * Récupère le dernier timestamp réussi pour un modèle et une action
+     */
+    public function getLastSuccessfulTimestamp(Model $model, string $action): ?QualifiedTimestamp
+    {
+        return QualifiedTimestamp::where('timestampable_type', get_class($model))
+            ->where('timestampable_id', $model->id)
+            ->where('action', $action)
+            ->where('status', 'success')
+            ->orderBy('created_at', 'desc')
+            ->first();
+    }
 }
