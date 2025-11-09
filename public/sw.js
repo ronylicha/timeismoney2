@@ -1,10 +1,13 @@
 // Service Worker for TimeIsMoney PWA
-const CACHE_NAME = 'timeismoney-v4';
+const CACHE_NAME = 'timeismoney-v5';
 const urlsToCache = [
   '/login',
-  '/manifest.json',
-  '/images/icons/icon-192x192.png',
-  '/images/icons/icon-512x512.png'
+  '/manifest.json?v=3.0.0',
+  '/images/icons/icon-192x192.png?v=3.0.0',
+  '/images/icons/icon-512x512.png?v=3.0.0',
+  '/images/icons/icon-144x144.png?v=3.0.0',
+  '/images/icons/icon-96x96.png?v=3.0.0',
+  '/images/icons/icon-72x72.png?v=3.0.0'
 ];
 
 // Install event - cache resources
@@ -29,11 +32,21 @@ self.addEventListener('activate', event => {
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.filter(cacheName => {
+          // Delete ALL old caches including workbox caches
           return cacheName !== CACHE_NAME;
         }).map(cacheName => {
+          console.log('Deleting old cache:', cacheName);
           return caches.delete(cacheName);
         })
       );
+    }).then(() => {
+      // Force all tabs to reload to get new content
+      return self.clients.matchAll({ type: 'window' });
+    }).then(clients => {
+      clients.forEach(client => {
+        // Send message to client to reload
+        client.postMessage({ type: 'CACHE_UPDATED', version: '3.0.0' });
+      });
     })
   );
   // Claim clients immediately

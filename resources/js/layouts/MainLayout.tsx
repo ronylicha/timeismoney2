@@ -22,6 +22,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import UserAvatar from '@/components/UserAvatar';
 import LanguageSelector from '@/components/LanguageSelector';
 import NotificationBell from '@/components/Notifications/NotificationBell';
+import PWAUpdatePrompt from '@/components/PWAUpdatePrompt';
 
 interface MainLayoutProps {
     isAdmin?: boolean;
@@ -252,6 +253,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
                     <Outlet />
                 </main>
             </div>
+
+            {/* PWA Update Prompt */}
+            <PWAUpdatePrompt />
         </div>
     );
 };

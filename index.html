@@ -7,7 +7,7 @@
 
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#3B82F6" />
-    <link rel="manifest" href="/manifest.json" />
+    <link rel="manifest" href="/manifest.json?v=3.0.0" />
 
     <!-- Apple/iOS Specific Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -80,11 +80,25 @@
 
       // Register service worker for PWA
       if ('serviceWorker' in navigator) {
+        // Listen for cache update messages
+        navigator.serviceWorker.addEventListener('message', function(event) {
+          if (event.data.type === 'CACHE_UPDATED') {
+            console.log('Cache updated to version:', event.data.version);
+            // Force reload to get new content
+            window.location.reload(true);
+          }
+        });
+
         window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/sw.js?v=3.0.0').then(function(registration) {
-            console.log('ServiceWorker registration successful with version 3.0.0');
+          navigator.serviceWorker.register('/sw.js?v=3.0.1').then(function(registration) {
+            console.log('ServiceWorker registration successful with version 3.0.1');
             // Check for updates immediately
             registration.update();
+
+            // Check for updates every 30 seconds (for testing)
+            setInterval(() => {
+              registration.update();
+            }, 30000);
           }, function(err) {
             console.log('ServiceWorker registration failed: ', err);
           });
