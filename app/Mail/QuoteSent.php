@@ -22,6 +22,9 @@ class QuoteSent extends Mailable
         public Quote $quote,
         private PdfGeneratorService $pdfService
     ) {
+        // Load necessary relations to avoid null reference errors in email template
+        $this->quote->loadMissing(['client', 'tenant', 'items']);
+        
         // Generate signature token if not exists
         if (!$this->quote->signature_token) {
             $this->quote->generateSignatureToken();

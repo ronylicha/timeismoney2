@@ -126,6 +126,21 @@ class Quote extends Model
     }
 
     /**
+     * Get items attribute - force relation instead of attribute
+     * This fixes the issue where $quote->items returns NULL
+     */
+    public function getItemsAttribute()
+    {
+        // If relation is loaded, return it
+        if ($this->relationLoaded('items')) {
+            return $this->getRelation('items');
+        }
+        
+        // Otherwise load and return
+        return $this->getRelationValue('items');
+    }
+
+    /**
      * Boot the model
      */
     protected static function boot()

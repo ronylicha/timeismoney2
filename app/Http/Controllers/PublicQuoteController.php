@@ -7,6 +7,7 @@ use App\Models\ClientContact;
 use App\Mail\QuoteAccepted;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class PublicQuoteController extends Controller
@@ -75,14 +76,25 @@ class PublicQuoteController extends Controller
             ], 403);
         }
 
+        // Save signature as file for PDF generation
+        $signatureData = $request->signature_data;
+        $signatureImage = str_replace('data:image/png;base64,', '', $signatureData);
+        $signatureImage = str_replace(' ', '+', $signatureImage);
+        $signatureFileName = 'signatures/quote_' . $quote->id . '_' . time() . '.png';
+        Storage::disk('local')->put($signatureFileName, base64_decode($signatureImage));
+
         // Update quote with signature data
         $quote->update([
             'status' => 'accepted',
             'accepted_at' => now(),
             'signature_data' => $request->signature_data,
+            'signature_path' => $signatureFileName,
             'signer_name' => $request->signer_name,
+            'signatory_name' => $request->signer_name, // For backward compatibility
             'signer_email' => $request->signer_email,
             'signer_position' => $request->signer_position,
+            'signature_ip' => $request->ip(),
+            'signature_user_agent' => $request->userAgent(),
         ]);
 
         // Send acceptance notification to tenant

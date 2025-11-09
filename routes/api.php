@@ -113,6 +113,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Invoices
     Route::apiResource('invoices', InvoiceController::class);
     Route::post('/invoices/{invoice}/send', [InvoiceController::class, 'send']);
+    Route::post('/invoices/{invoice}/validate', [InvoiceController::class, 'validate']);
     Route::post('/invoices/{invoice}/send-reminder', [InvoiceController::class, 'sendReminder']);
     Route::post('/invoices/{invoice}/mark-paid', [InvoiceController::class, 'markAsPaid']);
     Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf']);

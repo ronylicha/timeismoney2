@@ -11,7 +11,6 @@ import {
     DocumentArrowDownIcon,
     PaperAirplaneIcon,
     CheckCircleIcon,
-    XCircleIcon,
     PrinterIcon,
     ReceiptPercentIcon,
     ClipboardDocumentCheckIcon,
@@ -21,6 +20,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { InvoiceType } from '../types';
 import PaymentModal, { PaymentData } from '../components/PaymentModal';
+import SendInvoiceModal from '../components/SendInvoiceModal';
 import DownloadFacturXButton from '../components/Invoice/DownloadFacturXButton';
 import CreateCreditNoteButton from '../components/Invoice/CreateCreditNoteButton';
 
@@ -69,6 +69,7 @@ const InvoiceDetail: React.FC = () => {
     const queryClient = useQueryClient();
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [showSendModal, setShowSendModal] = useState(false);
     const isNewInvoice = !id || id === 'new';
 
     // Fetch invoice details (skip if creating new invoice)
@@ -81,19 +82,20 @@ const InvoiceDetail: React.FC = () => {
         enabled: !isNewInvoice, // Only fetch if we have a valid ID
     });
 
-    // Update status mutation
-    const updateStatusMutation = useMutation({
-        mutationFn: async (status: string) => {
-            const response = await axios.patch(`/invoices/${id}`, { status });
+    // Validate invoice mutation (draft -> sent without email)
+    const validateInvoiceMutation = useMutation({
+        mutationFn: async () => {
+            const response = await axios.post(`/invoices/${id}/validate`);
             return response.data;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['invoice', id] });
             queryClient.invalidateQueries({ queryKey: ['invoices'] });
-            toast.success(t('invoices.statusUpdated'));
+            toast.success('Facture validée avec succès');
         },
-        onError: () => {
-            toast.error(t('invoices.statusUpdateError'));
+        onError: (error: any) => {
+            const message = error.response?.data?.message || 'Erreur lors de la validation';
+            toast.error(message);
         },
     });
 
@@ -163,15 +165,19 @@ const InvoiceDetail: React.FC = () => {
 
     // Send invoice mutation
     const sendInvoiceMutation = useMutation({
-        mutationFn: async () => {
-            await axios.post(`/invoices/${id}/send`);
+        mutationFn: async (recipientEmail?: string) => {
+            await axios.post(`/invoices/${id}/send`, {
+                recipient_email: recipientEmail
+            });
         },
         onSuccess: () => {
+            setShowSendModal(false);
             queryClient.invalidateQueries({ queryKey: ['invoice', id] });
             toast.success(t('invoices.sendSuccess'));
         },
-        onError: () => {
-            toast.error(t('invoices.sendError'));
+        onError: (error: any) => {
+            const message = error.response?.data?.message || t('invoices.sendError');
+            toast.error(message);
         },
     });
 
@@ -256,17 +262,16 @@ const InvoiceDetail: React.FC = () => {
                                     <span>{t('common.edit')}</span>
                                 </Link>
                                 <button
-                                    onClick={() => updateStatusMutation.mutate('sent')}
-                                    disabled={updateStatusMutation.isPending}
+                                    onClick={() => validateInvoiceMutation.mutate()}
+                                    disabled={validateInvoiceMutation.isPending}
                                     className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm disabled:opacity-50"
                                 >
                                     <CheckCircleIcon className="h-4 w-4" />
                                     <span>Valider</span>
                                 </button>
                                 <button
-                                    onClick={() => sendInvoiceMutation.mutate()}
-                                    disabled={sendInvoiceMutation.isPending}
-                                    className="flex items-center space-x-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition text-sm disabled:opacity-50"
+                                    onClick={() => setShowSendModal(true)}
+                                    className="flex items-center space-x-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition text-sm"
                                 >
                                     <PaperAirplaneIcon className="h-4 w-4" />
                                     <span>{t('invoices.send')}</span>
@@ -309,11 +314,14 @@ const InvoiceDetail: React.FC = () => {
                             <span>{t('invoices.downloadPDF')}</span>
                         </button>
 
-                        <DownloadFacturXButton
-                            invoiceId={invoice.id}
-                            invoiceNumber={invoice.invoice_number}
-                            variant="secondary"
-                        />
+                        {/* FacturX only available for validated invoices (not draft) */}
+                        {invoice.status !== 'draft' && (
+                            <DownloadFacturXButton
+                                invoiceId={invoice.id}
+                                invoiceNumber={invoice.invoice_number}
+                                variant="secondary"
+                            />
+                        )}
 
                         <button
                             onClick={() => window.print()}
@@ -620,6 +628,17 @@ const InvoiceDetail: React.FC = () => {
                 onConfirm={handlePaymentConfirm}
                 invoiceTotal={invoice?.total || 0}
                 isLoading={markAsPaidMutation.isPending}
+            />
+
+            {/* Send Invoice Modal */}
+            <SendInvoiceModal
+                isOpen={showSendModal}
+                onClose={() => setShowSendModal(false)}
+                onConfirm={(email) => sendInvoiceMutation.mutate(email)}
+                defaultEmail={invoice?.client?.email || ''}
+                invoiceNumber={invoice?.invoice_number || ''}
+                clientName={invoice?.client?.name || ''}
+                isPending={sendInvoiceMutation.isPending}
             />
         </div>
     );

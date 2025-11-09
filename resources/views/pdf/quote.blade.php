@@ -272,12 +272,22 @@
                 <div style="margin-bottom: 5px;"><strong>Signature:</strong></div>
                 <div style="border: 1px solid #d1d5db; padding: 10px; background-color: #ffffff; border-radius: 3px;">
                     @php
-                        $signaturePath = storage_path('app/' . $quote->signature_path);
-                        if (file_exists($signaturePath)) {
-                            $imageData = base64_encode(file_get_contents($signaturePath));
-                            $extension = pathinfo($signaturePath, PATHINFO_EXTENSION);
-                            $mimeType = 'image/' . $extension;
-                            echo '<img src="data:' . $mimeType . ';base64,' . $imageData . '" alt="Signature" style="max-width: 200px; max-height: 80px;">';
+                        // Try to get signature from file first
+                        $signatureImageData = null;
+                        if ($quote->signature_path) {
+                            $signaturePath = storage_path('app/private/' . $quote->signature_path);
+                            if (file_exists($signaturePath)) {
+                                $signatureImageData = base64_encode(file_get_contents($signaturePath));
+                            }
+                        }
+                        
+                        // Fallback to signature_data if file doesn't exist
+                        if (!$signatureImageData && $quote->signature_data) {
+                            $signatureImageData = str_replace('data:image/png;base64,', '', $quote->signature_data);
+                        }
+                        
+                        if ($signatureImageData) {
+                            echo '<img src="data:image/png;base64,' . $signatureImageData . '" alt="Signature" style="max-width: 200px; max-height: 80px;">';
                         }
                     @endphp
                 </div>

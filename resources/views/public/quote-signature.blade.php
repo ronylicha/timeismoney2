@@ -297,6 +297,11 @@
                 if (data.success) {
                     successDiv.classList.remove('hidden');
                     document.getElementById('signature-form').style.display = 'none';
+                    
+                    // Redirect to "already signed" page after 2 seconds
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
                 } else {
                     errorDiv.querySelector('p').textContent = data.message || 'Une erreur est survenue.';
                     errorDiv.classList.remove('hidden');

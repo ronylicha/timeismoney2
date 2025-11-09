@@ -50,6 +50,16 @@ class EmailService
     public function sendQuote(Quote $quote, ?string $recipientEmail = null): bool
     {
         try {
+            // Debug logging
+            Log::info("Attempting to send quote", [
+                'quote_id' => $quote->id,
+                'quote_number' => $quote->quote_number,
+                'has_client' => $quote->client !== null,
+                'has_tenant' => $quote->tenant !== null,
+                'client_email' => $quote->client?->email ?? 'NULL',
+                'recipient_email' => $recipientEmail
+            ]);
+            
             $email = $recipientEmail ?: $quote->client->email;
 
             if (!$email) {
@@ -62,7 +72,10 @@ class EmailService
             Log::info("Quote {$quote->quote_number} sent to {$email}");
             return true;
         } catch (\Exception $e) {
-            Log::error("Failed to send quote {$quote->quote_number}: " . $e->getMessage());
+            Log::error("Failed to send quote {$quote->quote_number}: " . $e->getMessage(), [
+                'exception' => $e,
+                'trace' => $e->getTraceAsString()
+            ]);
             return false;
         }
     }

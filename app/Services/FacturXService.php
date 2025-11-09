@@ -44,6 +44,11 @@ class FacturXService
             // 3. Obtenir le contenu XML
             $xmlContent = $document->getContent();
             
+            // 3.5 Valider le XML avant embedding
+            if (!$this->validateXmlContent($xmlContent)) {
+                throw new \Exception('Generated XML is not valid for EN 16931');
+            }
+            
             // 4. Générer le PDF de base
             $pdfService = app(\App\Services\PdfGeneratorService::class);
             $pdfContent = $pdfService->generateInvoicePdf($invoice, download: false)->output();
@@ -261,6 +266,11 @@ class FacturXService
             // 3. Obtenir le contenu XML
             $xmlContent = $document->getContent();
             
+            // 3.5 Valider le XML avant embedding
+            if (!$this->validateXmlContent($xmlContent)) {
+                throw new \Exception('Generated XML is not valid for EN 16931 (Credit Note)');
+            }
+            
             // 4. Générer le PDF de base
             $pdfService = app(\App\Services\PdfGeneratorService::class);
             $pdfContent = $pdfService->generateCreditNotePdf($creditNote, download: false)->output();
@@ -424,18 +434,33 @@ class FacturXService
     }
     
     /**
-     * Embedde le XML dans un PDF pour créer un FacturX
+     * Embarque le XML dans le PDF pour créer un fichier Factur-X conforme PDF/A-3
      */
     private function embedXmlInPdf(string $pdfContent, string $xmlContent): string
     {
-        // Pour une implémentation complète, il faudrait utiliser une bibliothèque
-        // qui peut créer de vrais PDF/A-3 avec XML embarqué
-        // Pour l'instant, on retourne le PDF tel quel
-        // TODO: Implémenter l'embedding réel avec FPDI ou autre
-        
-        Log::warning('XML embedding not fully implemented - returning PDF only');
-        
-        return $pdfContent;
+        try {
+            // Utiliser ZugferdDocumentPdfMerger pour embarquer le XML dans le PDF
+            $pdfMerger = new \horstoeko\zugferd\ZugferdDocumentPdfMerger($xmlContent, $pdfContent);
+            
+            // Générer le document (cela prépare le PDF/A-3 avec XML embarqué)
+            $pdfMerger->generateDocument();
+            
+            // Récupérer le PDF final avec XML embarqué
+            $facturXContent = $pdfMerger->downloadString();
+            
+            Log::info('XML successfully embedded in PDF/A-3');
+            
+            return $facturXContent;
+        } catch (\Exception $e) {
+            Log::error('Failed to embed XML in PDF', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // En cas d'erreur, retourner le PDF sans XML (fallback)
+            Log::warning('Falling back to PDF without embedded XML');
+            return $pdfContent;
+        }
     }
     
     /**
@@ -455,24 +480,47 @@ class FacturXService
     }
     
     /**
-     * Valide qu'une facture Factur-X est conforme
+     * Valide qu'une facture Factur-X est conforme EN 16931 et PDF/A-3
      */
     public function validateFacturX(string $facturXPath): bool
     {
         try {
             if (!Storage::exists($facturXPath)) {
+                Log::error('FacturX file not found', ['path' => $facturXPath]);
                 return false;
             }
             
-            // TODO: Implémenter la validation
-            // - Vérifier que le XML est conforme à EN 16931
-            // - Vérifier que le PDF est PDF/A-3
+            $fullPath = Storage::path($facturXPath);
             
+            // 1. Vérifier que le PDF contient un XML embarqué
+            $pdfReader = \horstoeko\zugferd\ZugferdDocumentPdfReader::readAndGuessFromFile($fullPath);
+            
+            if (!$pdfReader) {
+                Log::error('FacturX validation: Unable to read PDF or no XML found');
+                return false;
+            }
+            
+            // 2. Extraire et valider le XML avec le validateur intégré
+            $validator = new \horstoeko\zugferd\ZugferdPdfValidator();
+            $validationResult = $validator->validateFile($fullPath);
+            
+            if (!$validationResult) {
+                $errors = $validator->validationFailed();
+                Log::error('FacturX validation failed', [
+                    'path' => $facturXPath,
+                    'errors' => $errors
+                ]);
+                return false;
+            }
+            
+            Log::info('FacturX validation successful', ['path' => $facturXPath]);
             return true;
+            
         } catch (\Exception $e) {
-            Log::error('Factur-X validation failed', [
+            Log::error('FacturX validation exception', [
                 'path' => $facturXPath,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
             return false;
         }
@@ -484,14 +532,80 @@ class FacturXService
     public function extractXml(string $facturXPath): ?string
     {
         try {
-            // TODO: Implémenter l'extraction du XML embarqué
-            return null;
-        } catch (\Exception $e) {
-            Log::error('Failed to extract XML from Factur-X', [
+            if (!Storage::exists($facturXPath)) {
+                Log::error('FacturX file not found for XML extraction', ['path' => $facturXPath]);
+                return null;
+            }
+            
+            $fullPath = Storage::path($facturXPath);
+            
+            // Lire le PDF et extraire le XML embarqué
+            $pdfReader = \horstoeko\zugferd\ZugferdDocumentPdfReader::readAndGuessFromFile($fullPath);
+            
+            if (!$pdfReader) {
+                Log::error('Unable to read FacturX PDF or no XML found');
+                return null;
+            }
+            
+            // Récupérer le contenu XML
+            $xmlContent = $pdfReader->getContent();
+            
+            Log::info('XML successfully extracted from FacturX', [
                 'path' => $facturXPath,
-                'error' => $e->getMessage()
+                'xml_length' => strlen($xmlContent)
+            ]);
+            
+            return $xmlContent;
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to extract XML from FacturX', [
+                'path' => $facturXPath,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
             return null;
+        }
+    }
+    
+    /**
+     * Valide le XML généré avant embedding
+     */
+    private function validateXmlContent(string $xmlContent): bool
+    {
+        try {
+            // Vérifier que le XML est bien formé
+            $xml = new \DOMDocument();
+            $xml->loadXML($xmlContent);
+            
+            if (!$xml) {
+                Log::error('XML is not well-formed');
+                return false;
+            }
+            
+            // Vérifier présence des éléments obligatoires EN 16931
+            $requiredElements = [
+                'rsm:CrossIndustryInvoice',
+                'rsm:ExchangedDocument',
+                'ram:ID', // Invoice number
+                'ram:TypeCode', // Invoice type (380 or 381)
+            ];
+            
+            foreach ($requiredElements as $element) {
+                $nodes = $xml->getElementsByTagName(str_replace(['rsm:', 'ram:'], '', $element));
+                if ($nodes->length === 0) {
+                    Log::error('Required XML element missing', ['element' => $element]);
+                    return false;
+                }
+            }
+            
+            Log::info('XML validation successful', ['size' => strlen($xmlContent)]);
+            return true;
+            
+        } catch (\Exception $e) {
+            Log::error('XML validation failed', [
+                'error' => $e->getMessage()
+            ]);
+            return false;
         }
     }
 }

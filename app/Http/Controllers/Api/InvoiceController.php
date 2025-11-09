@@ -433,6 +433,27 @@ class InvoiceController extends Controller
     }
 
     /**
+     * Validate invoice (change from draft to sent without sending email)
+     */
+    public function validate(Invoice $invoice)
+    {
+        if ($invoice->status !== 'draft') {
+            return response()->json([
+                'message' => 'Only draft invoices can be validated',
+                'current_status' => $invoice->status
+            ], 422);
+        }
+
+        // Mark as sent without sending email
+        $invoice->markAsSent();
+
+        return response()->json([
+            'message' => 'Invoice validated successfully',
+            'invoice' => $invoice->fresh()->load(['client', 'items'])
+        ]);
+    }
+
+    /**
      * Mark invoice as paid
      */
     public function markAsPaid(Request $request, Invoice $invoice, EmailService $emailService)

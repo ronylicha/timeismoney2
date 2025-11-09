@@ -71,10 +71,19 @@
     @endif
 
     <p style="margin-top: 30px;">
-        La facture complète est jointe à cet email au format PDF.
+        La facture complète est jointe à cet email au <strong>format FacturX</strong> (norme européenne EN 16931).
     </p>
 
-    <p>
+    <div style="margin-top: 20px; padding: 15px; background-color: #f0f9ff; border-left: 4px solid #3b82f6; border-radius: 4px;">
+        <p style="margin: 0; font-size: 14px;"><strong>ℹ️ Qu'est-ce que FacturX ?</strong></p>
+        <p style="margin: 10px 0 0 0; font-size: 13px; color: #1e40af;">
+            FacturX est un format hybride PDF/XML conforme à la norme européenne, permettant l'import automatique 
+            de la facture dans votre logiciel comptable. Le fichier joint peut être ouvert comme un PDF classique 
+            et contient également les données structurées pour votre comptabilité.
+        </p>
+    </div>
+
+    <p style="margin-top: 20px;">
         Pour toute question concernant cette facture, n'hésitez pas à nous contacter.
     </p>
 

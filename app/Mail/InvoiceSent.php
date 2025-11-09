@@ -4,12 +4,15 @@ namespace App\Mail;
 
 use App\Models\Invoice;
 use App\Services\PdfGeneratorService;
+use App\Services\FacturXService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class InvoiceSent extends Mailable
 {
@@ -84,10 +87,35 @@ class InvoiceSent extends Mailable
      */
     public function attachments(): array
     {
+        // Try to generate FacturX format (hybrid PDF/XML)
+        try {
+            $facturXService = app(FacturXService::class);
+            $facturXPath = $facturXService->generateFacturX($this->invoice);
+            
+            if ($facturXPath && Storage::exists($facturXPath)) {
+                Log::info("Sending invoice with FacturX format", [
+                    'invoice_id' => $this->invoice->id,
+                    'path' => $facturXPath
+                ]);
+                
+                return [
+                    Attachment::fromStorage($facturXPath)
+                        ->as("facture-{$this->invoice->invoice_number}.pdf")
+                        ->withMime('application/pdf'),
+                ];
+            }
+        } catch (\Exception $e) {
+            Log::warning("Failed to generate FacturX, falling back to standard PDF", [
+                'invoice_id' => $this->invoice->id,
+                'error' => $e->getMessage()
+            ]);
+        }
+        
+        // Fallback to standard PDF if FacturX generation fails
         $pdf = $this->pdfService->generateInvoicePdf($this->invoice);
 
         return [
-            Attachment::fromData(fn () => $pdf->output(), "invoice-{$this->invoice->invoice_number}.pdf")
+            Attachment::fromData(fn () => $pdf->output(), "facture-{$this->invoice->invoice_number}.pdf")
                 ->withMime('application/pdf'),
         ];
     }

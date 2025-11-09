@@ -309,7 +309,8 @@ class QuoteController extends Controller
      */
     public function send(Request $request, $id, EmailService $emailService)
     {
-        $quote = Quote::where('tenant_id', auth()->user()->tenant_id)
+        $quote = Quote::with(['client', 'tenant', 'items'])
+            ->where('tenant_id', auth()->user()->tenant_id)
             ->findOrFail($id);
 
         if ($quote->status !== 'draft') {
