@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mise à jour TimeIsMoney PWA</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #3B82F6 0%, #1e40af 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        .icon {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px;
+            border-radius: 20px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .version {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 18px;
+        }
+        .instructions {
+            text-align: left;
+            background: #f7f7f7;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .instructions h2 {
+            color: #444;
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        .instructions ol {
+            margin-left: 20px;
+            color: #555;
+            line-height: 1.8;
+        }
+        .instructions li {
+            margin-bottom: 10px;
+        }
+        .button {
+            background: linear-gradient(135deg, #3B82F6 0%, #1e40af 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: transform 0.3s;
+            margin: 10px;
+        }
+        .button:hover {
+            transform: scale(1.05);
+        }
+        .button:active {
+            transform: scale(0.95);
+        }
+        .secondary-button {
+            background: #f0f0f0;
+            color: #666;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background 0.3s;
+        }
+        .secondary-button:hover {
+            background: #e0e0e0;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 500;
+            display: none;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="/images/icons/icon-192x192.png" alt="TimeIsMoney" class="icon">
+        <h1>TimeIsMoney</h1>
+        <div class="version">Version 3.0.1</div>
+
+        <div id="status" class="status"></div>
+
+        <div class="instructions">
+            <h2>🔄 Forcer la mise à jour sur Android</h2>
+            <ol>
+                <li>Cliquez sur <strong>"Effacer le cache"</strong> ci-dessous</li>
+                <li>Si l'icône ne change pas :</li>
+                <li>• Allez sur votre écran d'accueil</li>
+                <li>• Appuyez longuement sur l'icône TimeIsMoney</li>
+                <li>• Sélectionnez "Désinstaller" ou "Supprimer"</li>
+                <li>• Revenez sur cette page dans Chrome</li>
+                <li>• Installez à nouveau l'application</li>
+            </ol>
+        </div>
+
+        <button class="button" onclick="forceUpdate()">
+            🔄 Effacer le cache
+        </button>
+
+        <button class="button" onclick="window.location.href='/login'">
+            📱 Aller à l'application
+        </button>
+
+        <div style="margin-top: 30px;">
+            <button class="secondary-button" onclick="window.location.reload()">
+                Recharger la page
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Force Update Function
+        async function forceUpdate() {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = '⏳ Mise à jour en cours...';
+            statusDiv.className = 'status info';
+
+            try {
+                // Clear all caches
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    console.log('Found caches:', cacheNames);
+                    await Promise.all(
+                        cacheNames.map(cacheName => {
+                            console.log('Deleting cache:', cacheName);
+                            return caches.delete(cacheName);
+                        })
+                    );
+                }
+
+                // Unregister service workers
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    console.log('Found service workers:', registrations.length);
+                    await Promise.all(
+                        registrations.map(registration => {
+                            console.log('Unregistering service worker');
+                            return registration.unregister();
+                        })
+                    );
+                }
+
+                // Clear localStorage
+                localStorage.clear();
+                console.log('LocalStorage cleared');
+
+                // Update status
+                statusDiv.textContent = '✅ Cache effacé avec succès ! Redirection...';
+                statusDiv.className = 'status success';
+
+                // Reload after 2 seconds
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+
+            } catch (error) {
+                console.error('Error during update:', error);
+                statusDiv.textContent = '❌ Erreur lors de la mise à jour. Veuillez réessayer.';
+                statusDiv.className = 'status error';
+            }
+        }
+
+        // Auto-register new service worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js?v=3.0.1').then(registration => {
+                    console.log('Service Worker registered with version 3.0.1');
+                    registration.update();
+                });
+            });
+        }
+    </script>
+</body>
+</html>
