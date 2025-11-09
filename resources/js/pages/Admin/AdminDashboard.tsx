@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/contexts/AuthContext';
 import {
     UsersIcon,
     BuildingOfficeIcon,
@@ -87,7 +88,10 @@ interface SystemStats {
 
 const AdminDashboard: React.FC = () => {
     const { t } = useTranslation();
+    const { user } = useAuth();
     const [timeRange, setTimeRange] = useState('7d');
+
+    const isSuperAdmin = user?.role === 'super-admin';
 
     // Fetch system stats
     const { data: stats, isLoading: loadingStats } = useQuery<SystemStats>({
@@ -440,15 +444,17 @@ const AdminDashboard: React.FC = () => {
                         <BuildingOfficeIcon className="h-8 w-8 text-purple-600 mb-2" />
                         <span className="text-sm font-medium text-gray-900">{t('admin.quickActions.manageOrganizations')}</span>
                     </a>
+                    {isSuperAdmin && (
+                        <a
+                            href="/admin/settings"
+                            className="flex flex-col items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                        >
+                            <CogIcon className="h-8 w-8 text-gray-600 mb-2" />
+                            <span className="text-sm font-medium text-gray-900">{t('admin.quickActions.systemSettings')}</span>
+                        </a>
+                    )}
                     <a
-                        href="/admin/settings"
-                        className="flex flex-col items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                    >
-                        <CogIcon className="h-8 w-8 text-gray-600 mb-2" />
-                        <span className="text-sm font-medium text-gray-900">{t('admin.quickActions.systemSettings')}</span>
-                    </a>
-                    <a
-                        href="/admin/audit"
+                        href="/admin/audit-logs"
                         className="flex flex-col items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                     >
                         <ShieldCheckIcon className="h-8 w-8 text-red-600 mb-2" />

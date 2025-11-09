@@ -5,20 +5,13 @@ import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 import {
     CogIcon,
-    ServerIcon,
     ShieldCheckIcon,
     EnvelopeIcon,
     CurrencyEuroIcon,
-    DocumentTextIcon,
     CloudArrowUpIcon,
     BellIcon,
-    GlobeAltIcon,
-    ClockIcon,
-    KeyIcon,
     CircleStackIcon,
-    ArrowPathIcon,
-    CheckIcon,
-    ExclamationTriangleIcon
+    ArrowPathIcon
 } from '@heroicons/react/24/outline';
 
 interface SystemSettings {
@@ -62,12 +55,6 @@ interface SystemSettings {
         invoice_prefix: string;
         invoice_footer: string;
         payment_terms_days: number;
-    };
-    chorus_pro: {
-        enabled: boolean;
-        production_mode: boolean;
-        auto_submit: boolean;
-        certificate_expiry?: string;
     };
     notifications: {
         email_enabled: boolean;
@@ -159,7 +146,6 @@ const SystemSettings: React.FC = () => {
         { id: 'email', label: t('admin.settings.tabs.email'), icon: EnvelopeIcon },
         { id: 'storage', label: t('admin.settings.tabs.storage'), icon: CloudArrowUpIcon },
         { id: 'billing', label: t('admin.settings.tabs.billing'), icon: CurrencyEuroIcon },
-        { id: 'chorus_pro', label: t('admin.settings.tabs.chorusPro'), icon: DocumentTextIcon },
         { id: 'notifications', label: t('admin.settings.tabs.notifications'), icon: BellIcon },
         { id: 'backup', label: t('admin.settings.tabs.backup'), icon: CircleStackIcon },
     ];
@@ -615,70 +601,6 @@ const SystemSettings: React.FC = () => {
                                         />
                                     </div>
                                 </div>
-                            </div>
-                        )}
-
-                        {/* Chorus Pro Settings */}
-                        {activeTab === 'chorus_pro' && (
-                            <div className="space-y-6">
-                                <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('admin.settings.chorusPro.title')}</h2>
-
-                                <div className="space-y-4">
-                                    <label className="flex items-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={settings.chorus_pro.enabled}
-                                            onChange={(e) => setSettings({
-                                                ...settings,
-                                                chorus_pro: { ...settings.chorus_pro, enabled: e.target.checked }
-                                            })}
-                                            disabled={!editMode}
-                                            className="h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 disabled:opacity-50"
-                                        />
-                                        <span className="ml-2 text-sm text-gray-700">{t('admin.settings.chorusPro.enabled')}</span>
-                                    </label>
-
-                                    <label className="flex items-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={settings.chorus_pro.production_mode}
-                                            onChange={(e) => setSettings({
-                                                ...settings,
-                                                chorus_pro: { ...settings.chorus_pro, production_mode: e.target.checked }
-                                            })}
-                                            disabled={!editMode}
-                                            className="h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 disabled:opacity-50"
-                                        />
-                                        <span className="ml-2 text-sm text-gray-700">{t('admin.settings.chorusPro.productionMode')}</span>
-                                    </label>
-
-                                    <label className="flex items-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={settings.chorus_pro.auto_submit}
-                                            onChange={(e) => setSettings({
-                                                ...settings,
-                                                chorus_pro: { ...settings.chorus_pro, auto_submit: e.target.checked }
-                                            })}
-                                            disabled={!editMode}
-                                            className="h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 disabled:opacity-50"
-                                        />
-                                        <span className="ml-2 text-sm text-gray-700">{t('admin.settings.chorusPro.autoSubmit')}</span>
-                                    </label>
-                                </div>
-
-                                {settings.chorus_pro.certificate_expiry && (
-                                    <div className="p-4 bg-yellow-50 rounded-lg">
-                                        <div className="flex">
-                                            <ExclamationTriangleIcon className="h-5 w-5 text-yellow-400" />
-                                            <div className="ml-3">
-                                                <p className="text-sm text-yellow-800">
-                                                    {t('admin.settings.chorusPro.certificateExpiry', { date: settings.chorus_pro.certificate_expiry })}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         )}
 

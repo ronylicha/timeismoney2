@@ -11,9 +11,20 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::with(['tenant', 'roles'])->paginate(20);
+        $currentUser = $request->user();
+
+        // Super-admins can see all users across all tenants
+        if ($currentUser->hasRole('super-admin')) {
+            $users = User::with(['tenant', 'roles', 'teamMember'])->paginate(20);
+        } else {
+            // Regular users only see users from their tenant
+            $users = User::where('tenant_id', $currentUser->tenant_id)
+                ->with(['tenant', 'roles', 'teamMember'])
+                ->paginate(20);
+        }
+
         return response()->json($users);
     }
 
@@ -160,6 +171,92 @@ class UserController extends Controller
         return response()->json([
             'message' => 'Preferences updated successfully',
             'user' => $user->fresh()
+        ]);
+    }
+
+    /**
+     * Update password for a specific user (admin/manager only)
+     */
+    public function updateUserPassword(Request $request, User $user)
+    {
+        // Check if the current user has permission to change passwords
+        $currentUser = $request->user();
+
+        // Only admin and manager roles can change other users' passwords
+        if (!in_array($currentUser->role, ['admin', 'manager', 'super-admin'])) {
+            return response()->json([
+                'message' => 'Unauthorized. Only admins and managers can change user passwords.'
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user->update([
+            'password' => Hash::make($validated['password'])
+        ]);
+
+        return response()->json([
+            'message' => 'Password updated successfully'
+        ]);
+    }
+
+    /**
+     * Update user information by admin/manager
+     */
+    public function updateUser(Request $request, User $user)
+    {
+        $currentUser = $request->user();
+
+        // Check permissions
+        if (!in_array($currentUser->role, ['admin', 'manager', 'super-admin'])) {
+            return response()->json([
+                'message' => 'Unauthorized. Only admins and managers can update user information.'
+            ], 403);
+        }
+
+        // Non-super-admins can only update users from their own tenant
+        if (!$currentUser->hasRole('super-admin') && $user->tenant_id !== $currentUser->tenant_id) {
+            return response()->json([
+                'message' => 'You can only update users from your own organization.'
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'name' => 'sometimes|required|string|max:255',
+            'email' => 'sometimes|required|email|unique:users,email,' . $user->id,
+            'role' => 'sometimes|required|string|in:admin,manager,employee',
+            'position' => 'nullable|string|max:255',
+            'hourly_rate' => 'nullable|numeric|min:0'
+        ]);
+
+        // Update user basic information
+        if (isset($validated['name']) || isset($validated['email']) || isset($validated['role'])) {
+            $userUpdate = [];
+            if (isset($validated['name'])) $userUpdate['name'] = $validated['name'];
+            if (isset($validated['email'])) $userUpdate['email'] = $validated['email'];
+
+            $user->update($userUpdate);
+
+            // Update role if changed
+            if (isset($validated['role']) && $validated['role'] !== $user->role) {
+                $user->syncRoles([$validated['role']]);
+            }
+        }
+
+        // Update team member information if exists
+        if ($user->teamMember && (isset($validated['position']) || isset($validated['hourly_rate']))) {
+            $teamMemberUpdate = [];
+            if (isset($validated['position'])) $teamMemberUpdate['position'] = $validated['position'];
+            if (isset($validated['hourly_rate'])) $teamMemberUpdate['hourly_rate'] = $validated['hourly_rate'];
+
+            $user->teamMember->update($teamMemberUpdate);
+        }
+
+        return response()->json([
+            'message' => 'User updated successfully',
+            'user' => $user->load(['teamMember', 'roles'])
         ]);
     }
 }

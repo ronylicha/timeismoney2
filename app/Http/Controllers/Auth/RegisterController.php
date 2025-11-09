@@ -87,40 +87,60 @@ class RegisterController extends Controller
      */
     public function registerUser(Request $request)
     {
-        $validated = $request->validate([
+        $currentUser = auth()->user();
+
+        $rules = [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => ['required', 'confirmed', Password::defaults()],
             'role' => 'required|string|in:admin,manager,employee',
             'position' => 'nullable|string|max:255',
             'hourly_rate' => 'nullable|numeric|min:0',
-        ]);
+        ];
+
+        // Super-admins can specify a tenant when creating users
+        if ($currentUser->hasRole('super-admin')) {
+            $rules['tenant_id'] = 'nullable|exists:tenants,id';
+        }
+
+        $validated = $request->validate($rules);
+
+        // Determine which tenant_id to use
+        if ($currentUser->hasRole('super-admin')) {
+            // Super-admin can specify a tenant or leave it null
+            $tenantId = $validated['tenant_id'] ?? null;
+        } else {
+            // Regular admins/managers use their own tenant_id
+            $tenantId = $currentUser->tenant_id;
+        }
 
         $user = User::create([
-            'tenant_id' => auth()->user()->tenant_id,
+            'tenant_id' => $tenantId,
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'locale' => auth()->user()->locale,
-            'timezone' => auth()->user()->timezone,
-            'date_format' => auth()->user()->date_format,
-            'time_format' => auth()->user()->time_format
+            'locale' => $currentUser->locale,
+            'timezone' => $currentUser->timezone,
+            'date_format' => $currentUser->date_format,
+            'time_format' => $currentUser->time_format
         ]);
 
         // Assign role
         $user->assignRole($validated['role']);
 
-        // Create team member profile
-        $user->teamMember()->create([
-            'tenant_id' => auth()->user()->tenant_id,
-            'position' => $validated['position'] ?? $validated['role'],
-            'hourly_rate' => $validated['hourly_rate'],
-            'is_billable' => true,
-            'can_approve_time' => in_array($validated['role'], ['admin', 'manager']),
-            'can_approve_expenses' => in_array($validated['role'], ['admin', 'manager']),
-            'weekly_hours' => 40,
-            'working_days' => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
-        ]);
+        // Create team member profile only if user has a tenant
+        if ($tenantId) {
+            $user->teamMember()->create([
+                'tenant_id' => $tenantId,
+                'position' => $validated['position'] ?? $validated['role'],
+                'hourly_rate' => $validated['hourly_rate'],
+                'is_billable' => true,
+                'can_approve_time' => in_array($validated['role'], ['admin', 'manager']),
+                'can_approve_expenses' => in_array($validated['role'], ['admin', 'manager']),
+                'weekly_hours' => 40,
+                'working_days' => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+            ]);
+        }
 
         return response()->json([
             'user' => $user->load('teamMember'),

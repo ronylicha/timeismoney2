@@ -58,6 +58,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // User management
     Route::post('/users/register', [RegisterController::class, 'registerUser']);
+    Route::patch('/users/{user}/password', [UserController::class, 'updateUserPassword']); // Admin/Manager change user password
+    Route::put('/users/{user}', [UserController::class, 'updateUser']); // Admin/Manager update user information
     Route::apiResource('users', UserController::class);
 
     // Profile management (current user)
@@ -222,13 +224,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/notifications/project-deadline', [\App\Http\Controllers\NotificationController::class, 'projectDeadlineApproaching']);
     Route::post('/notifications/task-assigned', [\App\Http\Controllers\NotificationController::class, 'taskAssigned']);
 
-    // Admin Routes
-    Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
+    // Admin Routes (Super Admin only)
+    Route::prefix('admin')->middleware(['auth:sanctum', 'super_admin'])->group(function () {
         // Dashboard Stats
         Route::get('/stats', [AdminController::class, 'getStats']);
         Route::get('/activity', [AdminController::class, 'getActivity']);
         Route::get('/revenue-chart', [AdminController::class, 'getRevenueChart']);
         Route::get('/user-growth-chart', [AdminController::class, 'getUserGrowthChart']);
+        Route::get('/reports', [AdminController::class, 'getReportsData']);
 
         // Billing
         Route::get('/billing/overview', [AdminController::class, 'getBillingOverview']);

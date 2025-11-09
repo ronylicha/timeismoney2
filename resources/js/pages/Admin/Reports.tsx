@@ -19,55 +19,32 @@ const AdminReports: React.FC = () => {
     const { t } = useTranslation();
     const [dateRange, setDateRange] = useState('30days');
 
-    // Fetch admin stats
-    const { data: stats, isLoading } = useQuery({
-        queryKey: ['admin-stats'],
+    // Fetch comprehensive reports data
+    const { data: reportsData, isLoading } = useQuery({
+        queryKey: ['admin-reports', dateRange],
         queryFn: async () => {
-            const response = await axios.get('/admin/stats');
+            const response = await axios.get('/admin/reports', {
+                params: { range: dateRange }
+            });
             return response.data;
         },
     });
 
-    // Generate growth chart data
-    const generateGrowthData = () => {
-        const data = [];
-        for (let i = 11; i >= 0; i--) {
-            const date = subMonths(new Date(), i);
-            data.push({
-                month: format(date, 'MMM yyyy', { locale: fr }),
-                users: Math.floor(Math.random() * 50) + 100 + (11 - i) * 10,
-                tenants: Math.floor(Math.random() * 10) + 20 + (11 - i) * 2,
-                revenue: Math.floor(Math.random() * 5000) + 10000 + (11 - i) * 1000,
-            });
-        }
-        return data;
-    };
-
-    // Generate user activity data
-    const generateActivityData = () => {
-        const data = [];
-        for (let i = 29; i >= 0; i--) {
-            const date = subDays(new Date(), i);
-            data.push({
-                date: format(date, 'dd MMM', { locale: fr }),
-                activeUsers: Math.floor(Math.random() * 100) + 50,
-                newUsers: Math.floor(Math.random() * 20) + 5,
-            });
-        }
-        return data;
-    };
-
-    const growthData = generateGrowthData();
-    const activityData = generateActivityData();
+    // Extract data from API response with fallbacks
+    const growthData = reportsData?.growth_data || [];
+    const activityData = reportsData?.activity_data || [];
+    const planDistribution = (reportsData?.plan_distribution || []).map((plan: any) => ({
+        name: plan.name,
+        value: plan.value,
+        color: plan.name === 'Individual' ? '#9CA3AF' :
+               plan.name === 'Team' ? '#3B82F6' :
+               plan.name === 'Company' ? '#8B5CF6' : '#F59E0B'
+    }));
+    const topTenants = reportsData?.top_tenants || [];
+    const metrics = reportsData?.metrics || {};
+    const systemPerformance = reportsData?.system_performance || {};
 
     const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
-
-    const planDistribution = [
-        { name: t('admin.reports.plans.free'), value: 45, color: '#9CA3AF' },
-        { name: t('admin.reports.plans.starter'), value: 30, color: '#3B82F6' },
-        { name: t('admin.reports.plans.professional'), value: 20, color: '#8B5CF6' },
-        { name: t('admin.reports.plans.enterprise'), value: 5, color: '#F59E0B' },
-    ];
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('fr-FR', {
@@ -125,10 +102,10 @@ const AdminReports: React.FC = () => {
                         <h3 className="text-sm font-medium text-gray-600">{t('admin.reports.metrics.totalUsers')}</h3>
                         <UserGroupIcon className="h-5 w-5 text-blue-600" />
                     </div>
-                    <p className="text-3xl font-bold text-gray-900">{stats?.total_users || 1247}</p>
-                    <div className="flex items-center gap-1 mt-2 text-sm text-green-600">
+                    <p className="text-3xl font-bold text-gray-900">{metrics?.total_users || 0}</p>
+                    <div className={`flex items-center gap-1 mt-2 text-sm ${(metrics?.user_growth || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         <ArrowTrendingUpIcon className="h-4 w-4" />
-                        <span>+12.5%</span>
+                        <span>{(metrics?.user_growth || 0) >= 0 ? '+' : ''}{metrics?.user_growth || 0}%</span>
                         <span className="text-gray-500">{t('admin.reports.vsLastMonth')}</span>
                     </div>
                 </div>
@@ -138,10 +115,10 @@ const AdminReports: React.FC = () => {
                         <h3 className="text-sm font-medium text-gray-600">{t('admin.reports.metrics.organizations')}</h3>
                         <BuildingOfficeIcon className="h-5 w-5 text-purple-600" />
                     </div>
-                    <p className="text-3xl font-bold text-gray-900">{stats?.total_tenants || 178}</p>
-                    <div className="flex items-center gap-1 mt-2 text-sm text-green-600">
+                    <p className="text-3xl font-bold text-gray-900">{metrics?.total_tenants || 0}</p>
+                    <div className={`flex items-center gap-1 mt-2 text-sm ${(metrics?.tenant_growth || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         <ArrowTrendingUpIcon className="h-4 w-4" />
-                        <span>+8.3%</span>
+                        <span>{(metrics?.tenant_growth || 0) >= 0 ? '+' : ''}{metrics?.tenant_growth || 0}%</span>
                         <span className="text-gray-500">{t('admin.reports.vsLastMonth')}</span>
                     </div>
                 </div>
@@ -151,10 +128,10 @@ const AdminReports: React.FC = () => {
                         <h3 className="text-sm font-medium text-gray-600">{t('admin.reports.metrics.monthlyRevenue')}</h3>
                         <CurrencyEuroIcon className="h-5 w-5 text-green-600" />
                     </div>
-                    <p className="text-3xl font-bold text-green-600">{formatCurrency(stats?.monthly_revenue || 18750)}</p>
-                    <div className="flex items-center gap-1 mt-2 text-sm text-green-600">
+                    <p className="text-3xl font-bold text-green-600">{formatCurrency(metrics?.monthly_revenue || 0)}</p>
+                    <div className={`flex items-center gap-1 mt-2 text-sm ${(metrics?.revenue_growth || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         <ArrowTrendingUpIcon className="h-4 w-4" />
-                        <span>+15.7%</span>
+                        <span>{(metrics?.revenue_growth || 0) >= 0 ? '+' : ''}{metrics?.revenue_growth || 0}%</span>
                         <span className="text-gray-500">{t('admin.reports.vsLastMonth')}</span>
                     </div>
                 </div>
@@ -164,11 +141,9 @@ const AdminReports: React.FC = () => {
                         <h3 className="text-sm font-medium text-gray-600">{t('admin.reports.metrics.retentionRate')}</h3>
                         <ChartBarIcon className="h-5 w-5 text-orange-600" />
                     </div>
-                    <p className="text-3xl font-bold text-gray-900">94.2%</p>
-                    <div className="flex items-center gap-1 mt-2 text-sm text-green-600">
-                        <ArrowTrendingUpIcon className="h-4 w-4" />
-                        <span>+2.1%</span>
-                        <span className="text-gray-500">{t('admin.reports.vsLastMonth')}</span>
+                    <p className="text-3xl font-bold text-gray-900">N/A</p>
+                    <div className="flex items-center gap-1 mt-2 text-sm text-gray-500">
+                        <span>{t('admin.reports.notTracked')}</span>
                     </div>
                 </div>
             </div>
@@ -276,13 +251,7 @@ const AdminReports: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {[
-                                { name: 'Acme Corp', plan: 'Enterprise', users: 45, revenue: 199, activity: 98 },
-                                { name: 'Tech Solutions', plan: 'Professional', users: 28, revenue: 79, activity: 95 },
-                                { name: 'Digital Agency', plan: 'Professional', users: 22, revenue: 79, activity: 87 },
-                                { name: 'StartupX', plan: 'Starter', users: 12, revenue: 29, activity: 92 },
-                                { name: 'Freelance Hub', plan: 'Starter', users: 8, revenue: 29, activity: 84 },
-                            ].map((tenant, index) => (
+                            {topTenants.length > 0 ? topTenants.map((tenant: any, index: number) => (
                                 <tr key={index}>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                         {tenant.name}
@@ -310,7 +279,13 @@ const AdminReports: React.FC = () => {
                                         </div>
                                     </td>
                                 </tr>
-                            ))}
+                            )) : (
+                                <tr>
+                                    <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                                        {t('admin.reports.noData')}
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>
@@ -324,28 +299,28 @@ const AdminReports: React.FC = () => {
                         <div>
                             <div className="flex justify-between text-sm mb-1">
                                 <span className="text-gray-600">{t('admin.reports.health.cpu')}</span>
-                                <span className="font-semibold">45%</span>
+                                <span className="font-semibold">{systemPerformance?.cpu || 0}%</span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div className="bg-blue-600 h-2 rounded-full" style={{ width: '45%' }}></div>
+                                <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${systemPerformance?.cpu || 0}%` }}></div>
                             </div>
                         </div>
                         <div>
                             <div className="flex justify-between text-sm mb-1">
                                 <span className="text-gray-600">{t('admin.reports.health.memory')}</span>
-                                <span className="font-semibold">62%</span>
+                                <span className="font-semibold">{systemPerformance?.memory || 0}%</span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div className="bg-green-600 h-2 rounded-full" style={{ width: '62%' }}></div>
+                                <div className="bg-green-600 h-2 rounded-full" style={{ width: `${systemPerformance?.memory || 0}%` }}></div>
                             </div>
                         </div>
                         <div>
                             <div className="flex justify-between text-sm mb-1">
                                 <span className="text-gray-600">{t('admin.reports.health.storage')}</span>
-                                <span className="font-semibold">38%</span>
+                                <span className="font-semibold">{systemPerformance?.storage || 0}%</span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div className="bg-purple-600 h-2 rounded-full" style={{ width: '38%' }}></div>
+                                <div className="bg-purple-600 h-2 rounded-full" style={{ width: `${systemPerformance?.storage || 0}%` }}></div>
                             </div>
                         </div>
                     </div>

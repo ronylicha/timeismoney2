@@ -15,7 +15,8 @@ import {
     UserCircleIcon,
     ArrowRightOnRectangleIcon,
     ShieldCheckIcon,
-    ClipboardDocumentListIcon
+    ClipboardDocumentListIcon,
+    UsersIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
 import UserAvatar from '@/components/UserAvatar';
@@ -34,14 +35,19 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
     const { user, logout } = useAuth();
     const { t } = useTranslation();
 
-    const navigation = isAdmin ? [
+    const isSuperAdmin = user?.role === 'super-admin';
+    const isAdminOrManager = user?.role === 'admin' || user?.role === 'manager';
+
+    const adminNavigation = [
         { name: t('nav.adminDashboard'), href: '/admin', icon: HomeIcon },
         { name: t('nav.userDashboard'), href: '/dashboard', icon: UserCircleIcon },
         { name: t('nav.users'), href: '/admin/users', icon: UserGroupIcon },
         { name: t('nav.organizations'), href: '/admin/tenants', icon: FolderIcon },
         { name: t('nav.auditLogs'), href: '/admin/audit-logs', icon: ClipboardDocumentListIcon },
-        { name: t('nav.settings'), href: '/admin/settings', icon: Cog6ToothIcon },
-    ] : [
+        ...(isSuperAdmin ? [{ name: t('nav.settings'), href: '/admin/settings', icon: Cog6ToothIcon }] : []),
+    ];
+
+    const navigation = isAdmin ? adminNavigation : [
         { name: t('nav.dashboard'), href: '/dashboard', icon: HomeIcon },
         { name: t('nav.time'), href: '/time', icon: ClockIcon },
         { name: t('nav.timesheet'), href: '/timesheet', icon: ClipboardDocumentListIcon },
@@ -51,6 +57,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
         { name: t('nav.invoices'), href: '/invoices', icon: DocumentTextIcon },
         { name: t('nav.expenses'), href: '/expenses', icon: BanknotesIcon },
         { name: t('nav.reports'), href: '/reports', icon: ChartBarIcon },
+        ...(isAdminOrManager ? [{ name: t('nav.teamManagement'), href: '/team', icon: UsersIcon }] : []),
         { name: t('nav.settings'), href: '/settings', icon: Cog6ToothIcon },
     ];
 
@@ -200,7 +207,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
                                                 <Cog6ToothIcon className="mr-3 h-5 w-5 text-gray-400" />
                                                 {t('userMenu.settings')}
                                             </Link>
-                                            {(user?.role === 'admin' || user?.role === 'super-admin') && (
+                                            {user?.role === 'super-admin' && (
                                                 location.pathname.startsWith('/admin') ? (
                                                     <Link
                                                         to="/dashboard"

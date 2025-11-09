@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -13,6 +13,7 @@ import {
     CheckCircleIcon
 } from '@heroicons/react/24/outline';
 import { Project, Client, PaginatedResponse } from '../types';
+import ClientSearchSelect from '../components/ClientSearchSelect';
 
 interface ProjectFormData {
     name: string;
@@ -32,10 +33,13 @@ interface ProjectFormData {
 const CreateProject: React.FC = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const clientIdFromUrl = searchParams.get('client_id') || '';
+
     const [formData, setFormData] = useState<ProjectFormData>({
         name: '',
         description: '',
-        client_id: '',
+        client_id: clientIdFromUrl,
         status: 'planning',
         type: 'hourly',
         hourly_rate: 0,
@@ -47,14 +51,15 @@ const CreateProject: React.FC = () => {
         is_billable: true
     });
 
-    // Fetch clients for dropdown
-    const { data: clientsData } = useQuery<PaginatedResponse<Client>>({
-        queryKey: ['clients'],
-        queryFn: async () => {
-            const response = await axios.get('/api/clients');
-            return response.data;
+    // Initialize client_id from URL parameter
+    useEffect(() => {
+        if (clientIdFromUrl) {
+            setFormData(prev => ({
+                ...prev,
+                client_id: clientIdFromUrl
+            }));
         }
-    });
+    }, [clientIdFromUrl]);
 
     // Create project mutation
     const createProjectMutation = useMutation({
@@ -187,23 +192,13 @@ const CreateProject: React.FC = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                {t('projects.client')} *
-                            </label>
-                            <select
-                                name="client_id"
+                            <ClientSearchSelect
                                 value={formData.client_id}
-                                onChange={handleInputChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                onChange={(clientId) => setFormData(prev => ({ ...prev, client_id: clientId }))}
+                                label={t('projects.client')}
+                                placeholder={t('projects.selectClient') || 'Sélectionner un client...'}
                                 required
-                            >
-                                <option value="">{t('projects.selectClient')}</option>
-                                {clientsData?.data?.map(client => (
-                                    <option key={client.id} value={client.id}>
-                                        {client.name}
-                                    </option>
-                                ))}
-                            </select>
+                            />
                         </div>
 
                         <div>

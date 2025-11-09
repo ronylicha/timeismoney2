@@ -11,3 +11,4 @@ export { default as TasksSummaryWidget } from './TasksSummaryWidget';
 export { default as ClientStatsWidget } from './ClientStatsWidget';
 export { default as ExpensesSummaryWidget } from './ExpensesSummaryWidget';
 export { default as TopProjectsWidget } from './TopProjectsWidget';
+export { default as UserManagementWidget } from './UserManagementWidget';

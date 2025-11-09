@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -14,6 +14,7 @@ import {
     CheckCircleIcon
 } from '@heroicons/react/24/outline';
 import { Quote, QuoteItem, Client, Project, PaginatedResponse } from '../types';
+import ClientSearchSelect from '../components/ClientSearchSelect';
 
 interface QuoteFormData {
     client_id: string;
@@ -35,8 +36,11 @@ interface QuoteFormData {
 const CreateQuote: React.FC = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const clientIdFromUrl = searchParams.get('client_id') || '';
+
     const [formData, setFormData] = useState<QuoteFormData>({
-        client_id: '',
+        client_id: clientIdFromUrl,
         project_id: '',
         subject: '',
         issue_date: new Date().toISOString().split('T')[0],
@@ -54,14 +58,15 @@ const CreateQuote: React.FC = () => {
         ]
     });
 
-    // Fetch clients for dropdown
-    const { data: clientsData } = useQuery<PaginatedResponse<Client>>({
-        queryKey: ['clients'],
-        queryFn: async () => {
-            const response = await axios.get('/api/clients');
-            return response.data;
+    // Initialize client_id from URL parameter
+    useEffect(() => {
+        if (clientIdFromUrl) {
+            setFormData(prev => ({
+                ...prev,
+                client_id: clientIdFromUrl
+            }));
         }
-    });
+    }, [clientIdFromUrl]);
 
     // Fetch projects when client is selected
     const { data: projectsData } = useQuery<PaginatedResponse<Project>>({
@@ -225,23 +230,13 @@ const CreateQuote: React.FC = () => {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        {t('quotes.client')} *
-                                    </label>
-                                    <select
-                                        name="client_id"
+                                    <ClientSearchSelect
                                         value={formData.client_id}
-                                        onChange={handleInputChange}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        onChange={(clientId) => setFormData(prev => ({ ...prev, client_id: clientId }))}
+                                        label={t('quotes.client')}
+                                        placeholder={t('quotes.selectClient') || 'Sélectionner un client...'}
                                         required
-                                    >
-                                        <option value="">{t('quotes.selectClient')}</option>
-                                        {clientsData?.data?.map(client => (
-                                            <option key={client.id} value={client.id}>
-                                                {client.name}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    />
                                 </div>
 
                                 <div>

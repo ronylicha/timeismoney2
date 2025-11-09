@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
@@ -25,6 +25,7 @@ import {
 } from '../types';
 import { formatDuration, formatDate, formatDateForApi } from '../utils/time';
 import { toast } from 'react-toastify';
+import ClientSearchSelect from '../components/ClientSearchSelect';
 
 interface InvoiceFormData {
     client_id: string;
@@ -49,8 +50,11 @@ interface InvoiceFormData {
 const CreateInvoice: React.FC = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const clientIdFromUrl = searchParams.get('client_id') || '';
+
     const [formData, setFormData] = useState<InvoiceFormData>({
-        client_id: '',
+        client_id: clientIdFromUrl,
         project_id: '',
         invoice_date: formatDateForApi(new Date()),
         due_date: formatDateForApi(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)), // 30 days
@@ -69,14 +73,15 @@ const CreateInvoice: React.FC = () => {
     const [selectedExpenses, setSelectedExpenses] = useState<Set<string>>(new Set());
     const [showNF525Warning, setShowNF525Warning] = useState(false);
 
-    // Fetch clients
-    const { data: clientsData } = useQuery<PaginatedResponse<Client>>({
-        queryKey: ['clients'],
-        queryFn: async () => {
-            const response = await axios.get('/api/clients');
-            return response.data;
+    // Initialize client_id from URL parameter
+    useEffect(() => {
+        if (clientIdFromUrl) {
+            setFormData(prev => ({
+                ...prev,
+                client_id: clientIdFromUrl
+            }));
         }
-    });
+    }, [clientIdFromUrl]);
 
     // Fetch projects when client is selected
     const { data: projectsData } = useQuery<PaginatedResponse<Project>>({
@@ -317,24 +322,13 @@ const CreateInvoice: React.FC = () => {
                             </h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        {t('invoices.client')} *
-                                    </label>
-                                    <select
-                                        name="client_id"
+                                    <ClientSearchSelect
                                         value={formData.client_id}
-                                        onChange={handleInputChange}
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                        onChange={(clientId) => setFormData(prev => ({ ...prev, client_id: clientId }))}
+                                        label={t('invoices.client')}
+                                        placeholder={t('invoices.selectClient') || 'Sélectionner un client...'}
                                         required
-                                    >
-                                        <option value="">{t('invoices.selectClient')}</option>
-                                        {clientsData?.data?.map(client => (
-                                            <option key={client.id} value={client.id}>
-                                                {client.name}
-                                                {client.client_type === 'government' && ' (Chorus Pro)'}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

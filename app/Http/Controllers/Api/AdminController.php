@@ -812,10 +812,15 @@ class AdminController extends Controller
     }
 
     /**
-     * Get system settings
+     * Get system settings (Super Admin only)
      */
     public function getSystemSettings()
     {
+        // Only super-admin can access system settings
+        if (!auth()->user()->isSuperAdmin()) {
+            abort(403, 'Super admin access required');
+        }
+
         return response()->json([
             'general' => [
                 'app_name' => config('app.name'),
@@ -858,12 +863,6 @@ class AdminController extends Controller
                 'invoice_footer' => '',
                 'payment_terms_days' => 30,
             ],
-            'chorus_pro' => [
-                'enabled' => false,
-                'production_mode' => false,
-                'auto_submit' => false,
-                'certificate_expiry' => null,
-            ],
             'notifications' => [
                 'email_enabled' => true,
                 'push_enabled' => false,
@@ -882,10 +881,16 @@ class AdminController extends Controller
     }
 
     /**
-     * Save system settings (Note: Most settings require .env changes)
+     * Save system settings (Super Admin only)
+     * Note: Most settings require .env changes
      */
     public function saveSystemSettings(Request $request)
     {
+        // Only super-admin can modify system settings
+        if (!auth()->user()->isSuperAdmin()) {
+            abort(403, 'Super admin access required');
+        }
+
         // For now, return success
         // In production, you might want to validate and store certain settings in database
         // System-level settings like app_name, timezone etc. require .env file modifications
@@ -1394,5 +1399,149 @@ class AdminController extends Controller
         }
 
         return ['status' => 'healthy', 'message' => "Disk usage at {$diskPercent}%"];
+    }
+
+    /**
+     * Get comprehensive reports data with real statistics
+     */
+    public function getReportsData(Request $request)
+    {
+        $this->checkAdminAccess();
+
+        $dateRange = $request->get('range', '30days');
+        $cacheKey = "admin_reports_{$dateRange}";
+
+        return Cache::remember($cacheKey, 300, function () use ($dateRange) {
+            // Monthly growth data for last 12 months
+            $growthData = [];
+            for ($i = 11; $i >= 0; $i--) {
+                $date = Carbon::now()->subMonths($i);
+                $startOfMonth = $date->copy()->startOfMonth();
+                $endOfMonth = $date->copy()->endOfMonth();
+
+                $usersCount = User::where('created_at', '<=', $endOfMonth)->count();
+                $tenantsCount = Tenant::where('created_at', '<=', $endOfMonth)->count();
+                $revenue = Invoice::whereBetween('created_at', [$startOfMonth, $endOfMonth])
+                    ->where('status', 'paid')
+                    ->sum('total');
+
+                $growthData[] = [
+                    'month' => $date->format('M Y'),
+                    'users' => $usersCount,
+                    'tenants' => $tenantsCount,
+                    'revenue' => (float) $revenue,
+                ];
+            }
+
+            // Daily activity data for last 30 days
+            $activityData = [];
+            for ($i = 29; $i >= 0; $i--) {
+                $date = Carbon::now()->subDays($i);
+                $startOfDay = $date->copy()->startOfDay();
+                $endOfDay = $date->copy()->endOfDay();
+
+                $newUsers = User::whereBetween('created_at', [$startOfDay, $endOfDay])->count();
+                // Active users = users who created time entries that day
+                $activeUsers = TimeEntry::whereBetween('started_at', [$startOfDay, $endOfDay])
+                    ->distinct('user_id')
+                    ->count('user_id');
+
+                $activityData[] = [
+                    'date' => $date->format('d M'),
+                    'activeUsers' => $activeUsers,
+                    'newUsers' => $newUsers,
+                ];
+            }
+
+            // Plan distribution
+            $planDistribution = [
+                ['name' => 'Individual', 'value' => Tenant::where('type', 'individual')->count()],
+                ['name' => 'Team', 'value' => Tenant::where('type', 'team')->count()],
+                ['name' => 'Company', 'value' => Tenant::where('type', 'company')->count()],
+                ['name' => 'Enterprise', 'value' => Tenant::where('type', 'enterprise')->count()],
+            ];
+
+            // Top tenants by user count
+            $topTenants = Tenant::withCount('users')
+                ->orderBy('users_count', 'desc')
+                ->limit(5)
+                ->get()
+                ->map(function ($tenant) {
+                    // Calculate revenue for this tenant this month
+                    $revenue = Invoice::where('tenant_id', $tenant->id)
+                        ->whereMonth('created_at', Carbon::now()->month)
+                        ->where('status', 'paid')
+                        ->sum('total');
+
+                    // Calculate activity score based on time entries this month
+                    $timeEntriesCount = TimeEntry::where('tenant_id', $tenant->id)
+                        ->whereMonth('created_at', Carbon::now()->month)
+                        ->count();
+
+                    // Normalize activity to 0-100 scale (assuming 100 entries = 100% activity)
+                    $activityScore = min(100, ($timeEntriesCount / 100) * 100);
+
+                    return [
+                        'name' => $tenant->name,
+                        'plan' => ucfirst($tenant->type),
+                        'users' => $tenant->users_count,
+                        'revenue' => (float) $revenue,
+                        'activity' => round($activityScore),
+                    ];
+                });
+
+            // Calculate growth percentages
+            $currentMonth = Carbon::now();
+            $lastMonth = Carbon::now()->subMonth();
+
+            $currentMonthUsers = User::whereMonth('created_at', $currentMonth->month)
+                ->whereYear('created_at', $currentMonth->year)
+                ->count();
+            $lastMonthUsers = User::whereMonth('created_at', $lastMonth->month)
+                ->whereYear('created_at', $lastMonth->year)
+                ->count();
+            $userGrowth = $lastMonthUsers > 0 ? (($currentMonthUsers - $lastMonthUsers) / $lastMonthUsers) * 100 : 0;
+
+            $currentMonthTenants = Tenant::whereMonth('created_at', $currentMonth->month)
+                ->whereYear('created_at', $currentMonth->year)
+                ->count();
+            $lastMonthTenants = Tenant::whereMonth('created_at', $lastMonth->month)
+                ->whereYear('created_at', $lastMonth->year)
+                ->count();
+            $tenantGrowth = $lastMonthTenants > 0 ? (($currentMonthTenants - $lastMonthTenants) / $lastMonthTenants) * 100 : 0;
+
+            $currentMonthRevenue = Invoice::whereMonth('created_at', $currentMonth->month)
+                ->whereYear('created_at', $currentMonth->year)
+                ->where('status', 'paid')
+                ->sum('total');
+            $lastMonthRevenue = Invoice::whereMonth('created_at', $lastMonth->month)
+                ->whereYear('created_at', $lastMonth->year)
+                ->where('status', 'paid')
+                ->sum('total');
+            $revenueGrowth = $lastMonthRevenue > 0 ? (($currentMonthRevenue - $lastMonthRevenue) / $lastMonthRevenue) * 100 : 0;
+
+            // System performance metrics
+            $systemPerformance = [
+                'cpu' => function_exists('sys_getloadavg') ? min(100, round(sys_getloadavg()[0] * 20, 0)) : 45,
+                'memory' => function_exists('memory_get_usage') ? round((memory_get_usage(true) / 1024 / 1024 / 1024) * 100, 0) : 62,
+                'storage' => round((disk_total_space('/') - disk_free_space('/')) / disk_total_space('/') * 100, 0),
+            ];
+
+            return [
+                'growth_data' => $growthData,
+                'activity_data' => $activityData,
+                'plan_distribution' => $planDistribution,
+                'top_tenants' => $topTenants,
+                'metrics' => [
+                    'total_users' => User::count(),
+                    'total_tenants' => Tenant::count(),
+                    'monthly_revenue' => (float) $currentMonthRevenue,
+                    'user_growth' => round($userGrowth, 1),
+                    'tenant_growth' => round($tenantGrowth, 1),
+                    'revenue_growth' => round($revenueGrowth, 1),
+                ],
+                'system_performance' => $systemPerformance,
+            ];
+        });
     }
 }

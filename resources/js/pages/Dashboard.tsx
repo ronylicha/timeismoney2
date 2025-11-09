@@ -23,6 +23,7 @@ import {
     RecentActivityWidget,
     QuickActionsWidget,
     TasksSummaryWidget,
+    UserManagementWidget,
 } from '../components/Dashboard/Widgets';
 
 interface DashboardStats {
@@ -228,6 +229,13 @@ const Dashboard: React.FC = () => {
                     isLoading={chartsLoading}
                 />
             </div>
+
+            {/* User Management Widget (Admin and Manager only) */}
+            {(user?.role === 'admin' || user?.role === 'manager') && (
+                <div className="mb-8">
+                    <UserManagementWidget />
+                </div>
+            )}
 
             {/* Bottom Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

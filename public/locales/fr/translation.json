@@ -85,7 +85,8 @@
         "admin": "Administration",
         "users": "Utilisateurs",
         "organizations": "Organisations",
-        "auditLogs": "Journaux d'audit"
+        "auditLogs": "Journaux d'audit",
+        "teamManagement": "Gestion de l'équipe"
     },
     "auth": {
         "login": "Connexion",
@@ -1060,10 +1061,33 @@
                 "channelPush": "Push",
                 "channelPushDesc": "Notification push",
                 "send": "Envoyer la notification",
-                "reset": "Réinitialiser"
+                "reset": "Réinitialiser",
+                "sending": "Envoi en cours..."
             },
             "recent": {
-                "newFeatures": "Nouvelles fonctionnalités"
+                "newFeatures": "Nouvelles fonctionnalités",
+                "systemUpdate": "Mise à jour système",
+                "systemUpdateMsg": "Le système a été mis à jour vers la version 2.0",
+                "newFeaturesMsg": "De nouvelles fonctionnalités ont été ajoutées",
+                "plannedMaintenance": "Maintenance programmée",
+                "plannedMaintenanceMsg": "Le système sera en maintenance"
+            },
+            "title": "Notifications",
+            "sendSuccess": "Notification envoyée avec succès",
+            "sendError": "Erreur lors de l'envoi de la notification",
+            "sendNotification": "Envoyer une notification",
+            "recentNotifications": "Notifications récentes",
+            "viewDetails": "Voir les détails",
+            "recipients": "{{count}} destinataires",
+            "types": {
+                "system": "Système",
+                "systemDesc": "Notifications et mises à jour système",
+                "announcement": "Annonce",
+                "announcementDesc": "Annonces importantes",
+                "maintenance": "Maintenance",
+                "maintenanceDesc": "Alertes de maintenance programmée",
+                "security": "Sécurité",
+                "securityDesc": "Alertes et avertissements de sécurité"
             }
         },
         "auditLogs": "Journaux d'audit",
@@ -1316,6 +1340,31 @@
         },
         "health": {
             "systemIssues": "Problèmes système"
+        },
+        "stats": {
+            "users": "Utilisateurs",
+            "thisMonth": "ce mois-ci",
+            "organizations": "Organisations",
+            "monthlyRevenue": "Revenu mensuel",
+            "currentMRR": "MRR actuel",
+            "system": "Système"
+        },
+        "system": {
+            "cpu": "CPU",
+            "ram": "RAM",
+            "disk": "Disque",
+            "uptime": "Disponibilité",
+            "days": "jours"
+        },
+        "quickActions": {
+            "title": "Actions rapides",
+            "manageUsers": "Gérer les utilisateurs",
+            "manageOrganizations": "Gérer les organisations",
+            "systemSettings": "Paramètres système",
+            "auditSecurity": "Audit et sécurité",
+            "reports": "Rapports",
+            "notifications": "Notifications",
+            "monitoring": "Surveillance"
         }
     },
     "notifications": {
@@ -1673,5 +1722,48 @@
             "completed": "Complétés",
             "onHold": "En attente"
         }
+    },
+    "userManagement": {
+        "title": "Gestion des utilisateurs",
+        "addUser": "Ajouter un utilisateur",
+        "createNewUser": "Créer un nouvel utilisateur",
+        "createUser": "Créer l'utilisateur",
+        "description": "Ajoutez de nouveaux membres à votre équipe",
+        "name": "Nom complet",
+        "email": "Adresse email",
+        "password": "Mot de passe",
+        "confirmPassword": "Confirmer le mot de passe",
+        "role": "Rôle",
+        "position": "Poste",
+        "hourlyRate": "Taux horaire (€)",
+        "roles": {
+            "admin": "Administrateur",
+            "manager": "Gestionnaire",
+            "employee": "Employé"
+        },
+        "userCreatedSuccess": "Utilisateur créé avec succès",
+        "userCreatedError": "Erreur lors de la création de l'utilisateur",
+        "passwordMismatch": "Les mots de passe ne correspondent pas",
+        "passwordTooShort": "Le mot de passe doit contenir au moins 8 caractères",
+        "teamMembers": "Membres de l'équipe",
+        "noUsers": "Aucun utilisateur pour le moment",
+        "rate": "Taux",
+        "viewDetails": "Voir les détails",
+        "changePassword": "Changer le mot de passe",
+        "editUser": "Modifier l'utilisateur",
+        "updateUser": "Mettre à jour l'utilisateur",
+        "userUpdatedSuccess": "Utilisateur mis à jour avec succès",
+        "userUpdatedError": "Erreur lors de la mise à jour de l'utilisateur",
+        "userDetails": "Détails de l'utilisateur",
+        "newPassword": "Nouveau mot de passe",
+        "confirmNewPassword": "Confirmer le nouveau mot de passe",
+        "updatePassword": "Mettre à jour le mot de passe",
+        "passwordChangedSuccess": "Mot de passe modifié avec succès",
+        "passwordChangedError": "Erreur lors de la modification du mot de passe",
+        "changePasswordFor": "Changer le mot de passe pour {{name}}",
+        "additionalInfo": "Informations supplémentaires"
+    },
+    "teamManagement": {
+        "pageDescription": "Gérez les membres de votre équipe et leurs accès"
     }
 }

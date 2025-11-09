@@ -85,7 +85,8 @@
         "admin": "Admin",
         "users": "Users",
         "organizations": "Organizations",
-        "auditLogs": "Audit Logs"
+        "auditLogs": "Audit Logs",
+        "teamManagement": "Team Management"
     },
     "auth": {
         "login": "Login",
@@ -1060,10 +1061,33 @@
                 "channelPush": "Push",
                 "channelPushDesc": "Push notification",
                 "send": "Send Notification",
-                "reset": "Reset"
+                "reset": "Reset",
+                "sending": "Sending..."
             },
             "recent": {
-                "newFeatures": "New Features"
+                "newFeatures": "New Features",
+                "systemUpdate": "System Update",
+                "systemUpdateMsg": "The system has been updated to version 2.0",
+                "newFeaturesMsg": "New features have been added",
+                "plannedMaintenance": "Planned Maintenance",
+                "plannedMaintenanceMsg": "The system will be under maintenance"
+            },
+            "title": "Notifications",
+            "sendSuccess": "Notification sent successfully",
+            "sendError": "Error sending notification",
+            "sendNotification": "Send Notification",
+            "recentNotifications": "Recent Notifications",
+            "viewDetails": "View Details",
+            "recipients": "{{count}} recipients",
+            "types": {
+                "system": "System",
+                "systemDesc": "System notifications and updates",
+                "announcement": "Announcement",
+                "announcementDesc": "Important announcements",
+                "maintenance": "Maintenance",
+                "maintenanceDesc": "Scheduled maintenance alerts",
+                "security": "Security",
+                "securityDesc": "Security alerts and warnings"
             }
         },
         "auditLogs": "Audit Logs",
@@ -1316,6 +1340,31 @@
         },
         "health": {
             "systemIssues": "System Issues"
+        },
+        "stats": {
+            "users": "Users",
+            "thisMonth": "this month",
+            "organizations": "Organizations",
+            "monthlyRevenue": "Monthly Revenue",
+            "currentMRR": "Current MRR",
+            "system": "System"
+        },
+        "system": {
+            "cpu": "CPU",
+            "ram": "RAM",
+            "disk": "Disk",
+            "uptime": "Uptime",
+            "days": "days"
+        },
+        "quickActions": {
+            "title": "Quick Actions",
+            "manageUsers": "Manage Users",
+            "manageOrganizations": "Manage Organizations",
+            "systemSettings": "System Settings",
+            "auditSecurity": "Audit & Security",
+            "reports": "Reports",
+            "notifications": "Notifications",
+            "monitoring": "Monitoring"
         }
     },
     "notifications": {
@@ -1673,5 +1722,48 @@
             "completed": "Completed",
             "onHold": "On Hold"
         }
+    },
+    "userManagement": {
+        "title": "User Management",
+        "addUser": "Add User",
+        "createNewUser": "Create New User",
+        "createUser": "Create User",
+        "description": "Add new team members to your organization",
+        "name": "Full Name",
+        "email": "Email Address",
+        "password": "Password",
+        "confirmPassword": "Confirm Password",
+        "role": "Role",
+        "position": "Position",
+        "hourlyRate": "Hourly Rate (€)",
+        "roles": {
+            "admin": "Administrator",
+            "manager": "Manager",
+            "employee": "Employee"
+        },
+        "userCreatedSuccess": "User created successfully",
+        "userCreatedError": "Error creating user",
+        "passwordMismatch": "Passwords do not match",
+        "passwordTooShort": "Password must be at least 8 characters long",
+        "teamMembers": "Team Members",
+        "noUsers": "No users yet",
+        "rate": "Rate",
+        "viewDetails": "View Details",
+        "changePassword": "Change Password",
+        "editUser": "Edit User",
+        "updateUser": "Update User",
+        "userUpdatedSuccess": "User updated successfully",
+        "userUpdatedError": "Error updating user",
+        "userDetails": "User Details",
+        "newPassword": "New Password",
+        "confirmNewPassword": "Confirm New Password",
+        "updatePassword": "Update Password",
+        "passwordChangedSuccess": "Password changed successfully",
+        "passwordChangedError": "Error changing password",
+        "changePasswordFor": "Change password for {{name}}",
+        "additionalInfo": "Additional Information"
+    },
+    "teamManagement": {
+        "pageDescription": "Manage your team members and their access"
     }
 }

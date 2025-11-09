@@ -20,10 +20,10 @@ const AdminRoute: React.FC = () => {
         return <Navigate to="/login" replace />;
     }
 
-    // Check if user has admin access (admin or super-admin role)
-    const hasAdminAccess = user?.role === 'admin' || user?.role === 'super-admin';
+    // Check if user has super-admin access (only super-admin can access admin routes)
+    const isSuperAdmin = user?.role === 'super-admin';
 
-    if (!hasAdminAccess) {
+    if (!isSuperAdmin) {
         return <Navigate to="/dashboard" replace />;
     }
 
