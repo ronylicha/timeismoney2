@@ -66,6 +66,11 @@ class FacturXService
                 'path' => $path
             ]);
             
+            // Soumettre automatiquement au PDP si activé
+            if (config('pdp.enabled', false) && $invoice->status === 'sent') {
+                $this->submitToPdp($invoice);
+            }
+            
             return $path;
             
         } catch (\Exception $e) {
@@ -287,6 +292,11 @@ class FacturXService
                 'credit_note_id' => $creditNote->id,
                 'path' => $path
             ]);
+            
+            // Soumettre automatiquement au PDP si activé
+            if (config('pdp.enabled', false) && $creditNote->status === 'sent') {
+                $this->submitCreditNoteToPdp($creditNote);
+            }
             
             return $path;
             
@@ -606,6 +616,70 @@ class FacturXService
                 'error' => $e->getMessage()
             ]);
             return false;
+        }
+    }
+
+    /**
+     * Soumet automatiquement une facture au PDP après génération Factur-X
+     */
+    private function submitToPdp(Invoice $invoice): void
+    {
+        try {
+            $submission = \App\Models\PdpSubmission::create([
+                'submittable_type' => Invoice::class,
+                'submittable_id' => $invoice->id,
+                'submission_id' => \App\Models\PdpSubmission::generateSubmissionId(),
+                'status' => 'pending',
+                'pdp_mode' => config('pdp.mode', 'simulation'),
+                'user_id' => auth()->id(),
+                'ip_address' => request()->ip(),
+            ]);
+
+            \App\Jobs\SendToPdpJob::dispatch($invoice, $submission->submission_id)
+                ->delay(now()->addMinutes(5)); // Délai de 5 minutes
+
+            Log::info('Auto-submission to PDP scheduled', [
+                'invoice_id' => $invoice->id,
+                'submission_id' => $submission->submission_id,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to schedule PDP auto-submission', [
+                'invoice_id' => $invoice->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Soumet automatiquement un avoir au PDP après génération Factur-X
+     */
+    private function submitCreditNoteToPdp(CreditNote $creditNote): void
+    {
+        try {
+            $submission = \App\Models\PdpSubmission::create([
+                'submittable_type' => \App\Models\CreditNote::class,
+                'submittable_id' => $creditNote->id,
+                'submission_id' => \App\Models\PdpSubmission::generateSubmissionId(),
+                'status' => 'pending',
+                'pdp_mode' => config('pdp.mode', 'simulation'),
+                'user_id' => auth()->id(),
+                'ip_address' => request()->ip(),
+            ]);
+
+            \App\Jobs\SendToPdpJob::dispatch($creditNote, $submission->submission_id)
+                ->delay(now()->addMinutes(5)); // Délai de 5 minutes
+
+            Log::info('Auto-submission to PDP scheduled for credit note', [
+                'credit_note_id' => $creditNote->id,
+                'submission_id' => $submission->submission_id,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to schedule PDP auto-submission for credit note', [
+                'credit_note_id' => $creditNote->id,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 }

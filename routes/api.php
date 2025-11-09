@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\StripeWebhookController;
 use App\Http\Controllers\Api\GoogleCalendarController;
 use App\Http\Controllers\Api\TenantSettingsController;
 use App\Http\Controllers\Api\ComplianceController;
+use App\Http\Controllers\Api\PdpController;
 
 /*
 |--------------------------------------------------------------------------
@@ -141,6 +142,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/export/fec', [ComplianceController::class, 'exportFec']);
         Route::get('/invoices/{invoice}/audit-trail', [ComplianceController::class, 'exportInvoiceAuditTrail']);
         Route::post('/invoices/batch/audit-trail', [ComplianceController::class, 'exportBatchAuditTrail']);
+    });
+
+    // Portail Public de Facturation (PDP)
+    Route::prefix('pdp')->group(function () {
+        Route::get('/', [PdpController::class, 'index']);
+        Route::get('/stats', [PdpController::class, 'getStats']);
+        Route::post('/invoices/{invoice}/submit', [PdpController::class, 'submitInvoice']);
+        Route::post('/credit-notes/{credit_note}/submit', [PdpController::class, 'submitCreditNote']);
+        Route::get('/submissions/{submission_id}/status', [PdpController::class, 'getSubmissionStatus']);
+        Route::post('/submissions/{submission_id}/retry', [PdpController::class, 'retrySubmission']);
     });
 
     // Quotes

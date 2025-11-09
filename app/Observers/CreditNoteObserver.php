@@ -4,6 +4,9 @@ namespace App\Observers;
 
 use App\Models\CreditNote;
 use App\Models\Invoice;
+use App\Services\QualifiedTimestampService;
+use App\Services\ArchiveService;
+use App\Services\FacturXService;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -13,9 +16,23 @@ use Illuminate\Support\Facades\Log;
  * - has_credit_notes
  * - total_credited
  * - balance_due
+ * 
+ * + Horodatage qualifié NF525
+ * + Archivage automatique FacturX
  */
 class CreditNoteObserver
 {
+    private QualifiedTimestampService $timestampService;
+    private ArchiveService $archiveService;
+    private FacturXService $facturXService;
+
+    public function __construct()
+    {
+        $this->timestampService = app(QualifiedTimestampService::class);
+        $this->archiveService = app(ArchiveService::class);
+        $this->facturXService = app(FacturXService::class);
+    }
+
     /**
      * Handle the CreditNote "created" event.
      */
@@ -24,6 +41,9 @@ class CreditNoteObserver
         if ($creditNote->invoice_id) {
             $this->updateInvoiceCredits($creditNote->invoice);
         }
+
+        // === HORODATAGE QUALIFIÉ & ARCHIVAGE NF525 ===
+        $this->handleCreditNoteCreation($creditNote);
     }
 
     /**
@@ -33,6 +53,67 @@ class CreditNoteObserver
     {
         if ($creditNote->invoice_id) {
             $this->updateInvoiceCredits($creditNote->invoice);
+        }
+    }
+
+    /**
+     * Gère la création d'un avoir
+     * - Horodatage qualifié
+     * - Archivage FacturX automatique
+     */
+    private function handleCreditNoteCreation(CreditNote $creditNote): void
+    {
+        try {
+            // 1. Créer un horodatage qualifié
+            $timestamp = $this->timestampService->timestamp($creditNote, 'credit_note_created');
+            
+            Log::info('Credit note created and timestamped', [
+                'credit_note_id' => $creditNote->id,
+                'credit_note_number' => $creditNote->credit_note_number,
+                'timestamp_id' => $timestamp->id
+            ]);
+
+            // 2. Archiver automatiquement en FacturX si configuré
+            if (config('archive.auto_archive_enabled') && config('archive.auto_archive_types.credit_note')) {
+                $this->archiveCreditNoteFacturX($creditNote);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Failed to timestamp/archive credit note', [
+                'credit_note_id' => $creditNote->id,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Archive un avoir au format FacturX
+     */
+    private function archiveCreditNoteFacturX(CreditNote $creditNote): void
+    {
+        try {
+            // Générer le FacturX
+            $facturXContent = $this->facturXService->generateFacturXForCreditNote($creditNote);
+            
+            if (!$facturXContent) {
+                throw new \Exception('Failed to generate FacturX for credit note');
+            }
+
+            // Archiver
+            $archive = $this->archiveService->archiveCreditNote($creditNote, $facturXContent, 'automatic');
+            
+            Log::info('Credit note automatically archived', [
+                'credit_note_id' => $creditNote->id,
+                'credit_note_number' => $creditNote->credit_note_number,
+                'archive_id' => $archive->id,
+                'file_size' => $archive->getFormattedFileSize()
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to archive credit note', [
+                'credit_note_id' => $creditNote->id,
+                'error' => $e->getMessage()
+            ]);
         }
     }
 
