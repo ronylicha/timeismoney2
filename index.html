@@ -7,7 +7,7 @@
 
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#3B82F6" />
-    <link rel="manifest" href="/manifest.json?v=3.0.0" />
+    <link rel="manifest" href="/manifest.json?v=3.1.0" />
 
     <!-- Apple/iOS Specific Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -78,31 +78,45 @@
         });
       }
 
-      // Register service worker for PWA
+      // Register service worker for PWA (only in production)
       if ('serviceWorker' in navigator) {
-        // Listen for cache update messages
-        navigator.serviceWorker.addEventListener('message', function(event) {
-          if (event.data.type === 'CACHE_UPDATED') {
-            console.log('Cache updated to version:', event.data.version);
-            // Force reload to get new content
-            window.location.reload(true);
-          }
-        });
+        // Check if we're in development mode (Vite dev server)
+        const isDevelopment = window.location.port >= '5173' && window.location.port <= '5177';
 
-        window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/sw.js?v=3.0.1').then(function(registration) {
-            console.log('ServiceWorker registration successful with version 3.0.1');
-            // Check for updates immediately
-            registration.update();
-
-            // Check for updates every 30 seconds (for testing)
-            setInterval(() => {
-              registration.update();
-            }, 30000);
-          }, function(err) {
-            console.log('ServiceWorker registration failed: ', err);
+        if (isDevelopment) {
+          // Unregister all service workers in development
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for (let registration of registrations) {
+              registration.unregister();
+              console.log('Service worker unregistered in development mode');
+            }
           });
-        });
+        } else {
+          // Production mode - register service worker
+          // Listen for cache update messages
+          navigator.serviceWorker.addEventListener('message', function(event) {
+            if (event.data.type === 'CACHE_UPDATED') {
+              console.log('Cache updated to version:', event.data.version);
+              // Force reload to get new content
+              window.location.reload(true);
+            }
+          });
+
+          window.addEventListener('load', function() {
+            navigator.serviceWorker.register('/sw.js?v=3.1.0').then(function(registration) {
+              console.log('ServiceWorker registration successful with version 3.1.0');
+              // Check for updates immediately
+              registration.update();
+
+              // Check for updates every 30 seconds (for testing)
+              setInterval(() => {
+                registration.update();
+              }, 30000);
+            }, function(err) {
+              console.log('ServiceWorker registration failed: ', err);
+            });
+          });
+        }
       }
     </script>
   </body>

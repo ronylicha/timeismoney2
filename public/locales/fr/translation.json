@@ -536,7 +536,8 @@
         "deleteError": "Erreur lors de la suppression du projet",
         "confirmDelete": "Confirmer la suppression",
         "deleteWarning": "Êtes-vous sûr de vouloir supprimer ce projet ? Cette action est irréversible.",
-        "deleting": "Suppression en cours..."
+        "deleting": "Suppression en cours...",
+        "days": "Jours"
     },
     "tasks": {
         "title": "Tâches",

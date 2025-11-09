@@ -129,7 +129,7 @@
     <div class="container">
         <img src="/pwa-icon.png?v=301" alt="TimeIsMoney" class="icon" onerror="this.style.display='none'">
         <h1>TimeIsMoney</h1>
-        <div class="version">Version 3.0.1</div>
+        <div class="version">Version 3.1.0</div>
 
         <div id="status" class="status"></div>
 
@@ -216,8 +216,8 @@
         // Auto-register new service worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js?v=3.0.1').then(registration => {
-                    console.log('Service Worker registered with version 3.0.1');
+                navigator.serviceWorker.register('/sw.js?v=3.1.0').then(registration => {
+                    console.log('Service Worker registered with version 3.1.0');
                     registration.update();
                 });
             });

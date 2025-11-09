@@ -13,7 +13,7 @@ const PWAUpdatePrompt: React.FC = () => {
         setIsAndroid(android);
 
         // Check PWA version in localStorage
-        const currentVersion = '3.0.1';
+        const currentVersion = '3.1.0';
         const storedVersion = localStorage.getItem('pwa-version');
 
         if (android && storedVersion !== currentVersion) {

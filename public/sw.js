@@ -1,13 +1,13 @@
 // Service Worker for TimeIsMoney PWA
-const CACHE_NAME = 'timeismoney-v5';
+const CACHE_NAME = 'timeismoney-v7';
 const urlsToCache = [
   '/login',
-  '/manifest.json?v=3.0.0',
-  '/images/icons/icon-192x192.png?v=3.0.0',
-  '/images/icons/icon-512x512.png?v=3.0.0',
-  '/images/icons/icon-144x144.png?v=3.0.0',
-  '/images/icons/icon-96x96.png?v=3.0.0',
-  '/images/icons/icon-72x72.png?v=3.0.0'
+  '/manifest.json?v=3.1.0',
+  '/images/icons/icon-192x192-v3.png',
+  '/images/icons/icon-512x512-v3.png',
+  '/images/icons/icon-144x144-v3.png',
+  '/images/icons/icon-96x96-v3.png',
+  '/images/icons/icon-72x72-v3.png'
 ];
 
 // Install event - cache resources
@@ -45,7 +45,7 @@ self.addEventListener('activate', event => {
     }).then(clients => {
       clients.forEach(client => {
         // Send message to client to reload
-        client.postMessage({ type: 'CACHE_UPDATED', version: '3.0.0' });
+        client.postMessage({ type: 'CACHE_UPDATED', version: '3.1.0' });
       });
     })
   );
@@ -65,6 +65,22 @@ self.addEventListener('fetch', event => {
 
   // Skip chrome extension requests
   if (url.protocol === 'chrome-extension:') {
+    return;
+  }
+
+  // Skip Vite dev server requests (port 5173-5177)
+  if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+    const port = parseInt(url.port);
+    if (port >= 5173 && port <= 5177) {
+      return;
+    }
+  }
+
+  // Skip HMR and Vite specific requests
+  if (url.pathname.includes('/@vite') ||
+      url.pathname.includes('/@react-refresh') ||
+      url.pathname.includes('/@fs/') ||
+      url.pathname.includes('/node_modules/')) {
     return;
   }
 

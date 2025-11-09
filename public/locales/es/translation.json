@@ -534,7 +534,8 @@
         "deleteError": "Error al eliminar proyecto",
         "confirmDelete": "Confirmar Eliminación",
         "deleteWarning": "¿Está seguro de que desea eliminar este proyecto? Esta acción no se puede deshacer.",
-        "deleting": "Eliminando..."
+        "deleting": "Eliminando...",
+        "days": "Días"
     },
     "tasks": {
         "title": "Tareas",
