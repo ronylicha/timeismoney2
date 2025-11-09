@@ -47,7 +47,7 @@ class ExportController extends Controller
             $fecData[] = [
                 'JournalCode' => 'VTE', // Ventes
                 'JournalLib' => 'Journal des ventes',
-                'EcritureNum' => $invoice->sequential_number,
+                'EcritureNum' => $invoice->sequence_number,
                 'EcritureDate' => $invoice->date->format('Ymd'),
                 'CompteNum' => '411' . str_pad($invoice->client_id, 5, '0', STR_PAD_LEFT), // Client account
                 'CompteLib' => 'Client - ' . $invoice->client->name,
@@ -73,7 +73,7 @@ class ExportController extends Controller
             $fecData[] = [
                 'JournalCode' => 'VTE',
                 'JournalLib' => 'Journal des ventes',
-                'EcritureNum' => $invoice->sequential_number,
+                'EcritureNum' => $invoice->sequence_number,
                 'EcritureDate' => $invoice->date->format('Ymd'),
                 'CompteNum' => '706000', // Services revenue
                 'CompteLib' => 'Prestations de services',
@@ -100,7 +100,7 @@ class ExportController extends Controller
                 $fecData[] = [
                     'JournalCode' => 'VTE',
                     'JournalLib' => 'Journal des ventes',
-                    'EcritureNum' => $invoice->sequential_number,
+                    'EcritureNum' => $invoice->sequence_number,
                     'EcritureDate' => $invoice->date->format('Ymd'),
                     'CompteNum' => '445710', // TVA collectée
                     'CompteLib' => 'TVA collectée',

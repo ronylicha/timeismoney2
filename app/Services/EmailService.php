@@ -180,4 +180,21 @@ class EmailService
             Mail::to($email)->queue(new CreditNoteSent($creditNote, $this->pdfService));
         }
     }
+
+    /**
+     * Queue payment received confirmation for async sending
+     */
+    public function queuePaymentReceived(
+        Invoice $invoice,
+        float $amount,
+        ?string $paymentMethod = null,
+        ?string $recipientEmail = null
+    ): void {
+        $email = $recipientEmail ?: $invoice->client->email;
+
+        if ($email) {
+            Mail::to($email)->queue(new PaymentReceived($invoice, $amount, $paymentMethod));
+            Log::info("Payment confirmation queued for invoice {$invoice->invoice_number} to {$email}");
+        }
+    }
 }

@@ -49,8 +49,8 @@ interface Invoice {
     id: number;
     invoice_number: string;
     status: string;
-    total_amount: number;
-    issue_date: string;
+    total: number;
+    date: string;
     due_date: string;
 }
 
@@ -148,14 +148,14 @@ const ClientDetail: React.FC = () => {
         if (!client?.invoices) return 0;
         return client.invoices
             .filter((invoice: Invoice) => invoice.status === 'paid')
-            .reduce((acc: number, invoice: Invoice) => acc + invoice.total_amount, 0);
+            .reduce((acc: number, invoice: Invoice) => acc + (invoice.total || 0), 0);
     };
 
     const getOutstandingAmount = () => {
         if (!client?.invoices) return 0;
         return client.invoices
             .filter((invoice: Invoice) => invoice.status === 'sent' || invoice.status === 'overdue')
-            .reduce((acc: number, invoice: Invoice) => acc + invoice.total_amount, 0);
+            .reduce((acc: number, invoice: Invoice) => acc + (invoice.total || 0), 0);
     };
 
     if (isLoading) {
@@ -477,10 +477,10 @@ const ClientDetail: React.FC = () => {
                                         </div>
                                         <div className="flex items-center space-x-4 text-sm text-gray-500">
                                             <span>
-                                                {t('invoices.issued')}: {format(new Date(invoice.issue_date), 'dd MMM yyyy', { locale: fr })}
+                                                {t('invoices.issued')}: {invoice.date ? format(new Date(invoice.date), 'dd MMM yyyy', { locale: fr }) : '-'}
                                             </span>
                                             <span>
-                                                {t('invoices.dueDate')}: {format(new Date(invoice.due_date), 'dd MMM yyyy', { locale: fr })}
+                                                {t('invoices.dueDate')}: {invoice.due_date ? format(new Date(invoice.due_date), 'dd MMM yyyy', { locale: fr }) : '-'}
                                             </span>
                                         </div>
                                     </div>
@@ -489,7 +489,7 @@ const ClientDetail: React.FC = () => {
                                             {new Intl.NumberFormat('fr-FR', {
                                                 style: 'currency',
                                                 currency: 'EUR',
-                                            }).format(invoice.total_amount)}
+                                            }).format(invoice.total || 0)}
                                         </p>
                                     </div>
                                 </div>

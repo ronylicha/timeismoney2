@@ -10,18 +10,48 @@ use Illuminate\Support\Facades\Storage;
 
 class PdfGeneratorService
 {
+    protected LegalFooterService $legalFooterService;
+
+    public function __construct()
+    {
+        $this->legalFooterService = new LegalFooterService();
+    }
+
     /**
      * Generate PDF for an invoice
      */
     public function generateInvoicePdf(Invoice $invoice, bool $download = false)
     {
+        // Load only safe relations (avoid circular references with advances/finalInvoice)
         $invoice->load(['client', 'items', 'tenant']);
+
+        // Calculate tax by rate
+        $taxByRate = [];
+        foreach ($invoice->items as $item) {
+            $rate = $item->tax_rate ?? 20;
+            if (!isset($taxByRate[$rate])) {
+                $taxByRate[$rate] = ['base' => 0, 'amount' => 0];
+            }
+            $itemSubtotal = $item->quantity * $item->unit_price;
+            $taxByRate[$rate]['base'] += $itemSubtotal;
+            $taxByRate[$rate]['amount'] += $itemSubtotal * ($rate / 100);
+        }
+
+        // Sort by rate descending
+        krsort($taxByRate);
+
+        // Generate legal footer automatically
+        $legalFooter = $this->legalFooterService->generateFooter($invoice->tenant, 'invoice');
+        $legalMentions = $this->legalFooterService->generateLegalMentions($invoice->tenant, 'invoice');
 
         $pdf = Pdf::loadView('pdf.invoice', [
             'invoice' => $invoice,
             'client' => $invoice->client,
             'items' => $invoice->items,
             'tenant' => $invoice->tenant,
+            'taxByRate' => $taxByRate,
+            'legalFooter' => $legalFooter,
+            'legalMentions' => $legalMentions,
         ]);
 
         $pdf->setPaper('a4', 'portrait');
@@ -42,11 +72,35 @@ class PdfGeneratorService
     {
         $quote->load(['client', 'items', 'tenant']);
 
+        // Calculate tax by rate
+        $taxByRate = [];
+        foreach ($quote->items as $item) {
+            $rate = $item->tax_rate ?? 20;
+            if (!isset($taxByRate[$rate])) {
+                $taxByRate[$rate] = ['base' => 0, 'amount' => 0];
+            }
+            $itemSubtotal = $item->quantity * $item->unit_price;
+            $discount = $item->discount ?? 0;
+            $itemSubtotalAfterDiscount = $itemSubtotal - $discount;
+            $taxByRate[$rate]['base'] += $itemSubtotalAfterDiscount;
+            $taxByRate[$rate]['amount'] += $itemSubtotalAfterDiscount * ($rate / 100);
+        }
+
+        // Sort by rate descending
+        krsort($taxByRate);
+
+        // Generate legal footer automatically
+        $legalFooter = $this->legalFooterService->generateFooter($quote->tenant, 'quote');
+        $legalMentions = $this->legalFooterService->generateLegalMentions($quote->tenant, 'quote');
+
         $pdf = Pdf::loadView('pdf.quote', [
             'quote' => $quote,
             'client' => $quote->client,
             'items' => $quote->items,
             'tenant' => $quote->tenant,
+            'taxByRate' => $taxByRate,
+            'legalFooter' => $legalFooter,
+            'legalMentions' => $legalMentions,
         ]);
 
         $pdf->setPaper('a4', 'portrait');

@@ -239,7 +239,7 @@ const AdvanceSelector: React.FC<AdvanceSelectorProps> = ({
                                         </div>
 
                                         {/* Status Badge */}
-                                        {advance.payment_status === 'paid' && (
+                                        {advance.status === 'paid' && (
                                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 mt-2">
                                                 Payé
                                             </span>
@@ -325,10 +325,19 @@ const AdvanceSelector: React.FC<AdvanceSelectorProps> = ({
                 <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-lg p-4">
                     <div className="flex items-start space-x-2">
                         <InformationCircleIcon className="w-5 h-5 text-blue-600 mt-0.5" />
-                        <p className="text-sm text-blue-700 dark:text-blue-300">
-                            Sélectionnez les factures d'acompte que vous souhaitez déduire de cette facture de solde.
-                            Vous pouvez en sélectionner plusieurs.
-                        </p>
+                        <div className="flex-1">
+                            <p className="text-sm text-blue-700 dark:text-blue-300 mb-2">
+                                Sélectionnez les factures d'acompte que vous souhaitez déduire de cette facture de solde.
+                                Vous pouvez en sélectionner plusieurs.
+                            </p>
+                            {availableAdvances.length > 0 && availableAdvances[0].advance_percentage && (
+                                <div className="mt-3 p-2 bg-blue-100 dark:bg-blue-900/40 rounded text-xs">
+                                    <strong>💡 Astuce:</strong> Si vos acomptes représentent un pourcentage du total,
+                                    le montant total de votre facture de solde devrait être calculé comme suit:<br/>
+                                    <code className="text-xs">Montant total = (Montant d'un acompte × 100) / Pourcentage de l'acompte</code>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}

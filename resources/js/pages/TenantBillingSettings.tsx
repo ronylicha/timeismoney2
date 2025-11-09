@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
@@ -7,10 +7,12 @@ import {
     BanknotesIcon,
     DocumentTextIcon,
     PhotoIcon,
-    CheckCircleIcon
+    CheckCircleIcon,
+    SparklesIcon
 } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 import { COUNTRIES } from '../constants/countries';
+import VatConfigWizard from '../components/VatConfigWizard';
 
 interface BillingSettings {
     company_name: string;
@@ -22,7 +24,18 @@ interface BillingSettings {
     ape_code: string;
     vat_number: string;
     vat_subject: boolean;
+    vat_regime: 'franchise_base' | 'normal' | 'intracommunity' | 'export' | 'exempt_article_261' | 'other';
+    main_activity: 'general' | 'insurance' | 'training' | 'medical' | 'banking' | 'real_estate_rental' | 'education' | 'sports' | 'other_exempt';
+    vat_deduction_coefficient: number;
+    activity_license_number: string | null;
     vat_exemption_reason: string;
+    vat_explanation?: string;
+    business_type: 'services' | 'goods' | 'mixed';
+    vat_threshold_services: number | null;
+    vat_threshold_goods: number | null;
+    vat_threshold_year_total: number;
+    vat_threshold_exceeded_at: string | null;
+    auto_apply_vat_on_threshold: boolean;
     address_line1: string;
     address_line2: string;
     postal_code: string;
@@ -37,6 +50,8 @@ interface BillingSettings {
     late_payment_penalty_text: string;
     recovery_indemnity_text: string;
     footer_legal_text: string;
+    default_quote_conditions: string;
+    default_invoice_conditions: string;
     logo: string | null;
 }
 
@@ -70,6 +85,7 @@ const TenantBillingSettings: React.FC = () => {
     const queryClient = useQueryClient();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [vatExemptionType, setVatExemptionType] = useState<string>('custom');
+    const [showWizard, setShowWizard] = useState<boolean>(false);
 
     const [formData, setFormData] = useState<BillingSettings>({
         company_name: '',
@@ -81,7 +97,17 @@ const TenantBillingSettings: React.FC = () => {
         ape_code: '',
         vat_number: '',
         vat_subject: true,
+        vat_regime: 'normal',
+        main_activity: 'general',
+        vat_deduction_coefficient: 100,
+        activity_license_number: null,
         vat_exemption_reason: '',
+        business_type: 'services',
+        vat_threshold_services: 36800,
+        vat_threshold_goods: 91900,
+        vat_threshold_year_total: 0,
+        vat_threshold_exceeded_at: null,
+        auto_apply_vat_on_threshold: true,
         address_line1: '',
         address_line2: '',
         postal_code: '',
@@ -96,6 +122,8 @@ const TenantBillingSettings: React.FC = () => {
         late_payment_penalty_text: '',
         recovery_indemnity_text: '',
         footer_legal_text: '',
+        default_quote_conditions: '',
+        default_invoice_conditions: '',
         logo: null,
     });
 
@@ -110,7 +138,47 @@ const TenantBillingSettings: React.FC = () => {
 
     useEffect(() => {
         if (billingSettings) {
-            setFormData(billingSettings);
+            // Ensure all fields have default values (no null for string/number inputs)
+            setFormData({
+                company_name: billingSettings.company_name || '',
+                legal_form: billingSettings.legal_form || '',
+                siret: billingSettings.siret || '',
+                rcs_number: billingSettings.rcs_number || '',
+                rcs_city: billingSettings.rcs_city || '',
+                capital: billingSettings.capital,
+                ape_code: billingSettings.ape_code || '',
+                vat_number: billingSettings.vat_number || '',
+                vat_subject: billingSettings.vat_subject ?? true,
+                vat_regime: billingSettings.vat_regime || 'normal',
+                main_activity: billingSettings.main_activity || 'general',
+                vat_deduction_coefficient: billingSettings.vat_deduction_coefficient ?? 100,
+                activity_license_number: billingSettings.activity_license_number || null,
+                vat_exemption_reason: billingSettings.vat_exemption_reason || '',
+                vat_explanation: billingSettings.vat_explanation,
+                business_type: billingSettings.business_type || 'services',
+                vat_threshold_services: billingSettings.vat_threshold_services ?? 36800,
+                vat_threshold_goods: billingSettings.vat_threshold_goods ?? 91900,
+                vat_threshold_year_total: billingSettings.vat_threshold_year_total ?? 0,
+                vat_threshold_exceeded_at: billingSettings.vat_threshold_exceeded_at || null,
+                auto_apply_vat_on_threshold: billingSettings.auto_apply_vat_on_threshold ?? true,
+                address_line1: billingSettings.address_line1 || '',
+                address_line2: billingSettings.address_line2 || '',
+                postal_code: billingSettings.postal_code || '',
+                city: billingSettings.city || '',
+                country: billingSettings.country || 'FR',
+                email: billingSettings.email || '',
+                phone: billingSettings.phone || '',
+                iban: billingSettings.iban || '',
+                bic: billingSettings.bic || '',
+                bank_name: billingSettings.bank_name || '',
+                website: billingSettings.website || '',
+                late_payment_penalty_text: billingSettings.late_payment_penalty_text || '',
+                recovery_indemnity_text: billingSettings.recovery_indemnity_text || '',
+                footer_legal_text: billingSettings.footer_legal_text || '',
+                default_quote_conditions: billingSettings.default_quote_conditions || '',
+                default_invoice_conditions: billingSettings.default_invoice_conditions || '',
+                logo: billingSettings.logo || null,
+            });
 
             // Detect VAT exemption type from existing data
             if (billingSettings.vat_exemption_reason) {
@@ -131,8 +199,22 @@ const TenantBillingSettings: React.FC = () => {
             const response = await axios.post('/settings/billing', data);
             return response.data;
         },
-        onSuccess: () => {
+        onSuccess: (response) => {
+            // Recharger les données depuis le serveur pour avoir les valeurs à jour
+            // (par ex. si vat_subject a été modifié par la vérification du seuil)
             queryClient.invalidateQueries({ queryKey: ['billing-settings'] });
+            
+            // Mettre à jour aussi le formData avec les nouvelles valeurs du backend
+            if (response.data) {
+                const updatedData = response.data;
+                setFormData(prev => ({
+                    ...prev,
+                    vat_subject: updatedData.vat_subject ?? prev.vat_subject,
+                    vat_threshold_year_total: updatedData.vat_threshold_year_total ?? prev.vat_threshold_year_total,
+                    vat_threshold_exceeded_at: updatedData.vat_threshold_exceeded_at,
+                }));
+            }
+            
             toast.success(t('settings.billingSettingsSaved'));
         },
         onError: (error: any) => {
@@ -363,9 +445,19 @@ const TenantBillingSettings: React.FC = () => {
 
                 {/* VAT Information */}
                 <div className="bg-white rounded-lg shadow p-6">
-                    <div className="flex items-center space-x-3 mb-4">
-                        <DocumentTextIcon className="h-6 w-6 text-gray-600" />
-                        <h2 className="text-lg font-semibold text-gray-900">{t('settings.vatInformation')}</h2>
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-3">
+                            <DocumentTextIcon className="h-6 w-6 text-gray-600" />
+                            <h2 className="text-lg font-semibold text-gray-900">{t('settings.vatInformation')}</h2>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setShowWizard(true)}
+                            className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-md"
+                        >
+                            <SparklesIcon className="h-5 w-5" />
+                            <span className="font-medium">Assistant de configuration</span>
+                        </button>
                     </div>
                     <div className="space-y-4">
                         <div>
@@ -391,6 +483,30 @@ const TenantBillingSettings: React.FC = () => {
                                 {t('settings.vatSubject')}
                             </label>
                         </div>
+
+                        {/* Régime de TVA */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Régime de TVA
+                            </label>
+                            <select
+                                value={formData.vat_regime}
+                                onChange={(e) => handleInputChange('vat_regime', e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                                <option value="franchise_base">Franchise en base (micro-entreprise) - Seuils applicables</option>
+                                <option value="normal">Régime normal (société, assujetti)</option>
+                                <option value="intracommunity">Intracommunautaire</option>
+                                <option value="export">Export hors UE</option>
+                                <option value="exempt_article_261">Exonéré article 261 CGI (médical, enseignement...)</option>
+                                <option value="other">Autre régime spécifique</option>
+                            </select>
+                            <p className="mt-1 text-xs text-gray-500">
+                                {formData.vat_regime === 'franchise_base' && '✅ Les seuils de TVA s\'appliquent'}
+                                {formData.vat_regime !== 'franchise_base' && '⚠️ Les seuils de TVA ne s\'appliquent pas'}
+                            </p>
+                        </div>
+
                         {!formData.vat_subject && (
                             <>
                                 <div>
@@ -433,6 +549,164 @@ const TenantBillingSettings: React.FC = () => {
                                 )}
                             </>
                         )}
+
+                        {/* Franchise en base de TVA - Seuils (toujours affiché) */}
+                        <div className={`mt-6 p-4 rounded-lg border ${
+                            formData.vat_subject 
+                                ? 'bg-orange-50 border-orange-200' 
+                                : 'bg-blue-50 border-blue-200'
+                        }`}>
+                            <h4 className={`text-sm font-semibold mb-3 flex items-center ${
+                                formData.vat_subject ? 'text-orange-900' : 'text-blue-900'
+                            }`}>
+                                <BanknotesIcon className="h-5 w-5 mr-2" />
+                                {formData.vat_subject 
+                                    ? 'Suivi des seuils de TVA (assujetti)' 
+                                    : 'Gestion automatique des seuils de TVA'}
+                            </h4>
+                            
+                            {formData.vat_subject && (
+                                <div className="mb-4 p-3 bg-orange-100 border border-orange-300 rounded text-sm">
+                                    <p className="font-semibold text-orange-900 mb-1">
+                                        ✓ Vous êtes actuellement assujetti à la TVA
+                                    </p>
+                                    {formData.vat_threshold_exceeded_at && (
+                                        <p className="text-orange-800 text-xs">
+                                            Seuil dépassé le {new Date(formData.vat_threshold_exceeded_at).toLocaleDateString('fr-FR')}
+                                        </p>
+                                    )}
+                                    <p className="text-orange-700 text-xs mt-2">
+                                        Pour revenir en franchise de base, décochez "Assujetti à la TVA" ci-dessus.
+                                    </p>
+                                </div>
+                            )}
+                                
+                            <div className="space-y-4">
+                                {/* Type d'activité */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Type d'activité principale
+                                    </label>
+                                    <select
+                                        value={formData.business_type}
+                                        onChange={(e) => handleInputChange('business_type', e.target.value)}
+                                        disabled={formData.vat_subject}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                    >
+                                        <option value="services">Prestations de services</option>
+                                        <option value="goods">Ventes de marchandises</option>
+                                        <option value="mixed">Activité mixte</option>
+                                    </select>
+                                    <p className="mt-1 text-xs text-gray-500">
+                                        Détermine le seuil de franchise en base applicable
+                                    </p>
+                                </div>
+
+                                {/* Seuils */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Seuil services (€)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            value={formData.vat_threshold_services ?? 36800}
+                                            onChange={(e) => handleInputChange('vat_threshold_services', parseFloat(e.target.value))}
+                                            disabled={formData.vat_subject}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                        />
+                                        <p className="mt-1 text-xs text-gray-500">Défaut: 36 800€ (2024)</p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Seuil marchandises (€)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            value={formData.vat_threshold_goods ?? 91900}
+                                            onChange={(e) => handleInputChange('vat_threshold_goods', parseFloat(e.target.value))}
+                                            disabled={formData.vat_subject}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                        />
+                                        <p className="mt-1 text-xs text-gray-500">Défaut: 91 900€ (2024)</p>
+                                    </div>
+                                </div>
+
+                                {/* Auto-application */}
+                                {!formData.vat_subject && (
+                                    <div className="flex items-start">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.auto_apply_vat_on_threshold}
+                                            onChange={(e) => handleInputChange('auto_apply_vat_on_threshold', e.target.checked)}
+                                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1"
+                                        />
+                                        <div className="ml-3">
+                                            <label className="text-sm font-medium text-gray-700">
+                                                Basculer automatiquement en TVA si seuil dépassé
+                                            </label>
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                Le système appliquera automatiquement la TVA à 20% dès que votre CA annuel HT dépasse le seuil configuré
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Statut actuel */}
+                                <div className={`mt-4 p-3 border rounded ${
+                                    formData.vat_subject 
+                                        ? 'bg-white border-orange-200' 
+                                        : 'bg-white border-blue-200'
+                                }`}>
+                                    <div className="flex justify-between items-center text-sm">
+                                        <span className="font-medium text-gray-700">CA annuel HT (année en cours):</span>
+                                        <span className={`text-lg font-bold ${
+                                            formData.vat_subject ? 'text-orange-600' : 'text-blue-600'
+                                        }`}>
+                                            {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(formData.vat_threshold_year_total ?? 0)}
+                                        </span>
+                                    </div>
+                                    {!formData.vat_subject && formData.vat_threshold_year_total > 0 && (
+                                        <div className="mt-2 text-xs">
+                                            <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                                                <div 
+                                                    className={`h-2 rounded-full ${
+                                                        (formData.vat_threshold_year_total / (formData.vat_threshold_services ?? 36800)) >= 0.9
+                                                            ? 'bg-orange-500'
+                                                            : 'bg-blue-500'
+                                                    }`}
+                                                    style={{
+                                                        width: `${Math.min(100, (formData.vat_threshold_year_total / (formData.vat_threshold_services ?? 36800)) * 100)}%`
+                                                    }}
+                                                />
+                                            </div>
+                                            <p className="text-gray-600 mt-1">
+                                                {Math.round((formData.vat_threshold_year_total / (formData.vat_threshold_services ?? 36800)) * 100)}% du seuil atteint
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="text-xs text-gray-600 mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                                    <strong>📋 Réglementation:</strong> En France, les seuils de franchise en base de TVA 2024 sont:
+                                    <ul className="list-disc list-inside mt-1 ml-2">
+                                        <li>Prestations de services: 36 800€</li>
+                                        <li>Ventes de marchandises: 91 900€</li>
+                                    </ul>
+                                    {formData.vat_subject ? (
+                                        <p className="mt-2 text-orange-700 font-medium">
+                                            ⚠️ Votre CA a dépassé le seuil, vous êtes assujetti à la TVA.
+                                        </p>
+                                    ) : (
+                                        <p className="mt-2">
+                                            Au-delà, vous devenez assujetti à la TVA.
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -640,6 +914,41 @@ const TenantBillingSettings: React.FC = () => {
                     </div>
                 </div>
 
+                {/* Default Conditions */}
+                <div className="bg-white rounded-lg shadow p-6">
+                    <div className="flex items-center space-x-3 mb-4">
+                        <DocumentTextIcon className="h-6 w-6 text-gray-600" />
+                        <h2 className="text-lg font-semibold text-gray-900">{t('settings.defaultConditions')}</h2>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-4">{t('settings.defaultConditionsDescription')}</p>
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                {t('settings.defaultQuoteConditions')}
+                            </label>
+                            <textarea
+                                value={formData.default_quote_conditions}
+                                onChange={(e) => handleInputChange('default_quote_conditions', e.target.value)}
+                                placeholder={t('settings.defaultQuoteConditionsPlaceholder')}
+                                rows={5}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                {t('settings.defaultInvoiceConditions')}
+                            </label>
+                            <textarea
+                                value={formData.default_invoice_conditions}
+                                onChange={(e) => handleInputChange('default_invoice_conditions', e.target.value)}
+                                placeholder={t('settings.defaultInvoiceConditionsPlaceholder')}
+                                rows={5}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                        </div>
+                    </div>
+                </div>
+
                 {/* Save Button */}
                 <div className="flex justify-end">
                     <button
@@ -658,6 +967,57 @@ const TenantBillingSettings: React.FC = () => {
                     </button>
                 </div>
             </form>
+
+            {/* Wizard Modal */}
+            {showWizard && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                            <h2 className="text-xl font-bold text-gray-900">Assistant de configuration TVA</h2>
+                            <button
+                                onClick={() => setShowWizard(false)}
+                                className="text-gray-400 hover:text-gray-600 transition-colors"
+                            >
+                                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div className="p-6">
+                            <VatConfigWizard
+                                initialData={{
+                                    legalForm: formData.legal_form,
+                                    mainActivity: formData.main_activity,
+                                    vatRegime: formData.vat_regime,
+                                    vatSubject: formData.vat_subject,
+                                    vatExemptionReason: formData.vat_exemption_reason,
+                                    businessType: formData.business_type,
+                                    vatDeductionCoefficient: formData.vat_deduction_coefficient,
+                                    activityLicenseNumber: formData.activity_license_number || '',
+                                    autoApplyVatOnThreshold: formData.auto_apply_vat_on_threshold,
+                                }}
+                                onComplete={(config) => {
+                                    // Mettre à jour le formulaire avec la config du wizard
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        legal_form: config.legalForm,
+                                        main_activity: config.mainActivity as any,
+                                        vat_regime: config.vatRegime as any,
+                                        vat_subject: config.vatSubject,
+                                        vat_exemption_reason: config.vatExemptionReason,
+                                        business_type: config.businessType as any,
+                                        vat_deduction_coefficient: config.vatDeductionCoefficient,
+                                        activity_license_number: config.activityLicenseNumber || null,
+                                        auto_apply_vat_on_threshold: config.autoApplyVatOnThreshold,
+                                    }));
+                                    setShowWizard(false);
+                                    toast.success('Configuration TVA mise à jour ! Pensez à enregistrer vos modifications.');
+                                }}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\CreditNote;
+use App\Observers\CreditNoteObserver;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
@@ -22,6 +24,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Register observers
+        CreditNote::observe(CreditNoteObserver::class);
+
         // Configure rate limiters
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());

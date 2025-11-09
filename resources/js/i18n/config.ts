@@ -18,6 +18,8 @@ i18n
 
         backend: {
             loadPath: '/locales/{{lng}}/{{ns}}.json',
+            // Add cache busting with a version parameter
+            queryStringParams: { v: import.meta.env.VITE_APP_VERSION || Date.now().toString() },
         },
 
         detection: {

@@ -52,3 +52,10 @@ Schedule::command('sync:google-calendar')
     ->name('google-calendar-sync')
     ->withoutOverlapping()
     ->runInBackground();
+
+// Reset annual VAT revenue - Run on January 1st at 00:01
+Schedule::command('vat:reset-annual')
+    ->yearlyOn(1, 1, '00:01')
+    ->name('reset-annual-vat-revenue')
+    ->withoutOverlapping()
+    ->runInBackground();

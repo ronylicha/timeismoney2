@@ -7,8 +7,10 @@ use App\Models\Quote;
 use App\Models\Client;
 use App\Services\PdfGeneratorService;
 use App\Services\EmailService;
+use App\Mail\QuoteAccepted;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 
 class QuoteController extends Controller
@@ -134,14 +136,24 @@ class QuoteController extends Controller
             ]);
 
             // Create quote items
-            foreach ($request->items as $item) {
+            foreach ($request->items as $position => $item) {
+                $itemSubtotal = $item['quantity'] * $item['unit_price'];
+                $discount = $item['discount'] ?? 0;
+                $subtotalAfterDiscount = $itemSubtotal - $discount;
+                $taxRate = $item['tax_rate'] ?? 0;
+                $itemTaxAmount = $subtotalAfterDiscount * ($taxRate / 100);
+                
                 $quote->items()->create([
+                    'type' => 'service',
                     'description' => $item['description'],
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
-                    'tax_rate' => $item['tax_rate'] ?? 0,
-                    'discount' => $item['discount'] ?? 0,
-                    'total' => ($item['quantity'] * $item['unit_price']) - ($item['discount'] ?? 0),
+                    'discount_percent' => 0,
+                    'tax_rate' => $taxRate,
+                    'subtotal' => $subtotalAfterDiscount,
+                    'tax_amount' => $itemTaxAmount,
+                    'total' => $subtotalAfterDiscount + $itemTaxAmount,
+                    'position' => $position,
                 ]);
             }
 
@@ -221,23 +233,27 @@ class QuoteController extends Controller
                 $subtotal = 0;
                 $totalTax = 0;
 
-                foreach ($request->items as $item) {
+                foreach ($request->items as $position => $item) {
                     $itemSubtotal = $item['quantity'] * $item['unit_price'];
                     $discount = $item['discount'] ?? 0;
-                    $itemSubtotal -= $discount;
-                    $subtotal += $itemSubtotal;
+                    $subtotalAfterDiscount = $itemSubtotal - $discount;
+                    $subtotal += $subtotalAfterDiscount;
 
-                    if (isset($item['tax_rate'])) {
-                        $totalTax += ($itemSubtotal * $item['tax_rate']) / 100;
-                    }
+                    $taxRate = $item['tax_rate'] ?? 0;
+                    $itemTaxAmount = $subtotalAfterDiscount * ($taxRate / 100);
+                    $totalTax += $itemTaxAmount;
 
                     $quote->items()->create([
+                        'type' => 'service',
                         'description' => $item['description'],
                         'quantity' => $item['quantity'],
                         'unit_price' => $item['unit_price'],
-                        'tax_rate' => $item['tax_rate'] ?? 0,
-                        'discount' => $item['discount'] ?? 0,
-                        'total' => $itemSubtotal,
+                        'discount_percent' => 0,
+                        'tax_rate' => $taxRate,
+                        'subtotal' => $subtotalAfterDiscount,
+                        'tax_amount' => $itemTaxAmount,
+                        'total' => $subtotalAfterDiscount + $itemTaxAmount,
+                        'position' => $position,
                     ]);
                 }
 
@@ -328,24 +344,66 @@ class QuoteController extends Controller
     /**
      * Accept quote
      */
-    public function accept($id)
+    public function accept(Request $request, $id)
     {
         $quote = Quote::where('tenant_id', auth()->user()->tenant_id)
             ->findOrFail($id);
 
-        if ($quote->status !== 'sent') {
+        if (!in_array($quote->status, ['draft', 'sent'])) {
             return response()->json([
-                'message' => 'Quote must be sent to be accepted'
+                'message' => 'Quote must be draft or sent to be accepted'
             ], 400);
         }
 
-        $quote->update([
-            'status' => 'accepted',
-            'accepted_at' => now()
+        $validator = Validator::make($request->all(), [
+            'signature' => 'required|string', // Base64 image data
+            'signatory_name' => 'required|string|max:255',
+            'accepted_terms' => 'required|boolean|accepted',
         ]);
 
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Save signature as file
+        $signatureData = $request->signature;
+        if (preg_match('/^data:image\/(\w+);base64,/', $signatureData, $type)) {
+            $signatureData = substr($signatureData, strpos($signatureData, ',') + 1);
+            $type = strtolower($type[1]); // jpg, png, gif
+
+            $signatureData = base64_decode($signatureData);
+            
+            if ($signatureData === false) {
+                return response()->json(['message' => 'Invalid signature data'], 400);
+            }
+
+            $fileName = 'signatures/quote_' . $quote->id . '_' . time() . '.' . $type;
+            \Storage::disk('private')->put($fileName, $signatureData);
+
+            $quote->update([
+                'status' => 'accepted',
+                'accepted_at' => now(),
+                'signature_path' => $fileName,
+                'signatory_name' => $request->signatory_name,
+                'signature_ip' => $request->ip(),
+                'signature_user_agent' => $request->userAgent(),
+            ]);
+
+            // Send confirmation email to client with signed quote PDF
+            try {
+                $pdfService = new PdfGeneratorService();
+                Mail::to($quote->client->email)->send(new QuoteAccepted($quote, $pdfService));
+            } catch (\Exception $e) {
+                \Log::error('Failed to send quote acceptance email: ' . $e->getMessage());
+                // Don't fail the request if email fails
+            }
+        }
+
         return response()->json([
-            'message' => 'Quote accepted successfully',
+            'message' => 'Quote accepted successfully with electronic signature',
             'data' => $quote->load(['client', 'items'])
         ]);
     }

@@ -6,14 +6,13 @@ import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 import {
     ArrowLeftIcon,
-    DocumentTextIcon,
     PlusIcon,
     TrashIcon,
-    CalendarIcon,
-    CurrencyEuroIcon,
     CheckCircleIcon
 } from '@heroicons/react/24/outline';
-import { Quote, QuoteItem, Client, Project, PaginatedResponse } from '../types';
+import { Quote, QuoteItem } from '../types';
+import ClientSearchSelect from '../components/ClientSearchSelect';
+import ProjectSearchSelect from '../components/ProjectSearchSelect';
 
 interface QuoteFormData {
     client_id: string;
@@ -67,24 +66,7 @@ const EditQuote: React.FC = () => {
         enabled: !!id
     });
 
-    // Fetch clients for dropdown
-    const { data: clientsData } = useQuery<PaginatedResponse<Client>>({
-        queryKey: ['clients'],
-        queryFn: async () => {
-            const response = await axios.get('/clients');
-            return response.data;
-        }
-    });
 
-    // Fetch projects when client is selected
-    const { data: projectsData } = useQuery<PaginatedResponse<Project>>({
-        queryKey: ['projects', formData.client_id],
-        queryFn: async () => {
-            const response = await axios.get(`/projects?client_id=${formData.client_id}`);
-            return response.data;
-        },
-        enabled: !!formData.client_id
-    });
 
     // Pre-fill form when quote data loads
     useEffect(() => {
@@ -92,18 +74,18 @@ const EditQuote: React.FC = () => {
             setFormData({
                 client_id: quote.client_id?.toString() || '',
                 project_id: quote.project_id?.toString() || '',
-                subject: quote.subject || '',
-                issue_date: quote.issue_date || new Date().toISOString().split('T')[0],
+                subject: quote.description || '',
+                issue_date: quote.quote_date || new Date().toISOString().split('T')[0],
                 valid_until: quote.valid_until || '',
                 notes: quote.notes || '',
-                terms: quote.terms || '',
+                terms: quote.terms_conditions || '',
                 items: quote.items && quote.items.length > 0
                     ? quote.items.map((item: QuoteItem) => ({
                         description: item.description || '',
                         quantity: item.quantity || 1,
                         unit_price: item.unit_price || 0,
                         tax_rate: item.tax_rate || 20,
-                        discount: item.discount || 0
+                        discount: 0
                     }))
                     : [{
                         description: '',
@@ -266,43 +248,23 @@ const EditQuote: React.FC = () => {
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                {t('quotes.client')} *
-                            </label>
-                            <select
-                                name="client_id"
+                            <ClientSearchSelect
                                 value={formData.client_id}
-                                onChange={handleInputChange}
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                onChange={(clientId) => setFormData(prev => ({ ...prev, client_id: clientId }))}
+                                label={t('quotes.client')}
+                                placeholder={t('quotes.selectClient') || 'Sélectionner un client...'}
                                 required
-                            >
-                                <option value="">{t('quotes.selectClient')}</option>
-                                {clientsData?.data?.map((client) => (
-                                    <option key={client.id} value={client.id}>
-                                        {client.name}
-                                    </option>
-                                ))}
-                            </select>
+                            />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                {t('quotes.project')}
-                            </label>
-                            <select
-                                name="project_id"
-                                value={formData.project_id}
-                                onChange={handleInputChange}
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                disabled={!formData.client_id}
-                            >
-                                <option value="">{t('quotes.selectProject')}</option>
-                                {projectsData?.data?.map((project) => (
-                                    <option key={project.id} value={project.id}>
-                                        {project.name}
-                                    </option>
-                                ))}
-                            </select>
+                            <ProjectSearchSelect
+                                value={formData.project_id || ''}
+                                onChange={(projectId) => setFormData(prev => ({ ...prev, project_id: projectId }))}
+                                clientId={formData.client_id}
+                                label={t('quotes.project')}
+                                placeholder={t('quotes.selectProject') || 'Sélectionner un projet...'}
+                            />
                         </div>
 
                         <div className="md:col-span-2">

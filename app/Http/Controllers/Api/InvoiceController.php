@@ -11,6 +11,7 @@ use App\Models\Payment;
 use App\Services\PdfGeneratorService;
 use App\Services\EmailService;
 use App\Services\StripePaymentService;
+use App\Services\CreditNoteService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -73,12 +74,14 @@ class InvoiceController extends Controller
             'date' => 'required|date',
             'due_date' => 'required|date|after_or_equal:date',
             'status' => 'required|in:draft,pending,sent,viewed,paid,overdue,cancelled',
+            'type' => 'nullable|in:invoice,quote,credit_note,advance,final',
             'payment_terms' => 'nullable|integer|min:0',
             'discount_amount' => 'nullable|numeric|min:0',
             'discount_type' => 'required_with:discount_amount|in:fixed,percentage',
             'tax_rate' => 'nullable|numeric|min:0|max:100',
             'notes' => 'nullable|string',
             'footer' => 'nullable|string',
+            'conditions' => 'nullable|string',
             'time_entry_ids' => 'nullable|array',
             'time_entry_ids.*' => 'exists:time_entries,id',
             'expense_ids' => 'nullable|array',
@@ -86,11 +89,19 @@ class InvoiceController extends Controller
             'custom_items' => 'nullable|array',
             'custom_items.*.description' => 'required|string',
             'custom_items.*.quantity' => 'required|numeric|min:0',
-            'custom_items.*.unit_price' => 'required|numeric|min:0'
+            'custom_items.*.unit_price' => 'required|numeric|min:0',
+            'custom_items.*.tax_rate' => 'nullable|numeric|min:0|max:100'
         ]);
 
         DB::beginTransaction();
         try {
+            // Get tenant and check VAT threshold
+            $tenant = auth()->user()->tenant;
+            $tenant->checkVatThreshold(); // Auto-check and apply VAT if threshold exceeded
+            
+            // Get default tax rate (may have changed if threshold was exceeded)
+            $defaultTaxRate = $tenant->fresh()->getDefaultTaxRate();
+            
             // Calculate totals
             $subtotal = 0;
             $items = [];
@@ -121,6 +132,7 @@ class InvoiceController extends Controller
                         'description' => $description,
                         'quantity' => round($totalHours, 2),
                         'unit_price' => $hourlyRate,
+                        'tax_rate' => $defaultTaxRate, // Use tenant's default tax rate
                         'total' => $amount,
                         'time_entry_ids' => $entries->pluck('id')->toArray()
                     ];
@@ -142,6 +154,7 @@ class InvoiceController extends Controller
                         'description' => $expense->description,
                         'quantity' => 1,
                         'unit_price' => $expense->amount,
+                        'tax_rate' => $defaultTaxRate, // Use tenant's default tax rate
                         'total' => $expense->amount
                     ];
 
@@ -159,6 +172,7 @@ class InvoiceController extends Controller
                         'description' => $customItem['description'],
                         'quantity' => $customItem['quantity'],
                         'unit_price' => $customItem['unit_price'],
+                        'tax_rate' => $customItem['tax_rate'] ?? $defaultTaxRate, // Use tenant's default
                         'total' => $total
                     ];
 
@@ -183,11 +197,27 @@ class InvoiceController extends Controller
             // Calculate total
             $total = $taxableAmount + $taxAmount;
 
+            // Get tenant's default conditions if not provided
+            $tenant = auth()->user()->tenant;
+            $type = $validated['type'] ?? 'invoice';
+            $conditions = $validated['conditions'] ?? null;
+            
+            // Auto-fill conditions from tenant settings if not provided
+            if (empty($conditions)) {
+                if ($type === 'quote') {
+                    $conditions = $tenant->default_quote_conditions;
+                } else {
+                    $conditions = $tenant->default_invoice_conditions;
+                }
+            }
+
             // Create invoice
             $invoice = Invoice::create([
                 'tenant_id' => auth()->user()->tenant_id,
+                'created_by' => auth()->id(),
                 'client_id' => $validated['client_id'],
                 'project_id' => $validated['project_id'],
+                'type' => $type,
                 'date' => $validated['date'],
                 'due_date' => $validated['due_date'],
                 'status' => $validated['status'],
@@ -200,21 +230,26 @@ class InvoiceController extends Controller
                 'currency' => 'EUR',
                 'payment_terms' => $validated['payment_terms'] ?? 30,
                 'notes' => $validated['notes'],
-                'footer' => $validated['footer']
+                'footer' => $validated['footer'],
+                'conditions' => $conditions
             ]);
 
             // Create invoice items
             foreach ($items as $index => $item) {
+                $subtotal = $item['quantity'] * $item['unit_price'];
+                $taxRate = $item['tax_rate'] ?? $defaultTaxRate;
+                $taxAmount = $subtotal * ($taxRate / 100);
+                
                 InvoiceItem::create([
                     'invoice_id' => $invoice->id,
-                    'type' => $item['type'],
+                    'type' => $item['type'] ?? 'custom',
                     'description' => $item['description'],
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
-                    'tax_rate' => $validated['tax_rate'] ?? 0,
-                    'tax_amount' => $item['total'] * (($validated['tax_rate'] ?? 0) / 100),
-                    'total' => $item['total'],
-                    'time_entry_ids' => $item['time_entry_ids'] ?? null,
+                    'tax_rate' => $taxRate,
+                    'subtotal' => $subtotal,
+                    'tax_amount' => $taxAmount,
+                    'total' => $subtotal + $taxAmount,
                     'position' => $index + 1
                 ]);
             }
@@ -275,9 +310,48 @@ class InvoiceController extends Controller
     /**
      * Display the specified invoice
      */
-    public function show(Invoice $invoice)
+    public function show($id)
     {
-        return $invoice->load(['client', 'project', 'items', 'payments', 'auditLogs']);
+        // Load only safe relations to avoid infinite recursion
+        $invoice = Invoice::with([
+            'client', 
+            'project', 
+            'items', 
+            'payments', 
+            'auditLogs'
+        ])
+        ->where('tenant_id', auth()->user()->tenant_id)
+        ->find($id);
+
+        if (!$invoice) {
+            return response()->json([
+                'message' => 'Invoice not found'
+            ], 404);
+        }
+
+        // Load type-specific relations
+        if ($invoice->type === 'final') {
+            // Pour une facture de solde: charger les acomptes liés
+            $invoice->load(['advances' => function ($query) {
+                $query->select('invoices.id', 'invoices.invoice_number', 'invoices.date', 'invoices.total', 'invoices.advance_percentage', 'invoices.status')
+                      ->with('client:id,name');
+            }]);
+            $invoice->total_advances = $invoice->total_advances;
+            $invoice->remaining_balance = $invoice->remaining_balance;
+        }
+
+        if ($invoice->type === 'advance') {
+            // Pour un acompte: charger la facture de solde liée (si existe)
+            $invoice->load(['finalInvoice' => function ($query) {
+                $query->select('invoices.id', 'invoices.invoice_number', 'invoices.date', 'invoices.total', 'invoices.status')
+                      ->with('client:id,name');
+            }]);
+            $invoice->is_linked_to_final = $invoice->isLinkedToFinalInvoice();
+        }
+
+        return response()->json([
+            'data' => $invoice
+        ]);
     }
 
     /**
@@ -309,6 +383,7 @@ class InvoiceController extends Controller
     }
 
     /**
+  +++++++ REPLACE
      * Send invoice to client
      */
     public function send(Request $request, Invoice $invoice, EmailService $emailService, StripePaymentService $stripeService)
@@ -407,12 +482,11 @@ class InvoiceController extends Controller
             // Create payment record
             Payment::create([
                 'invoice_id' => $invoice->id,
-                'client_id' => $invoice->client_id,
                 'amount' => $paidAmount,
                 'payment_date' => now(),
                 'payment_method' => $paymentMethod,
-                'reference' => $validated['payment_reference'],
-                'status' => 'completed'
+                'reference' => $validated['payment_reference'] ?? null,
+                'status' => 'succeeded'
             ]);
 
             // Mark invoice as paid
@@ -542,6 +616,92 @@ class InvoiceController extends Controller
     public function auditLog(Invoice $invoice)
     {
         return $invoice->auditLogs()->with('user')->get();
+    }
+
+    /**
+     * Create credit note from invoice
+     */
+    public function createCreditNote(
+        Request $request, 
+        Invoice $invoice, 
+        CreditNoteService $creditNoteService
+    ) {
+        $validated = $request->validate([
+            'reason' => 'required|string|max:500',
+            'full_credit' => 'boolean',
+            'items' => 'array',
+            'items.*.id' => 'exists:invoice_items,id',
+            'items.*.quantity' => 'numeric|min:0'
+        ]);
+        
+        try {
+            $creditNote = $creditNoteService->createFromInvoice(
+                $invoice,
+                $validated['items'] ?? [],
+                $validated['full_credit'] ?? true,
+                $validated['reason']
+            );
+            
+            return response()->json([
+                'message' => 'Avoir créé avec succès',
+                'data' => $creditNote->load(['client', 'invoice', 'items'])
+            ], 201);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Échec de création de l\'avoir',
+                'error' => $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Cancel invoice completely with credit note
+     */
+    public function cancelInvoice(
+        Request $request, 
+        Invoice $invoice, 
+        CreditNoteService $creditNoteService
+    ) {
+        $validated = $request->validate([
+            'reason' => 'required|string|max:500'
+        ]);
+        
+        try {
+            $creditNote = $creditNoteService->cancelInvoice(
+                $invoice, 
+                $validated['reason']
+            );
+            
+            return response()->json([
+                'message' => 'Facture annulée avec succès',
+                'invoice' => $invoice->fresh(['creditNotes']),
+                'credit_note' => $creditNote
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Échec de l\'annulation',
+                'error' => $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Get all credit notes for an invoice
+     */
+    public function getCreditNotes(Invoice $invoice)
+    {
+        $creditNotes = $invoice->creditNotes()
+            ->with(['items'])
+            ->orderBy('credit_note_date', 'desc')
+            ->get();
+        
+        return response()->json([
+            'data' => $creditNotes,
+            'total_credited' => $invoice->total_credited,
+            'remaining_balance' => $invoice->total - $invoice->total_credited
+        ]);
     }
 
     /**

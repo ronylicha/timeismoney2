@@ -17,10 +17,11 @@ class Invoice extends Model
 
     protected $fillable = [
         'tenant_id',
+        'created_by',
         'client_id',
         'project_id',
         'invoice_number',
-        'sequential_number',
+        'sequence_number',
         'date',
         'due_date',
         'status',
@@ -30,6 +31,7 @@ class Invoice extends Model
         'discount_amount',
         'discount_type',
         'total',
+        'balance_due',
         'currency',
         'payment_terms',
         'payment_method',
@@ -54,9 +56,23 @@ class Invoice extends Model
         'advance_percentage',
         'legal_mentions',
         'payment_conditions',
+        'conditions',
         'late_payment_penalty_rate',
         'recovery_indemnity',
         'early_payment_discount',
+        'electronic_format',
+        'facturx_path',
+        'ubl_path',
+        'cii_path',
+        'pdp_reference',
+        'pdp_status',
+        'pdp_sent_at',
+        'pdp_response',
+        'qr_code_sepa',
+        'qualified_timestamp',
+        'timestamp_authority',
+        'purchase_order_number',
+        'contract_reference',
     ];
 
     protected $casts = [
@@ -67,6 +83,7 @@ class Invoice extends Model
         'tax_rate' => 'decimal:2',
         'discount_amount' => 'decimal:2',
         'total' => 'decimal:2',
+        'balance_due' => 'decimal:2',
         'payment_terms' => 'integer',
         'sent_at' => 'datetime',
         'viewed_at' => 'datetime',
@@ -79,6 +96,8 @@ class Invoice extends Model
         'late_payment_penalty_rate' => 'decimal:2',
         'recovery_indemnity' => 'decimal:2',
         'early_payment_discount' => 'decimal:2',
+        'pdp_sent_at' => 'datetime',
+        'pdp_response' => 'array',
     ];
 
     protected static function booted()
@@ -89,8 +108,13 @@ class Invoice extends Model
                 $invoice->invoice_number = $invoice->generateInvoiceNumber();
             }
 
-            if (!$invoice->sequential_number) {
-                $invoice->sequential_number = $invoice->getNextSequentialNumber();
+            if (!$invoice->sequence_number) {
+                $invoice->sequence_number = $invoice->getNextSequentialNumber();
+            }
+
+            // Auto-assign created_by from authenticated user
+            if (!$invoice->created_by && auth()->check()) {
+                $invoice->created_by = auth()->id();
             }
         });
 
@@ -104,7 +128,7 @@ class Invoice extends Model
             if ($invoice->isDirty('status')) {
                 if (in_array($invoice->status, ['sent', 'paid'])) {
                     $invoice->is_locked = true;
-                    $invoice->save();
+                    $invoice->updateQuietly(['is_locked' => true]);
                 }
 
                 // Create audit log entry
@@ -120,6 +144,14 @@ class Invoice extends Model
                 ]);
             }
         });
+    }
+
+    /**
+     * Get the user who created the invoice
+     */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     /**
@@ -168,6 +200,41 @@ class Invoice extends Model
     public function auditLogs(): HasMany
     {
         return $this->hasMany(InvoiceAuditLog::class);
+    }
+
+    /**
+     * Get all credit notes for this invoice
+     */
+    public function creditNotes(): HasMany
+    {
+        return $this->hasMany(CreditNote::class);
+    }
+
+    /**
+     * Get total amount credited
+     */
+    public function getTotalCreditedAttribute(): float
+    {
+        return (float) $this->creditNotes()
+            ->whereIn('status', ['issued', 'applied'])
+            ->sum('total');
+    }
+
+    /**
+     * Check if invoice can be cancelled (not already cancelled and not fully credited)
+     */
+    public function canBeCancelled(): bool
+    {
+        if ($this->status === 'cancelled') {
+            return false;
+        }
+
+        if ($this->status === 'draft') {
+            return false;
+        }
+
+        $totalCredited = $this->total_credited;
+        return $totalCredited < $this->total;
     }
 
     /**
@@ -255,10 +322,10 @@ class Invoice extends Model
         $lastInvoice = static::where('tenant_id', $this->tenant_id)
             ->whereYear('date', $year)
             ->whereMonth('date', now()->month)
-            ->orderBy('sequential_number', 'desc')
+            ->orderBy('sequence_number', 'desc')
             ->first();
 
-        $sequence = $lastInvoice ? ((int)substr($lastInvoice->sequential_number, -4) + 1) : 1;
+        $sequence = $lastInvoice ? ((int)$lastInvoice->sequence_number + 1) : 1;
         $sequenceStr = str_pad($sequence, 4, '0', STR_PAD_LEFT);
 
         return "{$prefix}-{$year}{$month}-{$sequenceStr}";
@@ -267,15 +334,13 @@ class Invoice extends Model
     /**
      * Get next sequential number for NF525
      */
-    protected function getNextSequentialNumber(): string
+    protected function getNextSequentialNumber(): int
     {
         $lastInvoice = static::where('tenant_id', $this->tenant_id)
-            ->orderBy('id', 'desc')
+            ->orderBy('sequence_number', 'desc')
             ->first();
 
-        $nextNumber = $lastInvoice ? ((int)$lastInvoice->sequential_number + 1) : 1;
-
-        return str_pad($nextNumber, 10, '0', STR_PAD_LEFT);
+        return $lastInvoice ? ((int)$lastInvoice->sequence_number + 1) : 1;
     }
 
     /**
@@ -291,7 +356,7 @@ class Invoice extends Model
         $this->previous_hash = $previousInvoice?->hash;
 
         $dataToHash = implode('|', [
-            $this->sequential_number,
+            $this->sequence_number,
             $this->invoice_number,
             $this->date->format('Y-m-d'),
             $this->total,
@@ -330,9 +395,9 @@ class Invoice extends Model
     }
 
     /**
-     * Get balance due
+     * Calculate current balance due (considering payments)
      */
-    public function getBalanceDueAttribute(): float
+    public function calculateBalanceDue(): float
     {
         return $this->total - $this->payments()->sum('amount');
     }
@@ -361,9 +426,10 @@ class Invoice extends Model
      */
     public function markAsSent(): void
     {
-        $this->update([
+        $this->updateQuietly([
             'status' => 'sent',
-            'sent_at' => now()
+            'sent_at' => now(),
+            'is_locked' => true
         ]);
     }
 
@@ -372,9 +438,10 @@ class Invoice extends Model
      */
     public function markAsPaid(): void
     {
-        $this->update([
+        $this->updateQuietly([
             'status' => 'paid',
-            'paid_at' => now()
+            'payment_date' => now(),
+            'is_locked' => true
         ]);
     }
 }

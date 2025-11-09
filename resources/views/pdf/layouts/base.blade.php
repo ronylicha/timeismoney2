@@ -315,12 +315,10 @@
         @yield('content')
     </div>
 
-    @if (isset($showFooter) && $showFooter)
     <div class="footer">
         <div class="footer-content">
             @yield('footer')
         </div>
     </div>
-    @endif
 </body>
 </html>

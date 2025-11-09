@@ -1,18 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 import {
     ArrowLeftIcon,
     FolderIcon,
-    UserGroupIcon,
     CurrencyEuroIcon,
     CalendarIcon,
     CheckCircleIcon
 } from '@heroicons/react/24/outline';
-import { Project, Client, PaginatedResponse } from '../types';
+import { Project, Client } from '../types';
 import ClientSearchSelect from '../components/ClientSearchSelect';
 
 interface ProjectFormData {
@@ -77,9 +76,9 @@ const CreateProject: React.FC = () => {
             const response = await axios.post('/projects', data);
             return response.data;
         },
-        onSuccess: (project) => {
+        onSuccess: (response) => {
             toast.success(t('projects.createSuccess'));
-            navigate(`/projects/${project.id}`);
+            navigate(`/projects/${response.project.id}`);
         },
         onError: (error: any) => {
             const message = error.response?.data?.message || t('projects.createError');

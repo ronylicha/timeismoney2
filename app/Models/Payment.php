@@ -2,16 +2,19 @@
 
 namespace App\Models;
 
+use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Auth;
 
 class Payment extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToTenant;
 
     protected $fillable = [
         'tenant_id',
+        'created_by',
         'invoice_id',
         'user_id',
         'stripe_payment_intent_id',
@@ -69,6 +72,14 @@ class Payment extends Model
     }
 
     /**
+     * Get the user who created this payment
+     */
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
      * Check if payment is successful
      */
     public function isSuccessful(): bool
@@ -120,5 +131,17 @@ class Payment extends Model
             'status' => 'failed',
             'failure_message' => $message,
         ]);
+    }
+
+    /**
+     * Boot the model
+     */
+    protected static function booted()
+    {
+        static::creating(function ($payment) {
+            if (Auth::check() && !$payment->created_by) {
+                $payment->created_by = Auth::id();
+            }
+        });
     }
 }

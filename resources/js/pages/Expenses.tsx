@@ -52,7 +52,7 @@ const Expenses: React.FC = () => {
                             to="/expense-categories"
                             className="flex items-center space-x-2 bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition"
                         >
-                            <span>{t('expenses.categories')}</span>
+                            <span>{t('expenses.categoriesLabel')}</span>
                         </Link>
                         <Link
                             to="/expenses/new"

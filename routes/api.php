@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\StripeWebhookController;
 use App\Http\Controllers\Api\GoogleCalendarController;
 use App\Http\Controllers\Api\TenantSettingsController;
+use App\Http\Controllers\Api\ComplianceController;
 
 /*
 |--------------------------------------------------------------------------
@@ -124,6 +125,21 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/invoices/final', [InvoiceTypeController::class, 'createFinalInvoice']);
     Route::get('/invoices/advance-stats/{clientId}', [InvoiceTypeController::class, 'getAdvanceStats']);
 
+    // French Compliance (Conformité française)
+    Route::prefix('compliance')->group(function () {
+        Route::get('/metrics', [ComplianceController::class, 'getMetrics']);
+        Route::get('/non-compliant', [ComplianceController::class, 'getNonCompliantInvoices']);
+        Route::get('/sequential-check', [ComplianceController::class, 'checkSequentialNumbering']);
+        Route::post('/integrity-report', [ComplianceController::class, 'generateIntegrityReport']);
+        Route::post('/invoices/{invoice}/validate', [ComplianceController::class, 'validateInvoice']);
+        Route::post('/invoices/{invoice}/qr-code', [ComplianceController::class, 'generateSepaQrCode']);
+        
+        // FEC Export routes
+        Route::post('/export/fec', [ComplianceController::class, 'exportFec']);
+        Route::get('/invoices/{invoice}/audit-trail', [ComplianceController::class, 'exportInvoiceAuditTrail']);
+        Route::post('/invoices/batch/audit-trail', [ComplianceController::class, 'exportBatchAuditTrail']);
+    });
+
     // Quotes
     Route::apiResource('quotes', QuoteController::class);
     Route::post('/quotes/{quote}/send', [QuoteController::class, 'send']);
@@ -138,6 +154,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/credit-notes/{credit_note}/send', [CreditNoteController::class, 'send']);
     Route::post('/credit-notes/{credit_note}/apply', [CreditNoteController::class, 'apply']);
     Route::get('/credit-notes/{credit_note}/pdf', [CreditNoteController::class, 'downloadPdf']);
+    Route::post('/credit-notes/from-invoice', [CreditNoteController::class, 'createFromInvoice']);
+    Route::get('/credit-notes/{credit_note}/facturx', [CreditNoteController::class, 'downloadFacturX']);
+    Route::post('/credit-notes/{credit_note}/generate-facturx', [CreditNoteController::class, 'generateFacturX']);
+    
+    // Invoice - Credit Notes operations
+    Route::post('/invoices/{invoice}/create-credit-note', [InvoiceController::class, 'createCreditNote']);
+    Route::post('/invoices/{invoice}/cancel', [InvoiceController::class, 'cancelInvoice']);
+    Route::get('/invoices/{invoice}/credit-notes', [InvoiceController::class, 'getCreditNotes']);
 
     // Payments (Stripe)
     Route::apiResource('payments', PaymentController::class)->only(['index', 'show']);
@@ -185,6 +209,24 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/settings/billing', [TenantSettingsController::class, 'updateBillingSettings']);
     Route::post('/settings/billing/logo', [TenantSettingsController::class, 'uploadLogo']);
     Route::delete('/settings/billing/logo', [TenantSettingsController::class, 'deleteLogo']);
+
+    // VAT threshold status
+    Route::get('/vat/status', function () {
+        $tenant = auth()->user()->tenant;
+        $yearlyRevenue = $tenant->vat_threshold_year_total ?? $tenant->calculateYearlyRevenue();
+        $threshold = $tenant->vat_threshold_services ?? 36800;
+        $percentage = $threshold > 0 ? ($yearlyRevenue / $threshold) * 100 : 0;
+        
+        return response()->json([
+            'vat_subject' => $tenant->vat_subject,
+            'yearly_revenue' => $yearlyRevenue,
+            'threshold' => $threshold,
+            'percentage' => round($percentage, 1),
+            'is_approaching' => $tenant->isApproachingVatThreshold(),
+            'threshold_exceeded_at' => $tenant->vat_threshold_exceeded_at,
+            'auto_apply_vat' => $tenant->auto_apply_vat_on_threshold,
+        ]);
+    });
 
     // Google Calendar Integration
     Route::get('/google-calendar/status', [GoogleCalendarController::class, 'status']);

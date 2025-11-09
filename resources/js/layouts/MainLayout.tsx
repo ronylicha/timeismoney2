@@ -16,7 +16,8 @@ import {
     ArrowRightOnRectangleIcon,
     ShieldCheckIcon,
     ClipboardDocumentListIcon,
-    UsersIcon
+    UsersIcon,
+    DocumentCheckIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
 import UserAvatar from '@/components/UserAvatar';
@@ -58,6 +59,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
         { name: t('nav.invoices'), href: '/invoices', icon: DocumentTextIcon },
         { name: t('nav.expenses'), href: '/expenses', icon: BanknotesIcon },
         { name: t('nav.reports'), href: '/reports', icon: ChartBarIcon },
+        { name: t('nav.compliance'), href: '/compliance', icon: DocumentCheckIcon },
         ...(isAdminOrManager ? [{ name: t('nav.teamManagement'), href: '/team', icon: UsersIcon }] : []),
         { name: t('nav.settings'), href: '/settings', icon: Cog6ToothIcon },
     ];

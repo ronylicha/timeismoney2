@@ -13,12 +13,13 @@ class Tenant extends Model
     protected $fillable = [
         'name',
         'slug',
+        'domain',
         'type',
-        'settings',
         'is_active',
-        'logo',
+        'settings',
         'primary_color',
         'secondary_color',
+        // Company information
         'company_name',
         'legal_form',
         'siret',
@@ -28,7 +29,17 @@ class Tenant extends Model
         'ape_code',
         'vat_number',
         'vat_subject',
+        'vat_regime',
+        'vat_deduction_coefficient',
+        'main_activity',
+        'activity_license_number',
         'vat_exemption_reason',
+        'business_type',
+        'vat_threshold_services',
+        'vat_threshold_goods',
+        'vat_threshold_year_total',
+        'vat_threshold_exceeded_at',
+        'auto_apply_vat_on_threshold',
         'address_line1',
         'address_line2',
         'postal_code',
@@ -40,14 +51,24 @@ class Tenant extends Model
         'bic',
         'bank_name',
         'website',
+        'logo',
+        // Invoice settings
+        'last_invoice_number',
+        'last_quote_number',
+        'last_credit_note_number',
+        'invoice_prefix',
+        'quote_prefix',
+        'credit_note_prefix',
         'late_payment_penalty_text',
         'recovery_indemnity_text',
         'footer_legal_text',
+        'default_quote_conditions',
+        'default_invoice_conditions',
+        // Stripe settings
+        'stripe_enabled',
         'stripe_publishable_key',
         'stripe_secret_key',
         'stripe_webhook_secret',
-        'stripe_enabled',
-        'stripe_account_id',
         'stripe_settings',
         'stripe_connected_at',
     ];
@@ -57,6 +78,11 @@ class Tenant extends Model
         'settings' => 'array',
         'capital' => 'decimal:2',
         'vat_subject' => 'boolean',
+        'vat_threshold_services' => 'decimal:2',
+        'vat_threshold_goods' => 'decimal:2',
+        'vat_threshold_year_total' => 'decimal:2',
+        'vat_threshold_exceeded_at' => 'date',
+        'auto_apply_vat_on_threshold' => 'boolean',
         'stripe_enabled' => 'boolean',
         'stripe_settings' => 'array',
         'stripe_connected_at' => 'datetime',
@@ -163,5 +189,121 @@ class Tenant extends Model
     public function getStripeWebhookSecret(): ?string
     {
         return $this->stripe_enabled ? $this->stripe_webhook_secret : null;
+    }
+
+    /**
+     * Calculate total revenue for current year
+     */
+    public function calculateYearlyRevenue(): float
+    {
+        $currentYear = now()->year;
+        
+        return \App\Models\Invoice::where('tenant_id', $this->id)
+            ->whereIn('status', ['paid', 'sent'])
+            ->whereYear('date', $currentYear)
+            ->sum('subtotal'); // Montant HT
+    }
+
+    /**
+     * Check if VAT thresholds apply to this tenant
+     */
+    public function hasVatThresholds(): bool
+    {
+        // Seuls les tenants en "franchise_base" sont soumis aux seuils
+        return $this->vat_regime === 'franchise_base';
+    }
+
+    /**
+     * Check if VAT threshold is exceeded
+     */
+    public function checkVatThreshold(): bool
+    {
+        // IMPORTANT: Les seuils ne s'appliquent QUE pour le régime "franchise_base"
+        if (!$this->hasVatThresholds()) {
+            return false;
+        }
+
+        // Si déjà assujetti à la TVA, pas besoin de vérifier
+        if ($this->vat_subject) {
+            return false;
+        }
+
+        // Si pas de seuil configuré, ne pas vérifier
+        if (!$this->vat_threshold_services && !$this->vat_threshold_goods) {
+            return false;
+        }
+
+        // Calculer le CA de l'année
+        $yearlyRevenue = $this->calculateYearlyRevenue();
+        
+        // Mettre à jour le total de l'année
+        $this->update(['vat_threshold_year_total' => $yearlyRevenue]);
+
+        // Déterminer le seuil applicable selon le type d'activité
+        $threshold = match($this->business_type) {
+            'services' => $this->vat_threshold_services ?? 36800,
+            'goods' => $this->vat_threshold_goods ?? 91900,
+            'mixed' => min($this->vat_threshold_services ?? 36800, $this->vat_threshold_goods ?? 91900), // Le plus restrictif
+            default => $this->vat_threshold_services ?? 36800,
+        };
+        
+        if ($yearlyRevenue > $threshold) {
+            // Seuil dépassé !
+            if (!$this->vat_threshold_exceeded_at) {
+                $this->update([
+                    'vat_threshold_exceeded_at' => now(),
+                ]);
+
+                // Si auto-application activée, passer en assujetti à la TVA
+                if ($this->auto_apply_vat_on_threshold) {
+                    $this->update([
+                        'vat_subject' => true,
+                        'vat_exemption_reason' => null,
+                    ]);
+                }
+            }
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Get the applicable tax rate for this tenant
+     * Takes into account VAT exemption, threshold, and activity rules
+     */
+    public function getDefaultTaxRate(): float
+    {
+        return \App\Services\VatRulesService::getDefaultVatRateForTenant($this);
+    }
+
+    /**
+     * Get VAT explanation for this tenant
+     */
+    public function getVatExplanation(): string
+    {
+        return \App\Services\VatRulesService::getVatExplanation($this);
+    }
+
+    /**
+     * Check if approaching VAT threshold (90% of threshold)
+     */
+    public function isApproachingVatThreshold(): bool
+    {
+        if ($this->vat_subject) {
+            return false;
+        }
+
+        // Déterminer le seuil applicable selon le type d'activité
+        $threshold = match($this->business_type) {
+            'services' => $this->vat_threshold_services ?? 36800,
+            'goods' => $this->vat_threshold_goods ?? 91900,
+            'mixed' => min($this->vat_threshold_services ?? 36800, $this->vat_threshold_goods ?? 91900),
+            default => $this->vat_threshold_services ?? 36800,
+        };
+        
+        $yearlyRevenue = $this->vat_threshold_year_total ?? $this->calculateYearlyRevenue();
+
+        return $yearlyRevenue >= ($threshold * 0.9);
     }
 }

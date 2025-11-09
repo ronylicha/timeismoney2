@@ -220,10 +220,9 @@ export interface Invoice {
     project_id?: string;
     invoice_number: string;
     sequential_number: number;
-    invoice_date: string;
+    date: string;
     due_date: string;
-    status: 'draft' | 'pending' | 'sent' | 'viewed' | 'paid' | 'overdue' | 'cancelled';
-    payment_status: 'unpaid' | 'partial' | 'paid';
+    status: 'draft' | 'pending' | 'sent' | 'viewed' | 'paid' | 'partial' | 'overdue' | 'cancelled';
 
     // Type de facture française
     type: InvoiceType;

@@ -20,6 +20,7 @@ import {
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { InvoiceType } from '../types';
+import PaymentModal, { PaymentData } from '../components/PaymentModal';
 
 interface Invoice {
     id: number;
@@ -27,12 +28,13 @@ interface Invoice {
     client_id: number;
     status: string;
     type: InvoiceType;
-    issue_date: string;
+    date: string;
     due_date: string;
     subtotal: number;
     tax_rate: number;
     tax_amount: number;
     total_amount: number;
+    total?: number;
     notes: string | null;
     advance_percentage?: number;
     advances?: Invoice[];
@@ -64,6 +66,7 @@ const InvoiceDetail: React.FC = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
     const isNewInvoice = !id || id === 'new';
 
     // Fetch invoice details (skip if creating new invoice)
@@ -91,6 +94,32 @@ const InvoiceDetail: React.FC = () => {
             toast.error(t('invoices.statusUpdateError'));
         },
     });
+
+    // Mark as paid mutation (uses dedicated endpoint)
+    const markAsPaidMutation = useMutation({
+        mutationFn: async (paymentData: PaymentData) => {
+            const response = await axios.post(`/invoices/${id}/mark-paid`, paymentData);
+            return response.data;
+        },
+        onSuccess: async () => {
+            setShowPaymentModal(false);
+            toast.success(t('invoices.markedAsPaid'));
+            
+            // Invalidate and refetch invoice data
+            await queryClient.invalidateQueries({ queryKey: ['invoice', id] });
+            await queryClient.invalidateQueries({ queryKey: ['invoices'] });
+            await queryClient.refetchQueries({ queryKey: ['invoice', id] });
+        },
+        onError: (error: any) => {
+            const message = error.response?.data?.message || t('invoices.markAsPaidError');
+            toast.error(message);
+            console.error('Mark as paid error:', error);
+        },
+    });
+
+    const handlePaymentConfirm = (paymentData: PaymentData) => {
+        markAsPaidMutation.mutate(paymentData);
+    };
 
     // Delete invoice mutation
     const deleteInvoiceMutation = useMutation({
@@ -225,9 +254,17 @@ const InvoiceDetail: React.FC = () => {
                                     <span>{t('common.edit')}</span>
                                 </Link>
                                 <button
+                                    onClick={() => updateStatusMutation.mutate('sent')}
+                                    disabled={updateStatusMutation.isPending}
+                                    className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm disabled:opacity-50"
+                                >
+                                    <CheckCircleIcon className="h-4 w-4" />
+                                    <span>Valider</span>
+                                </button>
+                                <button
                                     onClick={() => sendInvoiceMutation.mutate()}
                                     disabled={sendInvoiceMutation.isPending}
-                                    className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm disabled:opacity-50"
+                                    className="flex items-center space-x-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition text-sm disabled:opacity-50"
                                 >
                                     <PaperAirplaneIcon className="h-4 w-4" />
                                     <span>{t('invoices.send')}</span>
@@ -237,8 +274,8 @@ const InvoiceDetail: React.FC = () => {
 
                         {invoice.status === 'sent' && (
                             <button
-                                onClick={() => updateStatusMutation.mutate('paid')}
-                                disabled={updateStatusMutation.isPending}
+                                onClick={() => setShowPaymentModal(true)}
+                                disabled={markAsPaidMutation.isPending}
                                 className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm disabled:opacity-50"
                             >
                                 <CheckCircleIcon className="h-4 w-4" />
@@ -285,11 +322,11 @@ const InvoiceDetail: React.FC = () => {
                     <div className="text-right">
                         <p className="text-sm text-gray-600">{t('invoices.issueDate')}</p>
                         <p className="font-semibold text-gray-900">
-                            {format(new Date(invoice.issue_date), 'dd MMMM yyyy', { locale: fr })}
+                            {invoice.date ? format(new Date(invoice.date), 'dd MMMM yyyy', { locale: fr }) : '-'}
                         </p>
                         <p className="text-sm text-gray-600 mt-2">{t('invoices.dueDate')}</p>
                         <p className="font-semibold text-gray-900">
-                            {format(new Date(invoice.due_date), 'dd MMMM yyyy', { locale: fr })}
+                            {invoice.due_date ? format(new Date(invoice.due_date), 'dd MMMM yyyy', { locale: fr }) : '-'}
                         </p>
                     </div>
                 </div>
@@ -311,28 +348,29 @@ const InvoiceDetail: React.FC = () => {
 
                 {/* Advance Invoice Info */}
                 {invoice.type === 'advance' && (
-                    <div className="mb-8 p-4 bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800 rounded-lg">
+                    <div className="mb-8 p-4 bg-indigo-50 dark:bg-indigo-900/20 border-2 border-indigo-200 dark:border-indigo-800 rounded-lg">
                         <div className="flex items-start space-x-3">
-                            <ReceiptPercentIcon className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
+                            <ReceiptPercentIcon className="w-6 h-6 text-indigo-600 flex-shrink-0 mt-0.5" />
                             <div className="flex-1">
-                                <h3 className="text-sm font-semibold text-green-900 dark:text-green-100 mb-2">
+                                <h3 className="text-sm font-semibold text-indigo-900 dark:text-indigo-100 mb-2">
+                                    <InformationCircleIcon className="w-5 h-5 inline mr-1" />
                                     Facture d'acompte
                                     {invoice.advance_percentage && (
-                                        <span className="ml-2 text-green-700 dark:text-green-300">
+                                        <span className="ml-2 text-indigo-600 dark:text-indigo-400">
                                             ({invoice.advance_percentage}%)
                                         </span>
                                     )}
                                 </h3>
                                 {invoice.is_linked_to_final && invoice.final_invoice && invoice.final_invoice.length > 0 ? (
-                                    <div>
-                                        <p className="text-sm text-green-700 dark:text-green-300 mb-2">
+                                    <div className="space-y-2">
+                                        <p className="text-sm text-indigo-700 dark:text-indigo-300">
                                             Cet acompte a été déduit de la facture de solde suivante:
                                         </p>
                                         {invoice.final_invoice.map((finalInv) => (
                                             <Link
                                                 key={finalInv.id}
                                                 to={`/invoices/${finalInv.id}`}
-                                                className="inline-flex items-center px-3 py-2 bg-white dark:bg-gray-800 border border-green-300 dark:border-green-700 rounded-lg text-sm font-medium text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors"
+                                                className="inline-flex items-center px-3 py-2 bg-white dark:bg-gray-800 border border-indigo-300 dark:border-indigo-700 rounded-lg text-sm font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors"
                                             >
                                                 <ClipboardDocumentCheckIcon className="w-4 h-4 mr-2" />
                                                 {finalInv.invoice_number}
@@ -340,7 +378,7 @@ const InvoiceDetail: React.FC = () => {
                                         ))}
                                     </div>
                                 ) : (
-                                    <p className="text-sm text-green-700 dark:text-green-300">
+                                    <p className="text-sm text-indigo-700 dark:text-indigo-300">
                                         <InformationCircleIcon className="w-4 h-4 inline mr-1" />
                                         Cet acompte n'est pas encore lié à une facture de solde.
                                     </p>
@@ -380,7 +418,7 @@ const InvoiceDetail: React.FC = () => {
                                                         </span>
                                                     )}
                                                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                        {format(new Date(advance.issue_date), 'dd MMM yyyy', { locale: fr })}
+                                                        {format(new Date(advance.date), 'dd MMM yyyy', { locale: fr })}
                                                     </p>
                                                 </div>
                                             </div>
@@ -389,7 +427,7 @@ const InvoiceDetail: React.FC = () => {
                                                     - {new Intl.NumberFormat('fr-FR', {
                                                         style: 'currency',
                                                         currency: 'EUR',
-                                                    }).format(advance.total_amount)}
+                                                    }).format(advance.total_amount || advance.total || 0)}
                                                 </p>
                                             </div>
                                         </div>
@@ -474,7 +512,7 @@ const InvoiceDetail: React.FC = () => {
                                 {new Intl.NumberFormat('fr-FR', {
                                     style: 'currency',
                                     currency: 'EUR',
-                                }).format(invoice.total_amount)}
+                                }).format(invoice.total_amount || invoice.total || 0)}
                             </span>
                         </div>
 
@@ -548,6 +586,15 @@ const InvoiceDetail: React.FC = () => {
                     </div>
                 </div>
             )}
+
+            {/* Payment Modal */}
+            <PaymentModal
+                isOpen={showPaymentModal}
+                onClose={() => setShowPaymentModal(false)}
+                onConfirm={handlePaymentConfirm}
+                invoiceTotal={invoice?.total || 0}
+                isLoading={markAsPaidMutation.isPending}
+            />
         </div>
     );
 };

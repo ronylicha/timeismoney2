@@ -67,8 +67,21 @@
                 </div>
             </div>
             <div class="header-right">
-                <div class="document-title">FACTURE</div>
+                <div class="document-title">
+                    @if($invoice->type === 'advance')
+                        FACTURE D'ACOMPTE
+                    @elseif($invoice->type === 'final')
+                        FACTURE DE SOLDE
+                    @else
+                        FACTURE
+                    @endif
+                </div>
                 <div class="document-number">{{ $invoice->invoice_number }}</div>
+                @if($invoice->type === 'advance' && $invoice->advance_percentage)
+                    <div style="margin-top: 5px; font-size: 11pt; color: #4F46E5; font-weight: bold;">
+                        Acompte de {{ number_format($invoice->advance_percentage, 0) }}%
+                    </div>
+                @endif
                 <div style="margin-top: 15px;">
                     @if($invoice->status === 'paid')
                         <span class="status-badge status-paid">Payée</span>
@@ -180,9 +193,19 @@
         </div>
         @endif
 
+        {{-- Tax breakdown by rate --}}
+        @if(isset($taxByRate) && count($taxByRate) > 0)
+            @foreach($taxByRate as $rate => $taxInfo)
+            <div class="totals-row" style="font-size: 10px; color: #666;">
+                <div class="totals-label">TVA {{ $rate }}% sur {{ number_format($taxInfo['base'], 2, ',', ' ') }} €</div>
+                <div class="totals-value">{{ number_format($taxInfo['amount'], 2, ',', ' ') }} €</div>
+            </div>
+            @endforeach
+        @endif
+
         <div class="totals-row">
-            <div class="totals-label">TVA</div>
-            <div class="totals-value">{{ number_format($invoice->tax, 2, ',', ' ') }} €</div>
+            <div class="totals-label"><strong>Total TVA</strong></div>
+            <div class="totals-value"><strong>{{ number_format($invoice->tax_amount, 2, ',', ' ') }} €</strong></div>
         </div>
 
         <div class="totals-row total">
@@ -199,37 +222,65 @@
     </div>
     @endif
 
-    <!-- Payment Information -->
+    <!-- Payment Information & Legal Mentions -->
     <div class="payment-info">
-        <div class="payment-title">Informations de paiement</div>
+        <div class="payment-title">Informations de paiement et mentions légales</div>
         <div class="payment-details">
-            @if($invoice->payment_terms)
-                <strong>Conditions:</strong> {{ $invoice->payment_terms }}<br>
+            {{-- Conditions de règlement (OBLIGATOIRE - Art. L441-3) --}}
+            @if($invoice->payment_conditions)
+                <strong>Conditions de règlement:</strong> {{ $invoice->payment_conditions }}<br>
+            @elseif($invoice->payment_terms)
+                <strong>Conditions de règlement:</strong> Paiement à {{ $invoice->payment_terms }} jours<br>
             @endif
-            @if($tenant->bank_name || $tenant->iban)
+            
+            {{-- Escompte pour paiement anticipé (si applicable) --}}
+            @if($invoice->early_payment_discount && $invoice->early_payment_discount > 0)
+                <strong>Escompte pour paiement anticipé:</strong> {{ number_format($invoice->early_payment_discount, 2) }}%<br>
+            @endif
+            
+            {{-- Coordonnées bancaires --}}
+            @if($tenant->iban)
                 <strong>Coordonnées bancaires:</strong><br>
-                @if($tenant->bank_name)
-                    Banque: {{ $tenant->bank_name }}<br>
-                @endif
-                @if($tenant->iban)
-                    IBAN: {{ $tenant->iban }}<br>
-                @endif
+                IBAN: {{ $tenant->iban }}<br>
                 @if($tenant->bic)
                     BIC: {{ $tenant->bic }}<br>
                 @endif
             @endif
+            
             <br>
-            @if($tenant->late_payment_penalty_text)
-                <em>{{ $tenant->late_payment_penalty_text }}</em><br>
+            
+            {{-- Pénalités de retard (OBLIGATOIRE - Art. L441-3) --}}
+            <strong>Pénalités de retard (Art. L441-3 Code Commerce):</strong><br>
+            @if($invoice->late_payment_penalty_rate)
+                <em>Taux des pénalités de retard: {{ number_format($invoice->late_payment_penalty_rate, 2) }}% (soit 3 fois le taux d'intérêt légal)</em><br>
             @else
                 <em>En cas de retard de paiement, une pénalité de 3 fois le taux d'intérêt légal sera exigible.</em><br>
             @endif
-            @if($tenant->recovery_indemnity_text)
-                <em>{{ $tenant->recovery_indemnity_text }}</em>
+            
+            {{-- Indemnité forfaitaire de recouvrement (OBLIGATOIRE - Art. L441-3) --}}
+            @if($invoice->recovery_indemnity)
+                <em>Indemnité forfaitaire pour frais de recouvrement: {{ number_format($invoice->recovery_indemnity, 2) }} € (Art. D.441-5)</em><br>
             @else
-                <em>Indemnité forfaitaire de 40 € pour frais de recouvrement.</em>
+                <em>Indemnité forfaitaire de 40 € pour frais de recouvrement (Art. D.441-5).</em><br>
+            @endif
+            
+            {{-- Références documents (si applicables) --}}
+            @if($invoice->purchase_order_number)
+                <strong>Bon de commande:</strong> {{ $invoice->purchase_order_number }}<br>
+            @endif
+            @if($invoice->contract_reference)
+                <strong>Référence contrat:</strong> {{ $invoice->contract_reference }}<br>
             @endif
         </div>
+        
+        {{-- QR Code SEPA pour paiement facile --}}
+        @if($invoice->qr_code_sepa)
+        <div class="qr-code-sepa" style="margin-top: 10px; text-align: center;">
+            <div style="font-size: 10pt; margin-bottom: 5px;"><strong>Payer par QR Code</strong></div>
+            {!! $invoice->qr_code_sepa !!}
+            <div style="font-size: 8pt; color: #666; margin-top: 3px;">Scannez avec votre application bancaire</div>
+        </div>
+        @endif
     </div>
 
     <!-- NF525 Compliance -->
@@ -245,25 +296,8 @@
 @endsection
 
 @section('footer')
-    @if($tenant->footer_legal_text)
-        {{ $tenant->footer_legal_text }}
-    @else
-        {{ $tenant->company_name ?? $tenant->name }}
-        @if($tenant->address_line1)
-            - {{ $tenant->address_line1 }}
-        @endif
-        @if($tenant->city)
-            - {{ $tenant->city }}
-        @endif
-        <br>
-        @if($tenant->siret)
-            SIRET: {{ $tenant->siret }} -
-        @endif
-        @if($tenant->rcs_number && $tenant->rcs_city)
-            RCS {{ $tenant->rcs_city }} {{ $tenant->rcs_number }} -
-        @endif
-        @if($tenant->vat_subject && $tenant->vat_number)
-            TVA: {{ $tenant->vat_number }}
-        @endif
-    @endif
+    {{-- Footer légal généré automatiquement par LegalFooterService --}}
+    <div style="font-size: 7pt; line-height: 1.4; color: #666; text-align: center;">
+        {!! nl2br(e($legalFooter ?? '')) !!}
+    </div>
 @endsection

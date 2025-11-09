@@ -21,9 +21,9 @@ interface Invoice {
     client_id: number;
     status: string;
     type: InvoiceType;
-    issue_date: string;
+    date: string;
     due_date: string;
-    total_amount: number;
+    total: number;
     advance_percentage?: number;
     client?: {
         name: string;
@@ -200,7 +200,7 @@ const Invoices: React.FC = () => {
                                     {t('invoices.amount')}
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    {t('invoices.status')}
+                                    {t('invoices.statusLabel')}
                                 </th>
                             </tr>
                         </thead>
@@ -221,16 +221,16 @@ const Invoices: React.FC = () => {
                                         {getTypeBadge(invoice.type || 'invoice', invoice.advance_percentage)}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                        {format(new Date(invoice.issue_date), 'dd MMM yyyy', { locale: fr })}
+                                        {invoice.date ? format(new Date(invoice.date), 'dd MMM yyyy', { locale: fr }) : '-'}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                        {format(new Date(invoice.due_date), 'dd MMM yyyy', { locale: fr })}
+                                        {invoice.due_date ? format(new Date(invoice.due_date), 'dd MMM yyyy', { locale: fr }) : '-'}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
                                         {new Intl.NumberFormat('fr-FR', {
                                             style: 'currency',
                                             currency: 'EUR',
-                                        }).format(invoice.total_amount)}
+                                        }).format(invoice.total || 0)}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         {getStatusBadge(invoice.status)}

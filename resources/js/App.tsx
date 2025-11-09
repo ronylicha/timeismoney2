@@ -39,7 +39,6 @@ const CreateInvoice = lazy(() => import('./pages/CreateInvoice'));
 const Quotes = lazy(() => import('./pages/Quotes'));
 const QuoteDetail = lazy(() => import('./pages/QuoteDetail'));
 const CreateQuote = lazy(() => import('./pages/CreateQuote'));
-const EditQuote = lazy(() => import('./pages/EditQuote'));
 const Expenses = lazy(() => import('./pages/Expenses'));
 const CreateExpense = lazy(() => import('./pages/CreateExpense'));
 const ExpenseCategories = lazy(() => import('./pages/ExpenseCategories'));
@@ -59,6 +58,7 @@ const AdminAuditLogs = lazy(() => import('./pages/Admin/AuditLogs'));
 const AdminMonitoring = lazy(() => import('./pages/Admin/Monitoring'));
 const AdminNotifications = lazy(() => import('./pages/Admin/Notifications'));
 const AdminReports = lazy(() => import('./pages/Admin/Reports'));
+const Compliance = lazy(() => import('./pages/Compliance'));
 
 // Contexts
 import { AuthProvider } from './contexts/AuthContext';
@@ -94,6 +94,8 @@ import axios from 'axios';
 const configureAxiosBaseURL = () => {
     const apiUrl = import.meta.env.VITE_API_URL;
     const currentHost = window.location.hostname;
+    const currentPort = window.location.port;
+    const currentProtocol = window.location.protocol;
 
     // If we have a custom API URL from env, use it
     if (apiUrl) {
@@ -105,8 +107,10 @@ const configureAxiosBaseURL = () => {
         return 'https://timeismoney.fr/api';
     }
 
-    // Default for local development
-    return '/api';
+    // For local development, use the current origin to avoid CORS issues
+    // This ensures we use the same hostname (localhost or 127.0.0.1) as the page
+    const portPart = currentPort ? `:${currentPort}` : '';
+    return `${currentProtocol}//${currentHost}${portPart}/api`;
 };
 
 axios.defaults.baseURL = configureAxiosBaseURL();
@@ -249,11 +253,12 @@ function App() {
                                         {/* Invoicing */}
                                         <Route path="/invoices" element={<Invoices />} />
                                         <Route path="/invoices/new" element={<CreateInvoice />} />
+                                        <Route path="/invoices/:id/edit" element={<CreateInvoice />} />
                                         <Route path="/invoices/:id" element={<InvoiceDetail />} />
                                         <Route path="/quotes" element={<Quotes />} />
                                         <Route path="/quotes/new" element={<CreateQuote />} />
+                                        <Route path="/quotes/:id/edit" element={<CreateQuote />} />
                                         <Route path="/quotes/:id" element={<QuoteDetail />} />
-                                        <Route path="/quotes/:id/edit" element={<EditQuote />} />
 
                                         {/* Expenses */}
                                         <Route path="/expenses" element={<Expenses />} />
@@ -263,6 +268,9 @@ function App() {
                                         {/* Reports & Analytics */}
                                         <Route path="/reports" element={<Reports />} />
                                         <Route path="/analytics" element={<Analytics />} />
+
+                                        {/* Compliance */}
+                                        <Route path="/compliance" element={<Compliance />} />
 
                                         {/* Settings */}
                                         <Route path="/settings" element={<Settings />} />

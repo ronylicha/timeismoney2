@@ -43,7 +43,9 @@ const ClientSearchSelect: React.FC<ClientSearchSelectProps> = ({
             const response = await axios.get(`/clients/${value}`);
             return response.data.data;
         },
-        enabled: !!value && value !== ''
+        enabled: !!value && value !== '',
+        staleTime: 0, // Force refresh when value changes
+        refetchOnMount: true,
     });
 
     // Close dropdown when clicking outside

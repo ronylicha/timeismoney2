@@ -174,9 +174,19 @@
         </div>
         @endif
 
+        {{-- Tax breakdown by rate --}}
+        @if(isset($taxByRate) && count($taxByRate) > 0)
+            @foreach($taxByRate as $rate => $taxInfo)
+            <div class="totals-row" style="font-size: 10px; color: #666;">
+                <div class="totals-label">TVA {{ $rate }}% sur {{ number_format($taxInfo['base'], 2, ',', ' ') }} €</div>
+                <div class="totals-value">{{ number_format($taxInfo['amount'], 2, ',', ' ') }} €</div>
+            </div>
+            @endforeach
+        @endif
+
         <div class="totals-row">
-            <div class="totals-label">TVA</div>
-            <div class="totals-value">{{ number_format($quote->tax, 2, ',', ' ') }} €</div>
+            <div class="totals-label"><strong>Total TVA</strong></div>
+            <div class="totals-value"><strong>{{ number_format($quote->tax, 2, ',', ' ') }} €</strong></div>
         </div>
 
         <div class="totals-row total">
@@ -197,16 +207,89 @@
     <div class="payment-info">
         <div class="payment-title">Conditions</div>
         <div class="payment-details">
-            @if($quote->payment_terms)
-                <strong>Conditions de paiement:</strong> {{ $quote->payment_terms }}<br><br>
+            @if($quote->payment_conditions)
+                <strong>Conditions de paiement:</strong> {{ $quote->payment_conditions }}<br><br>
             @endif
+            
+            @if($quote->conditions)
+                {!! nl2br(e($quote->conditions)) !!}<br><br>
+            @endif
+            
+            {{-- Mentions légales obligatoires en France --}}
+            @if($quote->late_payment_penalty_rate)
+                <strong>Pénalités de retard:</strong> En cas de retard de paiement, des pénalités au taux de {{ number_format($quote->late_payment_penalty_rate, 2, ',', ' ') }}% sont applicables.<br>
+            @endif
+            
+            @if($quote->recovery_indemnity)
+                <strong>Indemnité forfaitaire de recouvrement:</strong> {{ number_format($quote->recovery_indemnity, 2, ',', ' ') }} € (article D.441-5 du Code de commerce).<br>
+            @endif
+            
+            @if($quote->early_payment_discount)
+                <strong>Escompte pour paiement anticipé:</strong> {{ number_format($quote->early_payment_discount, 2, ',', ' ') }}%<br>
+            @endif
+            
+            <br>
             <em>Ce devis est valable {{ \Carbon\Carbon::parse($quote->quote_date)->diffInDays(\Carbon\Carbon::parse($quote->valid_until)) }} jours
             à compter de la date d'émission. Une fois accepté, il fera l'objet d'une facture selon les conditions indiquées.</em>
+            
+            @if($quote->legal_mentions)
+                <br><br>
+                <div style="font-size: 8pt; color: #666;">
+                    {!! nl2br(e($quote->legal_mentions)) !!}
+                </div>
+            @endif
         </div>
     </div>
 
     <!-- Acceptance Section -->
-    @if($quote->status === 'sent' || $quote->status === 'draft')
+    @if($quote->status === 'accepted' && $quote->signature_path)
+    <!-- Electronic Signature Section (Accepted Quote) -->
+    <div style="margin-top: 50px; padding: 20px; border: 2px solid #16a34a; border-radius: 5px; background-color: #f0fdf4;">
+        <div style="font-weight: bold; margin-bottom: 15px; font-size: 11pt; color: #16a34a;">
+            ✓ Devis accepté et signé électroniquement
+        </div>
+        <div style="display: table; width: 100%;">
+            <div style="display: table-cell; width: 50%; padding-right: 20px; vertical-align: top;">
+                <div style="margin-bottom: 10px;">
+                    <strong>Date de signature:</strong><br>
+                    {{ \Carbon\Carbon::parse($quote->accepted_at)->format('d/m/Y à H:i') }}
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <strong>Signataire:</strong><br>
+                    {{ $quote->signatory_name }}
+                </div>
+                @if($quote->signature_ip)
+                <div style="margin-bottom: 5px; font-size: 8pt; color: #666;">
+                    Adresse IP: {{ $quote->signature_ip }}
+                </div>
+                @endif
+                <div style="margin-top: 15px; padding: 8px; background-color: #dbeafe; border-left: 3px solid #2563eb; font-size: 8pt;">
+                    <strong>Valeur juridique:</strong> Cette signature électronique a la même valeur qu'une signature manuscrite 
+                    conformément au règlement eIDAS (UE) n°910/2014 et au Code civil français (articles 1366 et 1367).
+                </div>
+            </div>
+            <div style="display: table-cell; width: 50%; padding-left: 20px; vertical-align: top;">
+                <div style="margin-bottom: 5px;"><strong>Signature:</strong></div>
+                <div style="border: 1px solid #d1d5db; padding: 10px; background-color: #ffffff; border-radius: 3px;">
+                    @php
+                        $signaturePath = storage_path('app/' . $quote->signature_path);
+                        if (file_exists($signaturePath)) {
+                            $imageData = base64_encode(file_get_contents($signaturePath));
+                            $extension = pathinfo($signaturePath, PATHINFO_EXTENSION);
+                            $mimeType = 'image/' . $extension;
+                            echo '<img src="data:' . $mimeType . ';base64,' . $imageData . '" alt="Signature" style="max-width: 200px; max-height: 80px;">';
+                        }
+                    @endphp
+                </div>
+                <div style="margin-top: 10px; font-size: 8pt; color: #666; font-style: italic;">
+                    « Bon pour accord et signature du devis d'un montant de
+                    {{ number_format($quote->total, 2, ',', ' ') }} € TTC. »
+                </div>
+            </div>
+        </div>
+    </div>
+    @elseif($quote->status === 'sent' || $quote->status === 'draft')
+    <!-- Traditional Signature Section (Pending Quote) -->
     <div style="margin-top: 50px; padding: 20px; border: 2px solid #2563eb; border-radius: 5px;">
         <div style="font-weight: bold; margin-bottom: 15px; font-size: 11pt;">Bon pour accord</div>
         <div style="display: table; width: 100%;">
@@ -229,25 +312,8 @@
 @endsection
 
 @section('footer')
-    @if($tenant->footer_legal_text)
-        {{ $tenant->footer_legal_text }}
-    @else
-        {{ $tenant->company_name ?? $tenant->name }}
-        @if($tenant->address_line1)
-            - {{ $tenant->address_line1 }}
-        @endif
-        @if($tenant->city)
-            - {{ $tenant->city }}
-        @endif
-        <br>
-        @if($tenant->siret)
-            SIRET: {{ $tenant->siret }} -
-        @endif
-        @if($tenant->rcs_number && $tenant->rcs_city)
-            RCS {{ $tenant->rcs_city }} {{ $tenant->rcs_number }} -
-        @endif
-        @if($tenant->vat_subject && $tenant->vat_number)
-            TVA: {{ $tenant->vat_number }}
-        @endif
-    @endif
+    {{-- Footer légal généré automatiquement par LegalFooterService --}}
+    <div style="font-size: 7pt; line-height: 1.4; color: #666; text-align: center;">
+        {!! nl2br(e($legalFooter ?? '')) !!}
+    </div>
 @endsection

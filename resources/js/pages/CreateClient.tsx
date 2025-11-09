@@ -8,12 +8,10 @@ import {
     ArrowLeftIcon,
     UserGroupIcon,
     EnvelopeIcon,
-    PhoneIcon,
     MapPinIcon,
     BuildingOfficeIcon,
     CheckCircleIcon
 } from '@heroicons/react/24/outline';
-import { Client } from '../types';
 import AddressAutocomplete from '../components/AddressAutocomplete';
 import { COUNTRIES } from '../constants/countries';
 
@@ -77,9 +75,9 @@ const CreateClient: React.FC = () => {
             const response = await axios.post('/clients', data);
             return response.data;
         },
-        onSuccess: (client) => {
+        onSuccess: (response) => {
             toast.success(t('clients.clientCreatedSuccess'));
-            navigate(`/clients/${client.id}`);
+            navigate(`/clients/${response.client.id}`);
         },
         onError: (error: any) => {
             // Handle validation errors

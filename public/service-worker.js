@@ -1,7 +1,7 @@
 // Service Worker for TimeIsMoney PWA
-const CACHE_NAME = 'tim2-v1.0.0';
-const STATIC_CACHE = 'tim2-static-v1.0.0';
-const DYNAMIC_CACHE = 'tim2-dynamic-v1.0.0';
+const CACHE_NAME = 'tim2-v1.0.1';
+const STATIC_CACHE = 'tim2-static-v1.0.1';
+const DYNAMIC_CACHE = 'tim2-dynamic-v1.0.1';
 const OFFLINE_URL = '/offline.html';
 
 // Assets to cache on install
@@ -73,6 +73,25 @@ self.addEventListener('fetch', event => {
                             .then(cache => cache.put(request, responseToCache));
                     }
 
+                    return response;
+                })
+                .catch(() => {
+                    // If offline, try to serve from cache
+                    return caches.match(request);
+                })
+        );
+        return;
+    }
+
+    // Network-first strategy for translation files
+    if (url.pathname.includes('/locales/') && url.pathname.endsWith('.json')) {
+        event.respondWith(
+            fetch(request)
+                .then(response => {
+                    // Clone and cache the fresh translation
+                    const responseToCache = response.clone();
+                    caches.open(DYNAMIC_CACHE)
+                        .then(cache => cache.put(request, responseToCache));
                     return response;
                 })
                 .catch(() => {

@@ -8,8 +8,11 @@ use App\Models\CreditNoteItem;
 use App\Models\Invoice;
 use App\Services\PdfGeneratorService;
 use App\Services\EmailService;
+use App\Services\FacturXService;
+use App\Services\CreditNoteService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class CreditNoteController extends Controller
@@ -425,6 +428,96 @@ class CreditNoteController extends Controller
             DB::rollback();
             return response()->json([
                 'message' => 'Failed to apply credit note',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Create credit note from invoice (alternative route)
+     */
+    public function createFromInvoice(Request $request, CreditNoteService $creditNoteService)
+    {
+        $validated = $request->validate([
+            'invoice_id' => 'required|exists:invoices,id',
+            'reason' => 'required|string|max:500',
+            'full_credit' => 'boolean',
+            'items' => 'array',
+            'items.*.id' => 'exists:invoice_items,id',
+            'items.*.quantity' => 'numeric|min:0'
+        ]);
+        
+        try {
+            $invoice = Invoice::where('tenant_id', auth()->user()->tenant_id)
+                ->findOrFail($validated['invoice_id']);
+            
+            $creditNote = $creditNoteService->createFromInvoice(
+                $invoice,
+                $validated['items'] ?? [],
+                $validated['full_credit'] ?? true,
+                $validated['reason']
+            );
+            
+            return response()->json([
+                'message' => 'Avoir créé avec succès',
+                'data' => $creditNote->load(['client', 'invoice', 'items'])
+            ], 201);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Échec de création de l\'avoir',
+                'error' => $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Download credit note as FacturX (PDF + embedded XML)
+     */
+    public function downloadFacturX($id, FacturXService $facturXService)
+    {
+        $creditNote = CreditNote::where('tenant_id', auth()->user()->tenant_id)
+            ->findOrFail($id);
+
+        // Generate if doesn't exist
+        if (!$creditNote->facturx_path) {
+            $path = $facturXService->generateFacturXForCreditNote($creditNote);
+            $creditNote->update([
+                'facturx_path' => $path,
+                'facturx_generated_at' => now(),
+                'electronic_format' => 'facturx'
+            ]);
+        }
+
+        return Storage::download($creditNote->facturx_path);
+    }
+
+    /**
+     * Generate FacturX for credit note
+     */
+    public function generateFacturX($id, FacturXService $facturXService)
+    {
+        $creditNote = CreditNote::where('tenant_id', auth()->user()->tenant_id)
+            ->findOrFail($id);
+
+        try {
+            // Force regeneration
+            $path = $facturXService->generateFacturXForCreditNote($creditNote);
+            
+            $creditNote->update([
+                'facturx_path' => $path,
+                'facturx_generated_at' => now(),
+                'electronic_format' => 'facturx'
+            ]);
+
+            return response()->json([
+                'message' => 'FacturX généré avec succès',
+                'path' => $path
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Échec de génération FacturX',
                 'error' => $e->getMessage()
             ], 500);
         }

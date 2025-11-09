@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useNavigate, Link, useSearchParams, useParams } from 'react-router-dom';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
@@ -9,12 +9,11 @@ import {
     DocumentTextIcon,
     PlusIcon,
     TrashIcon,
-    CalendarIcon,
     CurrencyEuroIcon,
     CheckCircleIcon
 } from '@heroicons/react/24/outline';
-import { Quote, QuoteItem, Client, Project, PaginatedResponse } from '../types';
 import ClientSearchSelect from '../components/ClientSearchSelect';
+import ProjectSearchSelect from '../components/ProjectSearchSelect';
 
 interface QuoteFormData {
     client_id: string;
@@ -24,20 +23,28 @@ interface QuoteFormData {
     valid_until: string;
     notes: string;
     terms: string;
+    tax_rate: number;
     items: Array<{
         description: string;
         quantity: number;
         unit_price: number;
         tax_rate?: number;
         discount?: number;
+        total?: number;
     }>;
 }
 
 const CreateQuote: React.FC = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const { id } = useParams<{ id: string }>();
     const [searchParams] = useSearchParams();
     const clientIdFromUrl = searchParams.get('client_id') || '';
+    
+    // Determine if we're in edit mode
+    const isEditMode = !!id && id !== 'new';
+    const pageTitle = isEditMode ? 'Modifier le devis' : t('quotes.newQuote');
+    const pageDescription = isEditMode ? 'Mettre à jour les informations du devis' : t('quotes.createNewQuoteDescription');
 
     const [formData, setFormData] = useState<QuoteFormData>({
         client_id: clientIdFromUrl,
@@ -47,6 +54,7 @@ const CreateQuote: React.FC = () => {
         valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         notes: '',
         terms: '',
+        tax_rate: 20,
         items: [
             {
                 description: '',
@@ -58,6 +66,66 @@ const CreateQuote: React.FC = () => {
         ]
     });
 
+    // Fetch billing settings for default conditions
+    const { data: billingSettings } = useQuery({
+        queryKey: ['billing-settings'],
+        queryFn: async () => {
+            const response = await axios.get('/settings/billing');
+            return response.data.data;
+        },
+    });
+
+    // Fetch existing quote data if in edit mode
+    const { data: existingQuote, isLoading: isLoadingQuote } = useQuery({
+        queryKey: ['quote', id],
+        queryFn: async () => {
+            const response = await axios.get(`/quotes/${id}`);
+            return response.data.data;
+        },
+        enabled: isEditMode,
+    });
+
+    // Check if quote can be edited
+    useEffect(() => {
+        if (existingQuote && isEditMode) {
+            // Quotes can be edited if draft or sent
+            if (!['draft', 'sent'].includes(existingQuote.status)) {
+                toast.error('Ce devis ne peut plus être modifié (statut: ' + existingQuote.status + ')');
+                navigate(`/quotes/${id}`);
+                return;
+            }
+        }
+    }, [existingQuote, isEditMode, navigate, id]);
+
+    // Populate form with existing quote data
+    useEffect(() => {
+        if (existingQuote && isEditMode) {
+            setFormData({
+                client_id: existingQuote.client_id?.toString() || '',
+                project_id: existingQuote.project_id?.toString() || '',
+                subject: existingQuote.subject || '',
+                issue_date: existingQuote.issue_date || new Date().toISOString().split('T')[0],
+                valid_until: existingQuote.valid_until || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                notes: existingQuote.notes || '',
+                terms: existingQuote.conditions || existingQuote.terms || '',
+                tax_rate: existingQuote.tax_rate ?? 20,
+                items: existingQuote.items?.map((item: any) => ({
+                    description: item.description,
+                    quantity: item.quantity,
+                    unit_price: item.unit_price,
+                    tax_rate: item.tax_rate ?? 20,
+                    discount: item.discount || 0,
+                })) || [{
+                    description: '',
+                    quantity: 1,
+                    unit_price: 0,
+                    tax_rate: 20,
+                    discount: 0
+                }]
+            });
+        }
+    }, [existingQuote, isEditMode]);
+
     // Initialize client_id from URL parameter
     useEffect(() => {
         if (clientIdFromUrl) {
@@ -68,28 +136,38 @@ const CreateQuote: React.FC = () => {
         }
     }, [clientIdFromUrl]);
 
-    // Fetch projects when client is selected
-    const { data: projectsData } = useQuery<PaginatedResponse<Project>>({
-        queryKey: ['projects', formData.client_id],
-        queryFn: async () => {
-            const response = await axios.get(`/projects?client_id=${formData.client_id}`);
-            return response.data;
-        },
-        enabled: !!formData.client_id
-    });
+    // Pre-fill terms with default quote conditions
+    useEffect(() => {
+        if (billingSettings?.default_quote_conditions && !formData.terms) {
+            setFormData(prev => ({
+                ...prev,
+                terms: billingSettings.default_quote_conditions
+            }));
+        }
+    }, [billingSettings]);
+
+
 
     // Create quote mutation
     const createQuoteMutation = useMutation({
         mutationFn: async (data: QuoteFormData) => {
-            const response = await axios.post('/quotes', data);
-            return response.data;
+            if (isEditMode) {
+                const response = await axios.put(`/quotes/${id}`, data);
+                return response.data;
+            } else {
+                const response = await axios.post('/quotes', data);
+                return response.data;
+            }
         },
-        onSuccess: (quote) => {
-            toast.success(t('quotes.createSuccess'));
-            navigate(`/quotes/${quote.id}`);
+        onSuccess: (response) => {
+            const successMessage = isEditMode ? 'Devis mis à jour avec succès' : t('quotes.createSuccess');
+            toast.success(successMessage);
+            const quoteId = isEditMode ? id : response.quote.id;
+            navigate(`/quotes/${quoteId}`);
         },
         onError: (error: any) => {
-            const message = error.response?.data?.message || t('quotes.createError');
+            const defaultMessage = isEditMode ? 'Erreur lors de la mise à jour du devis' : t('quotes.createError');
+            const message = error.response?.data?.message || defaultMessage;
             toast.error(message);
         }
     });
@@ -154,6 +232,7 @@ const CreateQuote: React.FC = () => {
     const calculateTotals = () => {
         let subtotal = 0;
         let totalTax = 0;
+        const taxByRate: { [key: number]: { base: number; amount: number } } = {};
         
         formData.items.forEach(item => {
             const itemSubtotal = item.quantity * item.unit_price;
@@ -162,13 +241,21 @@ const CreateQuote: React.FC = () => {
             subtotal += itemSubtotalAfterDiscount;
             
             if (item.tax_rate) {
-                totalTax += (itemSubtotalAfterDiscount * item.tax_rate) / 100;
+                const taxAmount = (itemSubtotalAfterDiscount * item.tax_rate) / 100;
+                totalTax += taxAmount;
+                
+                // Group by tax rate
+                if (!taxByRate[item.tax_rate]) {
+                    taxByRate[item.tax_rate] = { base: 0, amount: 0 };
+                }
+                taxByRate[item.tax_rate].base += itemSubtotalAfterDiscount;
+                taxByRate[item.tax_rate].amount += taxAmount;
             }
         });
         
         const total = subtotal + totalTax;
         
-        return { subtotal, taxAmount: totalTax, total };
+        return { subtotal, taxAmount: totalTax, total, taxByRate };
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -214,12 +301,21 @@ const CreateQuote: React.FC = () => {
                 <div className="flex items-center">
                     <DocumentTextIcon className="h-8 w-8 text-blue-600 mr-3" />
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900">{t('quotes.newQuote')}</h1>
-                        <p className="text-gray-600">{t('quotes.createNewQuoteDescription')}</p>
+                        <h1 className="text-3xl font-bold text-gray-900">{pageTitle}</h1>
+                        <p className="text-gray-600">{pageDescription}</p>
                     </div>
                 </div>
             </div>
 
+            {/* Loading state for edit mode */}
+            {isEditMode && isLoadingQuote && (
+                <div className="flex items-center justify-center h-64">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                </div>
+            )}
+
+            {/* Only show form when not loading or not in edit mode */}
+            {(!isEditMode || !isLoadingQuote) && (
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Main Form */}
@@ -240,23 +336,13 @@ const CreateQuote: React.FC = () => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        {t('quotes.project')}
-                                    </label>
-                                    <select
-                                        name="project_id"
-                                        value={formData.project_id}
-                                        onChange={handleInputChange}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        disabled={!formData.client_id}
-                                    >
-                                        <option value="">{t('quotes.selectProject')}</option>
-                                        {projectsData?.data?.map(project => (
-                                            <option key={project.id} value={project.id}>
-                                                {project.name}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <ProjectSearchSelect
+                                        value={formData.project_id || ''}
+                                        onChange={(projectId) => setFormData(prev => ({ ...prev, project_id: projectId }))}
+                                        clientId={formData.client_id}
+                                        label={t('quotes.project')}
+                                        placeholder={t('quotes.selectProject') || 'Sélectionner un projet...'}
+                                    />
                                 </div>
 
                                 <div className="md:col-span-2">
@@ -323,7 +409,7 @@ const CreateQuote: React.FC = () => {
                             <div className="space-y-4">
                                 {formData.items.map((item, index) => (
                                     <div key={index} className="border border-gray-200 rounded-lg p-4">
-                                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                                             <div className="md:col-span-2">
                                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                                     {t('quotes.description')}
@@ -365,13 +451,34 @@ const CreateQuote: React.FC = () => {
                                                 />
                                             </div>
 
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    TVA (%)
+                                                </label>
+                                                <select
+                                                    value={item.tax_rate ?? 20}
+                                                    onChange={(e) => handleItemChange(index, 'tax_rate', e.target.value)}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                >
+                                                    <option value="0">0% (Exonéré)</option>
+                                                    <option value="5.5">5,5% (Taux réduit)</option>
+                                                    <option value="10">10% (Taux intermédiaire)</option>
+                                                    <option value="20">20% (Taux normal)</option>
+                                                </select>
+                                            </div>
+
                                             <div className="flex items-end">
                                                 <div className="flex-1">
                                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                                         {t('quotes.total')}
                                                     </label>
-                                                    <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg">
-                                                        €{(item.quantity * item.unit_price - (item.discount || 0)).toFixed(2)}
+                                                    <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm">
+                                                        <div className="font-medium">
+                                                            €{(item.quantity * item.unit_price - (item.discount || 0)).toFixed(2)}
+                                                        </div>
+                                                        <div className="text-xs text-gray-500">
+                                                            +€{((item.quantity * item.unit_price - (item.discount || 0)) * ((item.tax_rate ?? 20) / 100)).toFixed(2)} TVA
+                                                        </div>
                                                     </div>
                                                 </div>
 
@@ -456,9 +563,27 @@ const CreateQuote: React.FC = () => {
                                     <span className="text-gray-600">{t('quotes.subtotal')}</span>
                                     <span className="font-medium">€{totals.subtotal.toFixed(2)}</span>
                                 </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-600">{t('quotes.tax')}</span>
-                                    <span className="font-medium">€{totals.taxAmount.toFixed(2)}</span>
+                                
+                                {/* Tax breakdown by rate */}
+                                {totals.taxByRate && Object.keys(totals.taxByRate).length > 0 && (
+                                    <div className="border-t border-gray-100 pt-2 mt-2">
+                                        <div className="text-xs text-gray-500 mb-1">Détail TVA:</div>
+                                        {Object.keys(totals.taxByRate).sort((a, b) => parseFloat(b) - parseFloat(a)).map(rate => {
+                                            const rateNum = parseFloat(rate);
+                                            const taxInfo = totals.taxByRate[rateNum];
+                                            return (
+                                                <div key={rate} className="flex justify-between text-xs text-gray-600 ml-2">
+                                                    <span>TVA {rateNum}% sur €{taxInfo.base.toFixed(2)}</span>
+                                                    <span className="font-medium">€{taxInfo.amount.toFixed(2)}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                                
+                                <div className="flex justify-between text-sm font-medium border-t border-gray-100 pt-2">
+                                    <span className="text-gray-600">{t('quotes.tax')} Total</span>
+                                    <span>€{totals.taxAmount.toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between text-lg font-semibold border-t border-gray-200 pt-2">
                                     <span>{t('quotes.total')}</span>
@@ -481,7 +606,7 @@ const CreateQuote: React.FC = () => {
                                     ) : (
                                         <>
                                             <CheckCircleIcon className="h-5 w-5 mr-2" />
-                                            {t('quotes.createQuote')}
+                                            {isEditMode ? 'Mettre à jour le devis' : t('quotes.createQuote')}
                                         </>
                                     )}
                                 </button>
@@ -490,6 +615,7 @@ const CreateQuote: React.FC = () => {
                     </div>
                 </div>
             </form>
+            )}
         </div>
     );
 };

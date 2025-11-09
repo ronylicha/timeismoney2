@@ -2,16 +2,19 @@
 
 namespace App\Models;
 
+use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CreditNote extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, BelongsToTenant;
 
     protected $fillable = [
         'tenant_id',
+        'created_by',
         'client_id',
         'invoice_id',
         'credit_note_number',
@@ -28,16 +31,37 @@ class CreditNote extends Model
         'notes',
         'compliance_hash',
         'compliance_date',
+        'facturx_path',
+        'electronic_format',
+        'facturx_generated_at',
     ];
 
     protected $casts = [
         'credit_note_date' => 'date',
         'compliance_date' => 'datetime',
+        'facturx_generated_at' => 'datetime',
         'subtotal' => 'decimal:2',
         'tax' => 'decimal:2',
         'discount' => 'decimal:2',
         'total' => 'decimal:2',
     ];
+
+    protected static function booted()
+    {
+        static::creating(function (CreditNote $creditNote) {
+            if (!$creditNote->created_by && auth()->check()) {
+                $creditNote->created_by = auth()->id();
+            }
+        });
+    }
+
+    /**
+     * Get the user who created the credit note
+     */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 
     /**
      * Get the tenant that owns the credit note
@@ -126,14 +150,6 @@ class CreditNote extends Model
         ];
 
         return hash('sha256', json_encode($data));
-    }
-
-    /**
-     * Scope for tenant
-     */
-    public function scopeForTenant($query, $tenantId)
-    {
-        return $query->where('tenant_id', $tenantId);
     }
 
     /**

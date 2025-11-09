@@ -7,14 +7,11 @@ import { toast } from 'react-toastify';
 import {
     ArrowLeftIcon,
     BanknotesIcon,
-    CalendarIcon,
-    FolderIcon,
-    TagIcon,
     DocumentIcon,
     CheckCircleIcon,
     PhotoIcon
 } from '@heroicons/react/24/outline';
-import { Expense, ExpenseCategory, Project, PaginatedResponse } from '../types';
+import { Project, PaginatedResponse } from '../types';
 
 interface ExpenseFormData {
     description: string;
@@ -46,7 +43,7 @@ const CreateExpense: React.FC = () => {
     const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
 
     // Fetch expense categories
-    const { data: categoriesData } = useQuery<PaginatedResponse<ExpenseCategory>>({
+    const { data: categoriesData } = useQuery<PaginatedResponse<any>>({
         queryKey: ['expense-categories'],
         queryFn: async () => {
             const response = await axios.get('/expense-categories');
@@ -87,9 +84,9 @@ const CreateExpense: React.FC = () => {
             });
             return response.data;
         },
-        onSuccess: (expense) => {
+        onSuccess: (response) => {
             toast.success(t('expenses.createSuccess'));
-            navigate(`/expenses/${expense.id}`);
+            navigate(`/expenses/${response.expense.id}`);
         },
         onError: (error: any) => {
             const message = error.response?.data?.message || t('expenses.createError');

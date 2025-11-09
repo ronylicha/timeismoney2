@@ -15,14 +15,41 @@ class InvoiceSent extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public Invoice $invoice;
+    private int $invoiceId;
+
     /**
      * Create a new message instance.
      */
     public function __construct(
-        public Invoice $invoice,
+        Invoice $invoice,
         private PdfGeneratorService $pdfService
     ) {
-        //
+        // Store only the ID to avoid serialization issues with circular relationships
+        $this->invoiceId = $invoice->id;
+        // Load only safe relations
+        $this->invoice = $invoice->loadMissing(['client', 'tenant', 'items']);
+    }
+
+    /**
+     * Prepare the invoice for serialization
+     */
+    public function __serialize(): array
+    {
+        return [
+            'invoiceId' => $this->invoiceId,
+        ];
+    }
+
+    /**
+     * Restore the invoice after unserialization
+     */
+    public function __unserialize(array $data): void
+    {
+        $this->invoiceId = $data['invoiceId'];
+        // Reload the invoice with only safe relations
+        $this->invoice = Invoice::with(['client', 'tenant', 'items'])->findOrFail($this->invoiceId);
+        $this->pdfService = app(PdfGeneratorService::class);
     }
 
     /**
