@@ -1,7 +1,7 @@
 {
     "name": "TimeIsMoney",
     "short_name": "TIM",
-    "version": "2.0.0",
+    "version": "3.0.0",
     "description": "Application complète de gestion du temps et de facturation",
     "start_url": "/login",
     "display": "standalone",

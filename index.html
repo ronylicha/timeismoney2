@@ -81,9 +81,9 @@
       // Register service worker for PWA
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/sw.js?v=2.0.0').then(function(registration) {
-            console.log('ServiceWorker registration successful');
-            // Check for updates
+          navigator.serviceWorker.register('/sw.js?v=3.0.0').then(function(registration) {
+            console.log('ServiceWorker registration successful with version 3.0.0');
+            // Check for updates immediately
             registration.update();
           }, function(err) {
             console.log('ServiceWorker registration failed: ', err);

@@ -1,5 +1,5 @@
 // Service Worker for TimeIsMoney PWA
-const CACHE_NAME = 'timeismoney-v2';
+const CACHE_NAME = 'timeismoney-v4';
 const urlsToCache = [
   '/login',
   '/manifest.json',
@@ -58,13 +58,14 @@ self.addEventListener('fetch', event => {
   // Handle navigation requests (HTML pages)
   if (request.mode === 'navigate') {
     // In PWA mode, always redirect to login for the root path
-    if (url.pathname === '/' || url.pathname === '/index.html') {
-      event.respondWith(
-        fetch('/login').catch(() => {
-          return caches.match('/login');
-        })
-      );
-      return;
+    if (url.pathname === '/' || url.pathname === '/index.html' || url.pathname === '' || url.pathname === '/dashboard') {
+      // Check if this is a PWA navigation to root
+      if (url.pathname === '/' || url.pathname === '/index.html' || url.pathname === '') {
+        event.respondWith(
+          Response.redirect('/login', 302)
+        );
+        return;
+      }
     }
 
     // For other navigation requests, try network first, then cache
