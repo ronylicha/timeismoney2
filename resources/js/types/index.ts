@@ -151,7 +151,7 @@ export interface Task {
     title: string;
     description?: string;
     status: 'todo' | 'in_progress' | 'review' | 'done' | 'cancelled';
-    priority: 'low' | 'medium' | 'high' | 'urgent';
+    priority: 'low' | 'normal' | 'high' | 'urgent';
     assignee_id?: string;
     estimated_hours?: number;
     actual_hours?: number;

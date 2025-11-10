@@ -182,16 +182,16 @@ const Tasks: React.FC = () => {
         const colors = {
             todo: 'bg-gray-100 text-gray-800',
             in_progress: 'bg-blue-100 text-blue-800',
-            in_review: 'bg-purple-100 text-purple-800',
-            completed: 'bg-green-100 text-green-800',
+            review: 'bg-purple-100 text-purple-800',
+            done: 'bg-green-100 text-green-800',
             cancelled: 'bg-red-100 text-red-800',
         };
 
         const labels = {
             todo: t('tasks.status.todo'),
             in_progress: t('tasks.status.inProgress'),
-            in_review: t('tasks.status.inReview'),
-            completed: t('tasks.status.completed'),
+            review: t('tasks.status.inReview'),
+            done: t('tasks.status.done'),
             cancelled: t('tasks.status.cancelled'),
         };
 
@@ -232,7 +232,7 @@ const Tasks: React.FC = () => {
     };
 
     const getTasksByStatus = () => {
-        if (!tasks) return { todo: 0, in_progress: 0, in_review: 0, completed: 0 };
+        if (!tasks) return { todo: 0, in_progress: 0, review: 0, done: 0, cancelled: 0 };
         return tasks.reduce((acc: any, task: Task) => {
             acc[task.status] = (acc[task.status] || 0) + 1;
             return acc;
@@ -341,7 +341,7 @@ const Tasks: React.FC = () => {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm font-medium text-gray-600">{t('tasks.stats.inReview')}</p>
-                            <p className="text-2xl font-bold text-gray-900 mt-2">{statusCounts.in_review || 0}</p>
+                            <p className="text-2xl font-bold text-gray-900 mt-2">{statusCounts.review || 0}</p>
                         </div>
                         <div className="p-3 bg-purple-100 rounded-lg">
                             <ClockIcon className="h-6 w-6 text-purple-600" />
@@ -352,8 +352,8 @@ const Tasks: React.FC = () => {
                 <div className="bg-white rounded-lg shadow p-6">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm font-medium text-gray-600">{t('tasks.stats.completed')}</p>
-                            <p className="text-2xl font-bold text-gray-900 mt-2">{statusCounts.completed || 0}</p>
+                            <p className="text-sm font-medium text-gray-600">{t('tasks.stats.done')}</p>
+                            <p className="text-2xl font-bold text-gray-900 mt-2">{statusCounts.done || 0}</p>
                         </div>
                         <div className="p-3 bg-green-100 rounded-lg">
                             <CheckCircleIcon className="h-6 w-6 text-green-600" />
@@ -384,10 +384,10 @@ const Tasks: React.FC = () => {
                                     {t('tasks.status.inProgress')}
                                 </button>
                                 <button
-                                    onClick={() => handleBulkStatusUpdate('completed')}
+                                    onClick={() => handleBulkStatusUpdate('done')}
                                     className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded hover:bg-green-200 transition"
                                 >
-                                    {t('tasks.status.completed')}
+                                    {t('tasks.status.done')}
                                 </button>
                                 <button
                                     onClick={handleBulkDelete}
@@ -430,8 +430,8 @@ const Tasks: React.FC = () => {
                         <option value="all">{t('tasks.allStatuses')}</option>
                         <option value="todo">{t('tasks.status.todo')}</option>
                         <option value="in_progress">{t('tasks.status.inProgress')}</option>
-                        <option value="in_review">{t('tasks.status.inReview')}</option>
-                        <option value="completed">{t('tasks.status.completed')}</option>
+                        <option value="review">{t('tasks.status.inReview')}</option>
+                        <option value="done">{t('tasks.status.done')}</option>
                         <option value="cancelled">{t('tasks.status.cancelled')}</option>
                     </select>
 
@@ -723,8 +723,8 @@ const Tasks: React.FC = () => {
                                         >
                                             <option value="todo">{t('tasks.status.todo')}</option>
                                             <option value="in_progress">{t('tasks.status.inProgress')}</option>
-                                            <option value="in_review">{t('tasks.status.inReview')}</option>
-                                            <option value="completed">{t('tasks.status.completed')}</option>
+                                            <option value="review">{t('tasks.status.inReview')}</option>
+                                            <option value="done">{t('tasks.status.done')}</option>
                                             <option value="cancelled">{t('tasks.status.cancelled')}</option>
                                         </select>
                                     </div>
