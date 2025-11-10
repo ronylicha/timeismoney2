@@ -64,7 +64,7 @@ class StripePaymentService
     public function isConfigured(): bool
     {
         if ($this->tenant) {
-            return $this->tenant->hasStripeConfigured();
+            return $this->tenant->isStripeActive();
         }
 
         return !empty(config('stripe.secret'));

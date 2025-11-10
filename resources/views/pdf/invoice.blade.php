@@ -228,6 +228,38 @@
     <div class="payment-info">
         <div class="payment-title">Informations de paiement et mentions légales</div>
         <div class="payment-details">
+            {{-- Lien de paiement Stripe si disponible --}}
+            @if($invoice->stripe_payment_link && $invoice->status !== 'paid')
+                <div style="background-color: #f0f9ff; border: 2px solid #0ea5e9; border-radius: 8px; padding: 15px; margin-bottom: 20px; text-align: center;">
+                    <div style="font-size: 14pt; font-weight: bold; color: #0369a1; margin-bottom: 8px;">
+                        💳 Payer cette facture en ligne
+                    </div>
+                    <div style="font-size: 11pt; color: #0c4a6e; margin-bottom: 12px;">
+                        Paiement sécurisé par carte bancaire
+                    </div>
+                    <div style="font-family: monospace; font-size: 10pt; background-color: #ffffff; border: 1px dashed #0ea5e9; padding: 8px; border-radius: 4px; word-break: break-all; margin-bottom: 10px;">
+                        {{ $invoice->stripe_payment_link }}
+                    </div>
+                    <div style="font-size: 9pt; color: #64748b;">
+                        Scannez le QR code ci-dessous ou copiez le lien dans votre navigateur
+                    </div>
+                    {{-- QR Code pour le lien de paiement --}}
+                    @php
+                        try {
+                            $qrCode = new \Endroid\QrCode\QrCode($invoice->stripe_payment_link);
+                            $qrCode->setSize(120);
+                            $qrCode->setMargin(5);
+                            $writer = new \Endroid\QrCode\Writer\PngWriter();
+                            $qrCodeDataUri = $writer->write($qrCode)->getDataUri();
+                            echo '<div style="margin-top: 10px;"><img src="' . $qrCodeDataUri . '" alt="QR Code paiement" style="width: 120px; height: 120px; border: 1px solid #e2e8f0; border-radius: 4px;"></div>';
+                        } catch (\Exception $e) {
+                            // Fallback si QR code non disponible
+                        }
+                    @endphp
+                </div>
+                <br>
+            @endif
+            
             {{-- Conditions de règlement (OBLIGATOIRE - Art. L441-3) --}}
             @if($invoice->payment_conditions)
                 <strong>Conditions de règlement:</strong> {{ $invoice->payment_conditions }}<br>

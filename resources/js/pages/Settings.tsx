@@ -441,6 +441,20 @@ const Settings: React.FC = () => {
         },
     });
 
+    const toggleStripeMutation = useMutation({
+        mutationFn: async (enabled: boolean) => {
+            const response = await axios.post('/settings/stripe/toggle', { stripe_enabled: enabled });
+            return response.data;
+        },
+        onSuccess: (_, variables) => {
+            refetchStripe();
+            toast.success(variables ? t('settings.stripeEnabled') : t('settings.stripeDisabled'));
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || t('settings.stripeToggleError'));
+        }
+    });
+
     const disableStripeMutation = useMutation({
         mutationFn: async () => {
             const response = await axios.post('/settings/stripe/disable');
@@ -452,7 +466,7 @@ const Settings: React.FC = () => {
         },
         onError: (error: any) => {
             toast.error(error.response?.data?.message || t('settings.stripeDisableError'));
-        },
+        }
     });
 
     // PDP mutations
@@ -801,17 +815,35 @@ const Settings: React.FC = () => {
                             <CreditCardIcon className="h-6 w-6 text-gray-600" />
                             <h2 className="text-lg font-semibold text-gray-900">{t('settings.stripeIntegration')}</h2>
                         </div>
-                        {stripeSettings?.stripe_enabled ? (
-                            <div className="flex items-center space-x-2 text-green-600">
-                                <CheckCircleIcon className="h-5 w-5" />
-                                <span className="text-sm font-medium">{t('settings.enabled')}</span>
-                            </div>
-                        ) : (
-                            <div className="flex items-center space-x-2 text-gray-400">
-                                <XCircleIcon className="h-5 w-5" />
-                                <span className="text-sm font-medium">{t('settings.disabled')}</span>
-                            </div>
-                        )}
+                        <div className="flex items-center space-x-3">
+                            {stripeSettings?.stripe_configured && (
+                                <div className="flex items-center space-x-2">
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={stripeSettings?.stripe_enabled || false}
+                                            onChange={(e) => toggleStripeMutation.mutate(e.target.checked)}
+                                            disabled={toggleStripeMutation.isPending}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    </label>
+                                    <span className="text-sm font-medium">
+                                        {stripeSettings?.stripe_enabled ? (
+                                            <span className="text-green-600">{t('settings.enabled')}</span>
+                                        ) : (
+                                            <span className="text-gray-400">{t('settings.disabled')}</span>
+                                        )}
+                                    </span>
+                                </div>
+                            )}
+                            {!stripeSettings?.stripe_configured && (
+                                <div className="flex items-center space-x-2 text-gray-400">
+                                    <XCircleIcon className="h-5 w-5" />
+                                    <span className="text-sm font-medium">{t('settings.notConfigured')}</span>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     <div className="space-y-4">

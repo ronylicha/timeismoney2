@@ -243,6 +243,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/settings/stripe', [SettingsController::class, 'getStripeSettings']);
     Route::post('/settings/stripe', [SettingsController::class, 'updateStripeSettings']);
     Route::post('/settings/stripe/test', [SettingsController::class, 'testStripeConnection']);
+    Route::post('/settings/stripe/toggle', [SettingsController::class, 'toggleStripe']);
     Route::post('/settings/stripe/disable', [SettingsController::class, 'disableStripe']);
 
     // PDP Settings (Tenant-specific)

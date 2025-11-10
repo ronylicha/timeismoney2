@@ -163,10 +163,11 @@ class SettingsController extends Controller
         return response()->json([
             'data' => [
                 'stripe_enabled' => $tenant->stripe_enabled,
-                'stripe_publishable_key' => $tenant->stripe_publishable_key,
+                'stripe_publishable_key' => $tenant->getStripePublishableKeyForDisplay(),
                 'stripe_account_id' => $tenant->stripe_account_id,
                 'stripe_connected_at' => $tenant->stripe_connected_at,
                 'stripe_configured' => $tenant->hasStripeConfigured(),
+                'stripe_functional' => $tenant->testStripeConnection()['success'] ?? false,
                 'webhook_url' => route('stripe.webhook'),
                 'webhook_instructions' => [
                     'url' => route('stripe.webhook'),
@@ -209,19 +210,23 @@ class SettingsController extends Controller
             \Stripe\Stripe::setApiKey($validated['stripe_secret_key']);
             \Stripe\Balance::retrieve(); // Test API call
 
-            $tenant->update([
+            // Encrypt and store keys - respect user's choice for stripe_enabled
+            $tenant->setStripeKeys([
                 'stripe_publishable_key' => $validated['stripe_publishable_key'],
                 'stripe_secret_key' => $validated['stripe_secret_key'],
                 'stripe_webhook_secret' => $validated['stripe_webhook_secret'] ?? null,
-                'stripe_enabled' => $validated['stripe_enabled'] ?? true,
-                'stripe_connected_at' => $tenant->stripe_connected_at ?? now(),
+                'stripe_enabled' => $validated['stripe_enabled'] ?? false, // Default to false, let user decide
             ]);
 
             return response()->json([
                 'message' => 'Stripe configuration updated successfully',
                 'data' => [
                     'stripe_enabled' => $tenant->stripe_enabled,
-                    'stripe_configured' => $tenant->hasStripeConfigured(),
+                'stripe_configured' => $tenant->hasStripeConfigured(),
+                'stripe_active' => $tenant->isStripeActive(),
+                    'stripe_active' => $tenant->isStripeActive(),
+                    'stripe_publishable_key_display' => $tenant->getStripePublishableKeyForDisplay(),
+                    'stripe_webhook_secret_display' => $tenant->getStripeWebhookSecretForDisplay(),
                     'webhook_url' => route('stripe.webhook'),
                 ]
             ]);
@@ -247,38 +252,72 @@ class SettingsController extends Controller
 
         $tenant = $user->tenant;
 
-        if (!$tenant->hasStripeConfigured()) {
+        if (!$tenant->isStripeActive()) {
             return response()->json([
-                'message' => 'Stripe is not configured for this tenant',
+                'message' => 'Stripe is not active for this tenant',
                 'success' => false
             ], 400);
         }
 
-        try {
-            \Stripe\Stripe::setApiKey($tenant->getStripeSecretKey());
-            $balance = \Stripe\Balance::retrieve();
+        $result = $tenant->testStripeConnection();
 
+        if ($result['success']) {
             return response()->json([
-                'message' => 'Stripe connection successful',
+                'message' => $result['message'],
                 'success' => true,
                 'data' => [
-                    'available' => $balance->available,
-                    'pending' => $balance->pending,
-                    'currency' => $balance->available[0]->currency ?? 'eur',
+                    'balance' => $result['balance'] ?? 0,
+                    'currency' => $result['currency'] ?? 'eur',
                 ]
             ]);
-
-        } catch (\Exception $e) {
+        } else {
             return response()->json([
-                'message' => 'Stripe connection failed',
+                'message' => $result['error'] ?? 'Stripe connection failed',
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => $result['error'] ?? 'Unknown error'
             ], 422);
         }
     }
 
     /**
-     * Disable Stripe for current tenant
+     * Toggle Stripe status for current tenant
+     */
+    public function toggleStripe(Request $request)
+    {
+        $user = auth()->user();
+
+        if (!$user->hasPermission('manage_settings')) {
+            return response()->json(['message' => 'Insufficient permissions'], 403);
+        }
+
+        $validated = $request->validate([
+            'stripe_enabled' => 'required|boolean'
+        ]);
+
+        $tenant = $user->tenant;
+        
+        // Only allow enabling if Stripe is configured
+        if ($validated['stripe_enabled'] && !$tenant->hasStripeConfigured()) {
+            return response()->json([
+                'message' => 'Cannot enable Stripe: keys not configured',
+                'error' => 'stripe_not_configured'
+            ], 422);
+        }
+
+        $tenant->update(['stripe_enabled' => $validated['stripe_enabled']]);
+
+        return response()->json([
+            'message' => $validated['stripe_enabled'] ? 'Stripe enabled successfully' : 'Stripe disabled successfully',
+            'data' => [
+                'stripe_enabled' => $tenant->stripe_enabled,
+                'stripe_configured' => $tenant->hasStripeConfigured(),
+                'stripe_active' => $tenant->isStripeActive(),
+            ]
+        ]);
+    }
+
+    /**
+     * Disable Stripe for current tenant (legacy method)
      */
     public function disableStripe()
     {
@@ -294,7 +333,9 @@ class SettingsController extends Controller
         return response()->json([
             'message' => 'Stripe disabled successfully',
             'data' => [
-                'stripe_enabled' => false
+                'stripe_enabled' => false,
+                'stripe_configured' => $tenant->hasStripeConfigured(),
+                'stripe_active' => $tenant->isStripeActive(),
             ]
         ]);
     }

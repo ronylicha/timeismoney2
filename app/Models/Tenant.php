@@ -215,33 +215,133 @@ class Tenant extends Model
      */
     public function hasStripeConfigured(): bool
     {
-        return $this->stripe_enabled &&
-               !empty($this->stripe_publishable_key) &&
+        return !empty($this->stripe_publishable_key) &&
                !empty($this->stripe_secret_key);
     }
 
     /**
-     * Get Stripe publishable key
+     * Check if Stripe is both configured AND enabled
+     */
+    public function isStripeActive(): bool
+    {
+        return $this->stripe_enabled && $this->hasStripeConfigured();
+    }
+
+    /**
+     * Get Stripe publishable key (decrypted)
      */
     public function getStripePublishableKey(): ?string
     {
-        return $this->stripe_enabled ? $this->stripe_publishable_key : null;
+        if (!$this->stripe_enabled || empty($this->stripe_publishable_key)) {
+            return null;
+        }
+
+        return \App\Services\EncryptionService::decrypt($this->stripe_publishable_key);
     }
 
     /**
-     * Get Stripe secret key
+     * Get Stripe secret key (decrypted)
      */
     public function getStripeSecretKey(): ?string
     {
-        return $this->stripe_enabled ? $this->stripe_secret_key : null;
+        if (!$this->stripe_enabled || empty($this->stripe_secret_key)) {
+            return null;
+        }
+
+        return \App\Services\EncryptionService::decrypt($this->stripe_secret_key);
     }
 
     /**
-     * Get Stripe webhook secret
+     * Get Stripe webhook secret (decrypted)
      */
     public function getStripeWebhookSecret(): ?string
     {
-        return $this->stripe_enabled ? $this->stripe_webhook_secret : null;
+        if (!$this->stripe_enabled || empty($this->stripe_webhook_secret)) {
+            return null;
+        }
+
+        return \App\Services\EncryptionService::decrypt($this->stripe_webhook_secret);
+    }
+
+    /**
+     * Get Stripe publishable key for display (masked)
+     */
+    public function getStripePublishableKeyForDisplay(): ?string
+    {
+        $key = $this->getStripePublishableKey();
+        if (!$key) {
+            return null;
+        }
+
+        return substr($key, 0, 8) . '...' . substr($key, -4);
+    }
+
+    /**
+     * Get Stripe webhook secret for display (masked)
+     */
+    public function getStripeWebhookSecretForDisplay(): ?string
+    {
+        $key = $this->getStripeWebhookSecret();
+        if (!$key) {
+            return null;
+        }
+
+        return substr($key, 0, 10) . '...' . substr($key, -4);
+    }
+
+    /**
+     * Set Stripe keys with encryption
+     */
+    public function setStripeKeys(array $keys): void
+    {
+        $encryptedKeys = \App\Services\EncryptionService::encryptStripeKeys($keys);
+        
+        $this->update([
+            'stripe_publishable_key' => $encryptedKeys['stripe_publishable_key'],
+            'stripe_secret_key' => $encryptedKeys['stripe_secret_key'],
+            'stripe_webhook_secret' => $encryptedKeys['stripe_webhook_secret'],
+            'stripe_enabled' => $keys['stripe_enabled'] ?? true,
+            'stripe_connected_at' => $this->stripe_connected_at ?? now(),
+        ]);
+    }
+
+    /**
+     * Test Stripe connection with decrypted keys
+     */
+    public function testStripeConnection(): array
+    {
+        if (!$this->hasStripeConfigured()) {
+            return [
+                'success' => false,
+                'error' => 'Stripe is not configured'
+            ];
+        }
+
+        try {
+            $secretKey = $this->getStripeSecretKey();
+            if (!$secretKey) {
+                return [
+                    'success' => false,
+                    'error' => 'Secret key could not be decrypted'
+                ];
+            }
+
+            \Stripe\Stripe::setApiKey($secretKey);
+            $balance = \Stripe\Balance::retrieve();
+
+            return [
+                'success' => true,
+                'message' => 'Stripe connection successful',
+                'balance' => $balance->available[0]->amount / 100,
+                'currency' => $balance->available[0]->currency,
+            ];
+
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+        }
     }
 
     /**

@@ -374,9 +374,9 @@ class InvoiceController extends Controller
             'recipient_email' => 'nullable|email'
         ]);
 
-        // Generate Stripe payment link if Stripe is configured for tenant
+        // Generate Stripe payment link if Stripe is configured and enabled for tenant
         $tenant = auth()->user()->tenant;
-        if ($tenant && $tenant->hasStripeConfigured()) {
+        if ($tenant && $tenant->isStripeActive()) {
             try {
                 // Configure Stripe service with tenant
                 $stripeService->setTenant($tenant);
