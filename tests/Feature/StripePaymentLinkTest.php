@@ -55,7 +55,9 @@ class StripePaymentLinkTest extends TestCase
             'description' => 'Test Item',
             'quantity' => 1,
             'unit_price' => 100,
-            'total' => 100,
+            'subtotal' => 100,
+            'tax_amount' => 20,
+            'total' => 120,
             'tax_rate' => 20,
         ]);
 
@@ -67,7 +69,9 @@ class StripePaymentLinkTest extends TestCase
 
         // Mock Stripe service to avoid real API calls
         $mockStripeService = $this->createMock(StripePaymentService::class);
-        $mockSession = new \stdClass();
+        
+        // Create a proper mock of Stripe Checkout Session
+        $mockSession = $this->createMock(\Stripe\Checkout\Session::class);
         $mockSession->url = 'https://checkout.stripe.com/pay/test_session_123';
         $mockSession->id = 'cs_test_123';
         $mockSession->payment_intent = 'pi_test_123';
@@ -118,7 +122,9 @@ class StripePaymentLinkTest extends TestCase
             'description' => 'Test Item',
             'quantity' => 1,
             'unit_price' => 100,
-            'total' => 100,
+            'subtotal' => 100,
+            'tax_amount' => 20,
+            'total' => 120,
             'tax_rate' => 20,
         ]);
 
@@ -155,7 +161,9 @@ class StripePaymentLinkTest extends TestCase
             'description' => 'Test Item',
             'quantity' => 1,
             'unit_price' => 100,
-            'total' => 100,
+            'subtotal' => 100,
+            'tax_amount' => 20,
+            'total' => 120,
             'tax_rate' => 20,
         ]);
 
@@ -193,7 +201,9 @@ class StripePaymentLinkTest extends TestCase
             'description' => 'Test Item',
             'quantity' => 1,
             'unit_price' => 100,
-            'total' => 100,
+            'subtotal' => 100,
+            'tax_amount' => 20,
+            'total' => 120,
             'tax_rate' => 20,
         ]);
 
@@ -234,7 +244,9 @@ class StripePaymentLinkTest extends TestCase
             'description' => 'Test Item',
             'quantity' => 1,
             'unit_price' => 100,
-            'total' => 100,
+            'subtotal' => 100,
+            'tax_amount' => 20,
+            'total' => 120,
             'tax_rate' => 20,
         ]);
 

@@ -244,11 +244,17 @@ class Tenant extends Model
      */
     public function getStripeSecretKey(): ?string
     {
-        if (!$this->stripe_enabled || empty($this->stripe_secret_key)) {
+        if (empty($this->stripe_secret_key)) {
             return null;
         }
 
-        return \App\Services\EncryptionService::decrypt($this->stripe_secret_key);
+        // Check if key is already encrypted (starts with base64 header)
+        if (str_starts_with($this->stripe_secret_key, 'eyJ')) {
+            return \App\Services\EncryptionService::decrypt($this->stripe_secret_key);
+        }
+
+        // Return plain text key if not encrypted (backward compatibility)
+        return $this->stripe_secret_key;
     }
 
     /**

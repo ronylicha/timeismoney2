@@ -222,8 +222,7 @@ class SettingsController extends Controller
                 'message' => 'Stripe configuration updated successfully',
                 'data' => [
                     'stripe_enabled' => $tenant->stripe_enabled,
-                'stripe_configured' => $tenant->hasStripeConfigured(),
-                'stripe_active' => $tenant->isStripeActive(),
+                    'stripe_configured' => $tenant->hasStripeConfigured(),
                     'stripe_active' => $tenant->isStripeActive(),
                     'stripe_publishable_key_display' => $tenant->getStripePublishableKeyForDisplay(),
                     'stripe_webhook_secret_display' => $tenant->getStripeWebhookSecretForDisplay(),
