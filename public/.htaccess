@@ -1,3 +1,46 @@
+# Cache Control Headers for better iOS compatibility
+<IfModule mod_headers.c>
+    # Disable ETag (use Cache-Control instead)
+    Header unset ETag
+    FileETag None
+
+    # Set default Cache-Control for all files
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+
+    # Cache static assets (images, fonts, etc.) - 1 week
+    <FilesMatch "\.(jpg|jpeg|png|gif|svg|ico|webp|woff|woff2|ttf|eot)$">
+        Header set Cache-Control "public, max-age=604800, stale-while-revalidate=86400"
+    </FilesMatch>
+
+    # Cache CSS and JS with versioning - 1 year (they should be versioned)
+    <FilesMatch "\.(css|js)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+
+    # Don't cache HTML - always revalidate (important for iOS)
+    <FilesMatch "\.(html|htm)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </FilesMatch>
+
+    # Don't cache service worker and manifest
+    <FilesMatch "(service-worker\.js|sw\.js|manifest\.json)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </FilesMatch>
+
+    # API calls should not be cached
+    <IfModule mod_rewrite.c>
+        RewriteCond %{REQUEST_URI} ^/api/
+        RewriteRule .* - [E=NO_CACHE:1]
+    </IfModule>
+    Header set Cache-Control "no-cache, no-store, must-revalidate" env=NO_CACHE
+</IfModule>
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
