@@ -115,6 +115,12 @@ return [
             'contact' => 'contact@certeurope.fr',
             'phone' => '01 71 25 00 00',
         ],
+
+        'openapi' => [
+            'url' => 'https://openapi.com/',
+            'name' => 'OpenAPI',
+            'description' => 'Fournisseur d\'horodatage qualifié recommandé',
+        ],
     ],
 
 ];

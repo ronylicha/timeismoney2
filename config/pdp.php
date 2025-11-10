@@ -112,4 +112,27 @@ return [
         'events' => ['invoice.submitted', 'invoice.processed', 'invoice.rejected'],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Fournisseurs recommandés
+    |--------------------------------------------------------------------------
+    |
+    | Liens vers les fournisseurs de services recommandés pour la PDP
+    | et l'horodatage qualifié
+    |
+    */
+
+    'providers' => [
+        'pdp' => [
+            'name' => 'SuperPDP',
+            'url' => 'https://www.superpdp.tech/',
+            'description' => 'Fournisseur PDP recommandé pour la facturation électronique B2B',
+        ],
+        'timestamp' => [
+            'name' => 'OpenAPI',
+            'url' => 'https://openapi.com/',
+            'description' => 'Fournisseur d\'horodatage qualifié recommandé',
+        ],
+    ],
+
 ];

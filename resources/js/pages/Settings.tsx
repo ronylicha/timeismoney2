@@ -1094,9 +1094,21 @@ const Settings: React.FC = () => {
                         ) : (
                             <form onSubmit={handlePdpSubmit} className="space-y-4">
                                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                    <p className="text-sm text-blue-800">
+                                    <p className="text-sm text-blue-800 mb-2">
                                         Configurez l'intégration avec le Portail Public de Facturation de la DGFIP pour la facturation électronique B2B obligatoire en France.
                                     </p>
+                                    <div className="mt-3 p-3 bg-white rounded border border-blue-200">
+                                        <p className="text-xs font-semibold text-blue-900 mb-1">📋 Fournisseur recommandé:</p>
+                                        <a 
+                                            href="https://www.superpdp.tech/" 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="text-xs text-blue-600 hover:text-blue-800 underline flex items-center"
+                                        >
+                                            SuperPDP.tech - Portail Public de Facturation
+                                            <ArrowRightIcon className="h-3 w-3 ml-1" />
+                                        </a>
+                                    </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1448,9 +1460,18 @@ const Settings: React.FC = () => {
                                                 placeholder="https://api.openapi.com/tsa/v1"
                                                 required
                                             />
-                                            <p className="text-xs text-gray-500 mt-1">
-                                                URL du service d'horodatage qualifié OpenAPI.com
-                                            </p>
+                                            <div className="mt-2 p-3 bg-blue-50 rounded border border-blue-200">
+                                                <p className="text-xs font-semibold text-blue-900 mb-1">🔐 Fournisseur recommandé:</p>
+                                                <a 
+                                                    href="https://openapi.com/" 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="text-xs text-blue-600 hover:text-blue-800 underline flex items-center"
+                                                >
+                                                    OpenAPI.com - Horodatage Qualifié NF525
+                                                    <ArrowRightIcon className="h-3 w-3 ml-1" />
+                                                </a>
+                                            </div>
                                         </div>
 
                                         <div>
@@ -1507,9 +1528,9 @@ const Settings: React.FC = () => {
                                         type="button"
                                         onClick={() => testTimestampConnectionMutation.mutate()}
                                         disabled={testTimestampConnectionMutation.isPending}
-                                        className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition disabled:bg-gray-400"
+                                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:bg-gray-400"
                                     >
-                                        {testTimestampConnectionMutation.isPending ? 'Test...' : 'Tester la connexion'}
+                                        {testTimestampConnectionMutation.isPending ? 'Test en cours...' : 'Tester l\'horodatage qualifié'}
                                     </button>
                                 )}
                                 <button
