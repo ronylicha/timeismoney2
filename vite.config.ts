@@ -47,7 +47,7 @@ export default defineConfig({
     ],
     resolve: {
         alias: {
-            '@': '/var/www/html/timeismoney2/resources/js',
+            '@': new URL('./resources/js', import.meta.url).pathname,
         },
         extensions: ['.tsx', '.ts', '.jsx', '.js', '.json'],
     },
