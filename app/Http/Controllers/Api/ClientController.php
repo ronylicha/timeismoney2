@@ -15,7 +15,7 @@ class ClientController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Client::with('contacts')
+        $query = Client::with(['contacts', 'projects'])
             ->where('tenant_id', auth()->user()->tenant_id);
 
         // Search
@@ -44,7 +44,17 @@ class ClientController extends Controller
         $sortOrder = $request->sort_order ?? 'asc';
         $query->orderBy($sortBy, $sortOrder);
 
-        return $query->paginate(20);
+        $clients = $query->paginate(20);
+
+        // Add project counts to each client
+        $clients->getCollection()->transform(function ($client) {
+            $client->active_projects_count = $client->active_projects_count;
+            $client->inactive_projects_count = $client->inactive_projects_count;
+            $client->total_revenue = $client->total_revenue;
+            return $client;
+        });
+
+        return $clients;
     }
 
     /**

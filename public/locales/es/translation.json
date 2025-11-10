@@ -604,6 +604,7 @@
         "managePortfolio": "Gestionar Cartera de Clientes",
         "totalClients": "Total Clientes",
         "activeProjects": "Proyectos Activos",
+        "inactiveProjects": "Proyectos Inactivos",
         "totalRevenue": "Ingresos Totales",
         "searchClients": "Buscar clientes...",
         "addFirstClient": "Agregue su primer cliente para comenzar",

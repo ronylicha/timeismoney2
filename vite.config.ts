@@ -49,6 +49,7 @@ export default defineConfig({
         alias: {
             '@': '/var/www/html/timeismoney2/resources/js',
         },
+        extensions: ['.tsx', '.ts', '.jsx', '.js', '.json'],
     },
     build: {
         rollupOptions: {

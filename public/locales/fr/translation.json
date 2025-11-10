@@ -607,6 +607,7 @@
         "managePortfolio": "Gérer le portefeuille client",
         "totalClients": "Total clients",
         "activeProjects": "Projets actifs",
+        "inactiveProjects": "Projets inactifs",
         "totalRevenue": "Revenu total",
         "searchClients": "Rechercher des clients...",
         "addFirstClient": "Ajoutez votre premier client pour commencer",

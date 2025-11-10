@@ -117,4 +117,24 @@ class Client extends Model
             ->whereIn('status', ['sent', 'viewed', 'overdue'])
             ->sum('total');
     }
+
+    /**
+     * Get active projects count
+     */
+    public function getActiveProjectsCountAttribute(): int
+    {
+        return $this->projects()
+            ->where('status', 'active')
+            ->count();
+    }
+
+    /**
+     * Get inactive projects count
+     */
+    public function getInactiveProjectsCountAttribute(): int
+    {
+        return $this->projects()
+            ->whereIn('status', ['completed', 'archived', 'on_hold', 'cancelled'])
+            ->count();
+    }
 }

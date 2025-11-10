@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 import {
     PlusIcon,
@@ -26,12 +25,13 @@ interface Client {
     postal_code: string | null;
     country: string | null;
     projects_count?: number;
+    active_projects_count?: number;
+    inactive_projects_count?: number;
     total_revenue?: number;
 }
 
 const Clients: React.FC = () => {
     const { t } = useTranslation();
-    const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
 
     // Fetch clients
@@ -56,7 +56,7 @@ const Clients: React.FC = () => {
 
     const getActiveProjects = () => {
         if (!clients) return 0;
-        return clients.reduce((acc: number, client: Client) => acc + (client.projects_count || 0), 0);
+        return clients.reduce((acc: number, client: Client) => acc + (client.active_projects_count || 0), 0);
     };
 
     return (
@@ -205,16 +205,22 @@ const Clients: React.FC = () => {
 
                             {/* Statistics */}
                             <div className="pt-4 border-t border-gray-200">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <p className="text-xs text-gray-600 mb-1">{t('clients.projects')}</p>
-                                        <p className="text-lg font-semibold text-gray-900">
-                                            {client.projects_count || 0}
+                                <div className="grid grid-cols-3 gap-2">
+                                    <div className="text-center">
+                                        <p className="text-xs text-gray-600 mb-1">{t('clients.activeProjects')}</p>
+                                        <p className="text-sm font-semibold text-green-600">
+                                            {client.active_projects_count || 0}
                                         </p>
                                     </div>
-                                    <div>
+                                    <div className="text-center">
+                                        <p className="text-xs text-gray-600 mb-1">{t('clients.inactiveProjects')}</p>
+                                        <p className="text-sm font-semibold text-gray-500">
+                                            {client.inactive_projects_count || 0}
+                                        </p>
+                                    </div>
+                                    <div className="text-center">
                                         <p className="text-xs text-gray-600 mb-1">{t('clients.revenue')}</p>
-                                        <p className="text-lg font-semibold text-gray-900">
+                                        <p className="text-sm font-semibold text-gray-900">
                                             {new Intl.NumberFormat('fr-FR', {
                                                 style: 'currency',
                                                 currency: 'EUR',
