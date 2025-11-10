@@ -1,13 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import {
     Calendar,
-    Clock,
     ChevronLeft,
     ChevronRight,
     Download,
-    Filter,
     Play,
     Edit2,
     Trash2
@@ -25,9 +23,10 @@ import {
     formatDateForApi
 } from '../utils/time';
 import { useTimer } from '../hooks/useTimer';
-import { useProjects } from '../hooks/useProjects';
+
 import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
+import ProjectSearchSelectSimple from '../components/ProjectSearchSelectSimple';
 
 type ViewMode = 'day' | 'week' | 'month';
 
@@ -55,7 +54,6 @@ const TimeSheet: React.FC = () => {
     const [selectedProject, setSelectedProject] = useState<string>('');
     const [showBillableOnly, setShowBillableOnly] = useState(false);
     const { startTimer } = useTimer();
-    const { projects } = useProjects();
 
     // Calculate date range based on view mode
     const getDateRange = () => {
@@ -134,25 +132,38 @@ const TimeSheet: React.FC = () => {
     };
 
     // Export timesheet
-    const exportTimesheet = async (format: 'csv' | 'pdf' | 'excel') => {
+    const exportTimesheet = async (format: 'csv' | 'pdf' | 'excel' | 'json') => {
         try {
             const params = new URLSearchParams({
                 start_date: formatDateForApi(startDate),
                 end_date: formatDateForApi(endDate),
-                format,
                 ...(selectedProject && { project_id: selectedProject }),
                 ...(showBillableOnly && { billable_only: 'true' }),
             });
 
-            const response = await axios.get(`/time-entries/export?${params}`, {
-                responseType: 'blob',
-            });
+            let response;
+            let filename;
+
+            if (format === 'excel') {
+                // Use the new Excel export endpoint
+                response = await axios.get(`/time-entries/export/excel?${params}`, {
+                    responseType: 'blob',
+                });
+                filename = `timesheet_${formatDateForApi(startDate)}_${formatDateForApi(endDate)}.xlsx`;
+            } else {
+                // Use the existing export endpoint for other formats
+                params.append('format', format);
+                response = await axios.get(`/time-entries/export?${params}`, {
+                    responseType: 'blob',
+                });
+                filename = `timesheet_${formatDateForApi(startDate)}_${formatDateForApi(endDate)}.${format}`;
+            }
 
             // Create download link
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `timesheet_${formatDateForApi(startDate)}_${formatDateForApi(endDate)}.${format}`);
+            link.setAttribute('download', filename);
             document.body.appendChild(link);
             link.click();
             link.remove();
@@ -422,9 +433,16 @@ const TimeSheet: React.FC = () => {
                         {/* Export buttons */}
                         <div className="flex items-center space-x-2">
                             <button
-                                onClick={() => exportTimesheet('csv')}
+                                onClick={() => exportTimesheet('json')}
                                 className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                                title={t('time.exportCSV')}
+                                title={t('time.exportJSON')}
+                            >
+                                <Download size={20} />
+                            </button>
+                            <button
+                                onClick={() => exportTimesheet('excel')}
+                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                title={t('time.exportExcel')}
                             >
                                 <Download size={20} />
                             </button>
@@ -460,18 +478,11 @@ const TimeSheet: React.FC = () => {
 
                     <div className="flex items-center space-x-4">
                         {/* Project filter */}
-                        <select
+                        <ProjectSearchSelectSimple
                             value={selectedProject}
-                            onChange={(e) => setSelectedProject(e.target.value)}
-                            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                        >
-                            <option value="">{t('time.allProjects')}</option>
-                            {projects.map((project) => (
-                                <option key={project.id} value={project.id}>
-                                    {project.name}
-                                </option>
-                            ))}
-                        </select>
+                            onChange={setSelectedProject}
+                            placeholder="Tous les projets"
+                        />
 
                         {/* Billable filter */}
                         <label className="flex items-center cursor-pointer">

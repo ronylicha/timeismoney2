@@ -103,6 +103,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/time-entries/current', [TimeEntryController::class, 'current']);
     Route::get('/time-entries/timesheet', [TimeEntryController::class, 'timesheet']);
     Route::get('/time-entries/export', [TimeEntryController::class, 'export']);
+    Route::get('/time-entries/export/excel', [TimeEntryController::class, 'exportExcel']);
     Route::post('/time-entries/bulk-approve', [TimeEntryController::class, 'bulkApprove']);
     Route::post('/time-entries/{timeEntry}/approve', [TimeEntryController::class, 'approve']);
     Route::apiResource('time-entries', TimeEntryController::class);

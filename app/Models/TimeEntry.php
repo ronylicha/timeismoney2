@@ -48,7 +48,7 @@ class TimeEntry extends Model
         static::saving(function (TimeEntry $timeEntry) {
             // Calculate duration if both times are set
             if ($timeEntry->started_at && $timeEntry->ended_at) {
-                $timeEntry->duration_seconds = $timeEntry->ended_at->diffInSeconds($timeEntry->started_at);
+                $timeEntry->duration_seconds = abs($timeEntry->ended_at->diffInSeconds($timeEntry->started_at));
             }
 
             // Set hourly rate from project or user if not set

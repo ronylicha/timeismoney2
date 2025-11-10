@@ -207,7 +207,7 @@ class TaskController extends Controller
             }
         }
 
-        return $task->load([
+        $task->load([
             'project',
             'users',
             'parent',
@@ -217,6 +217,8 @@ class TaskController extends Controller
                 $q->latest()->limit(10);
             }
         ]);
+
+        return response()->json($task);
     }
 
     /**

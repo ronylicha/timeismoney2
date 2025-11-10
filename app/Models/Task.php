@@ -15,7 +15,7 @@ class Task extends Model
 
     protected $fillable = [
         'project_id',
-        'parent_id',
+        'parent_task_id',
         'code',
         'title',
         'description',
@@ -59,7 +59,7 @@ class Task extends Model
      */
     public function parent(): BelongsTo
     {
-        return $this->belongsTo(Task::class, 'parent_id');
+        return $this->belongsTo(Task::class, 'parent_task_id');
     }
 
     /**
@@ -67,7 +67,7 @@ class Task extends Model
      */
     public function children(): HasMany
     {
-        return $this->hasMany(Task::class, 'parent_id');
+        return $this->hasMany(Task::class, 'parent_task_id');
     }
 
     /**
@@ -84,8 +84,7 @@ class Task extends Model
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'task_users')
-            ->withPivot('role', 'assigned_hours')
-            ->withTimestamps();
+            ->withPivot('assigned_at');
     }
 
     /**
@@ -94,7 +93,6 @@ class Task extends Model
     public function dependencies(): BelongsToMany
     {
         return $this->belongsToMany(Task::class, 'task_dependencies', 'task_id', 'depends_on_task_id')
-            ->withPivot('type')
             ->withTimestamps();
     }
 
@@ -104,7 +102,6 @@ class Task extends Model
     public function dependents(): BelongsToMany
     {
         return $this->belongsToMany(Task::class, 'task_dependencies', 'depends_on_task_id', 'task_id')
-            ->withPivot('type')
             ->withTimestamps();
     }
 

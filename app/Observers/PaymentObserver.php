@@ -3,6 +3,8 @@
 namespace App\Observers;
 
 use App\Models\Payment;
+use App\Models\User;
+use App\Notifications\PaymentReceived;
 use App\Services\QualifiedTimestampService;
 use Illuminate\Support\Facades\Log;
 
@@ -59,10 +61,12 @@ class PaymentObserver
     /**
      * Gère la réception d'un paiement
      * - Horodatage qualifié NF525
+     * - Notification aux utilisateurs
      */
     private function handlePaymentReceived(Payment $payment): void
     {
         try {
+            // Horodatage qualifié
             $timestampService = new QualifiedTimestampService($payment->invoice->tenant);
             $timestamp = $timestampService->timestamp($payment, 'payment_received');
             
@@ -74,8 +78,53 @@ class PaymentObserver
                 'timestamp_id' => $timestamp->id
             ]);
 
+            // Envoyer les notifications aux utilisateurs du tenant
+            $this->sendPaymentNotifications($payment);
+
         } catch (\Exception $e) {
-            Log::error('Failed to timestamp payment', [
+            Log::error('Failed to process payment', [
+                'payment_id' => $payment->id,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Envoyer les notifications de paiement reçu
+     */
+    private function sendPaymentNotifications(Payment $payment): void
+    {
+        try {
+            $tenant = $payment->invoice->tenant;
+            
+            // Récupérer tous les utilisateurs du tenant qui peuvent voir les factures
+            $users = User::where('tenant_id', $tenant->id)
+                ->where(function($query) {
+                    $query->whereHas('roles', function($q) {
+                        $q->whereIn('name', ['admin', 'super_admin']);
+                    })->orWhereDoesntHave('roles'); // Utilisateurs sans rôle spécifique
+                })
+                ->get();
+
+            foreach ($users as $user) {
+                try {
+                    $user->notify(new PaymentReceived($payment));
+                    Log::info('Payment notification sent', [
+                        'payment_id' => $payment->id,
+                        'user_id' => $user->id,
+                        'user_email' => $user->email
+                    ]);
+                } catch (\Exception $notificationError) {
+                    Log::error('Failed to send payment notification', [
+                        'payment_id' => $payment->id,
+                        'user_id' => $user->id,
+                        'error' => $notificationError->getMessage()
+                    ]);
+                }
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Failed to get users for payment notifications', [
                 'payment_id' => $payment->id,
                 'error' => $e->getMessage()
             ]);

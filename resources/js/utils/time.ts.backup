@@ -7,18 +7,14 @@
  * @param seconds - Duration in seconds
  * @returns Formatted time string (HH:MM:SS)
  */
-export function formatDuration(seconds: number | null | undefined): string {
-    // Handle null, undefined, and invalid values
-    if (seconds === null || seconds === undefined || !Number.isFinite(seconds) || seconds < 0) {
+export function formatDuration(seconds: number): string {
+    if (seconds < 0 || !Number.isFinite(seconds)) {
         return '00:00:00';
     }
 
-    // Ensure it's a valid number
-    const validSeconds = Math.max(0, Math.floor(seconds));
-
-    const hours = Math.floor(validSeconds / 3600);
-    const minutes = Math.floor((validSeconds % 3600) / 60);
-    const secs = validSeconds % 60;
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
 
     return [hours, minutes, secs]
         .map(unit => unit.toString().padStart(2, '0'))
@@ -30,8 +26,8 @@ export function formatDuration(seconds: number | null | undefined): string {
  * @param seconds - Duration in seconds
  * @returns Hours with two decimal places (e.g., "2.50")
  */
-export function formatHours(seconds: number | null | undefined): string {
-    if (seconds === null || seconds === undefined || !Number.isFinite(seconds) || seconds < 0) {
+export function formatHours(seconds: number): string {
+    if (seconds < 0 || !Number.isFinite(seconds)) {
         return '0.00';
     }
 
@@ -285,14 +281,13 @@ export function getBusinessDays(startDate: Date | string, endDate: Date | string
  * @param seconds - Duration in seconds
  * @returns Formatted string (e.g., "8h 30m")
  */
-export function formatTimesheetDuration(seconds: number | null | undefined): string {
-    if (seconds === null || seconds === undefined || !Number.isFinite(seconds) || seconds < 0) {
+export function formatTimesheetDuration(seconds: number): string {
+    if (seconds < 0 || !Number.isFinite(seconds)) {
         return '0m';
     }
 
-    const validSeconds = Math.max(0, Math.floor(seconds));
-    const hours = Math.floor(validSeconds / 3600);
-    const minutes = Math.floor((validSeconds % 3600) / 60);
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
 
     if (hours === 0) {
         return `${minutes}m`;
@@ -301,37 +296,4 @@ export function formatTimesheetDuration(seconds: number | null | undefined): str
     } else {
         return `${hours}h ${minutes}m`;
     }
-}
-
-/**
- * Validate if a date string is valid
- * @param dateString - Date string to validate
- * @returns True if valid date
- */
-export function isValidDate(dateString: string | null | undefined): boolean {
-    if (!dateString) return false;
-    const date = new Date(dateString);
-    return !isNaN(date.getTime());
-}
-
-/**
- * Get elapsed seconds since a start time
- * @param startTime - Start time string or Date object
- * @param endTime - Optional end time (defaults to now)
- * @returns Elapsed seconds
- */
-export function getElapsedSeconds(startTime: string | Date | null | undefined, endTime?: Date): number {
-    if (!startTime || !isValidDate(startTime.toString())) {
-        return 0;
-    }
-
-    const start = typeof startTime === 'string' ? new Date(startTime) : startTime;
-    const end = endTime || new Date();
-
-    if (isNaN(start.getTime())) {
-        return 0;
-    }
-
-    const elapsed = Math.floor((end.getTime() - start.getTime()) / 1000);
-    return Math.max(0, elapsed);
 }

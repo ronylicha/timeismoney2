@@ -1,8 +1,20 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
-import { ArrowLeftIcon, PlusIcon } from '@heroicons/react/24/outline';
+import {
+    ArrowLeftIcon,
+    PlusIcon,
+    EyeIcon,
+    PencilIcon,
+    TrashIcon,
+    ClockIcon,
+    TagIcon,
+    ChatBubbleLeftRightIcon,
+    PaperClipIcon,
+} from '@heroicons/react/24/outline';
 import {
     DndContext,
     DragEndEvent,
@@ -22,8 +34,20 @@ interface Task {
     description: string;
     status: string;
     priority: string;
-    assigned_to?: {
+    due_date?: string;
+    labels?: string[];
+    code?: string;
+    project?: {
+        id: number;
         name: string;
+    };
+    users?: Array<{
+        id: number;
+        name: string;
+    }>;
+    _count?: {
+        comments: number;
+        attachments: number;
     };
 }
 
@@ -33,14 +57,49 @@ interface TaskCardProps {
 }
 
 const TaskCard: React.FC<TaskCardProps> = ({ task, isDragging = false }) => {
+    const { t } = useTranslation();
+    const queryClient = useQueryClient();
+
     const getPriorityColor = (priority: string) => {
         const colors = {
             low: 'border-l-gray-400',
+            normal: 'border-l-blue-400',
             medium: 'border-l-yellow-400',
             high: 'border-l-orange-400',
             urgent: 'border-l-red-400',
         };
         return colors[priority as keyof typeof colors] || 'border-l-gray-400';
+    };
+
+    const getPriorityLabel = (priority: string) => {
+        const labels = {
+            low: t('tasks.priority.low'),
+            normal: t('tasks.priority.normal'),
+            medium: t('tasks.priority.medium'),
+            high: t('tasks.priority.high'),
+            urgent: t('tasks.priority.urgent'),
+        };
+        return labels[priority as keyof typeof labels] || priority;
+    };
+
+    const deleteTaskMutation = useMutation({
+        mutationFn: async (taskId: number) => {
+            await axios.delete(`/tasks/${taskId}`);
+        },
+        onSuccess: () => {
+            toast.success(t('tasks.delete_success'));
+            queryClient.invalidateQueries({ queryKey: ['tasks'] });
+        },
+        onError: () => {
+            toast.error(t('tasks.delete_error'));
+        }
+    });
+
+    const handleDelete = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (window.confirm(t('tasks.confirm_delete'))) {
+            deleteTaskMutation.mutate(task.id);
+        }
     };
 
     return (
@@ -49,24 +108,119 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, isDragging = false }) => {
                 isDragging ? 'opacity-50' : ''
             }`}
         >
-            <h4 className="font-medium text-gray-900 mb-2">{task.title}</h4>
+            <div className="flex justify-between items-start mb-2">
+                <h4 className="font-medium text-gray-900 flex-1 mr-2">{task.title}</h4>
+                <div className="flex space-x-1 opacity-0 hover:opacity-100 transition-opacity">
+                    <Link
+                        to={`/tasks/${task.id}`}
+                        className="p-1 text-gray-400 hover:text-blue-600 transition"
+                        title={t('common.view')}
+                    >
+                        <EyeIcon className="h-4 w-4" />
+                    </Link>
+                    <Link
+                        to={`/tasks/${task.id}/edit`}
+                        className="p-1 text-gray-400 hover:text-green-600 transition"
+                        title={t('common.edit')}
+                    >
+                        <PencilIcon className="h-4 w-4" />
+                    </Link>
+                    <button
+                        onClick={handleDelete}
+                        className="p-1 text-gray-400 hover:text-red-600 transition"
+                        title={t('common.delete')}
+                    >
+                        <TrashIcon className="h-4 w-4" />
+                    </button>
+                </div>
+            </div>
+            
             {task.description && (
                 <p className="text-sm text-gray-600 mb-3 line-clamp-2">
                     {task.description}
                 </p>
             )}
-            {task.assigned_to && (
-                <div className="flex items-center space-x-2">
-                    <div className="h-6 w-6 bg-gray-200 rounded-full flex items-center justify-center">
-                        <span className="text-xs font-medium text-gray-600">
-                            {task.assigned_to.name.charAt(0).toUpperCase()}
-                        </span>
+
+            <div className="flex items-center justify-between mb-2">
+                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                    task.priority === 'urgent' ? 'bg-red-100 text-red-700' :
+                    task.priority === 'high' ? 'bg-orange-100 text-orange-700' :
+                    task.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                    task.priority === 'normal' ? 'bg-blue-100 text-blue-700' :
+                    'bg-gray-100 text-gray-700'
+                }`}>
+                    {getPriorityLabel(task.priority)}
+                </span>
+                
+                {task.due_date && (
+                    <div className="flex items-center text-xs text-gray-500">
+                        <ClockIcon className="h-3 w-3 mr-1" />
+                        {new Date(task.due_date).toLocaleDateString()}
                     </div>
-                    <span className="text-xs text-gray-600">
-                        {task.assigned_to.name}
-                    </span>
+                )}
+            </div>
+
+            {task.users && task.users.length > 0 && (
+                <div className="flex items-center space-x-1 mb-2">
+                    {task.users.slice(0, 3).map((user) => (
+                        <div
+                            key={user.id}
+                            className="h-6 w-6 bg-gray-200 rounded-full flex items-center justify-center"
+                            title={user.name}
+                        >
+                            <span className="text-xs font-medium text-gray-600">
+                                {user.name.charAt(0).toUpperCase()}
+                            </span>
+                        </div>
+                    ))}
+                    {task.users.length > 3 && (
+                        <div className="h-6 w-6 bg-gray-300 rounded-full flex items-center justify-center">
+                            <span className="text-xs font-medium text-gray-600">
+                                +{task.users.length - 3}
+                            </span>
+                        </div>
+                    )}
                 </div>
             )}
+
+            {task.labels && task.labels.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-2">
+                    {task.labels.slice(0, 2).map((label, index) => (
+                        <span
+                            key={index}
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded"
+                        >
+                            <TagIcon className="h-3 w-3 mr-1" />
+                            {label}
+                        </span>
+                    ))}
+                    {task.labels.length > 2 && (
+                        <span className="text-xs text-gray-500">+{task.labels.length - 2}</span>
+                    )}
+                </div>
+            )}
+
+            <div className="flex items-center justify-between text-xs text-gray-500">
+                <div className="flex items-center space-x-3">
+                    {task._count && task._count.comments > 0 && (
+                        <div className="flex items-center">
+                            <ChatBubbleLeftRightIcon className="h-3 w-3 mr-1" />
+                            {task._count.comments}
+                        </div>
+                    )}
+                    {task._count && task._count.attachments > 0 && (
+                        <div className="flex items-center">
+                            <PaperClipIcon className="h-3 w-3 mr-1" />
+                            {task._count.attachments}
+                        </div>
+                    )}
+                </div>
+                {task.code && (
+                    <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
+                        {task.code}
+                    </span>
+                )}
+            </div>
         </div>
     );
 };
@@ -104,6 +258,7 @@ const DroppableTaskCard: React.FC<DroppableTaskCardProps> = ({ task }) => {
 };
 
 const KanbanBoard: React.FC = () => {
+    const { t } = useTranslation();
     const { id } = useParams<{ id: string }>();
     const isValidId = id && id !== 'new' && id !== 'undefined';
     const queryClient = useQueryClient();
@@ -130,6 +285,7 @@ const KanbanBoard: React.FC = () => {
         queryKey: ['tasks', id],
         queryFn: async () => {
             const response = await axios.get(`/tasks?project_id=${id}`);
+            console.log('Kanban tasks response:', response.data);
             return response.data.data;
         },
         enabled: !!isValidId,
@@ -145,15 +301,17 @@ const KanbanBoard: React.FC = () => {
     });
 
     const columns = [
-        { id: 'todo', name: 'À faire', color: 'bg-gray-200' },
-        { id: 'in_progress', name: 'En cours', color: 'bg-blue-200' },
-        { id: 'in_review', name: 'En révision', color: 'bg-purple-200' },
-        { id: 'completed', name: 'Terminé', color: 'bg-green-200' },
+        { id: 'todo', name: t('tasks.status.todo'), color: 'bg-gray-200' },
+        { id: 'in_progress', name: t('tasks.status.in_progress'), color: 'bg-blue-200' },
+        { id: 'in_review', name: t('tasks.status.in_review'), color: 'bg-purple-200' },
+        { id: 'completed', name: t('tasks.status.completed'), color: 'bg-green-200' },
     ];
 
     const getTasksByStatus = (status: string) => {
         if (!tasks) return [];
-        return tasks.filter((task: Task) => task.status === status);
+        const filtered = tasks.filter((task: Task) => task.status === status);
+        console.log(`Tasks for status ${status}:`, filtered);
+        return filtered;
     };
 
     const handleDragStart = (event: DragStartEvent) => {
@@ -215,13 +373,13 @@ const KanbanBoard: React.FC = () => {
                             className="flex items-center text-gray-600 hover:text-gray-900 transition mr-4"
                         >
                             <ArrowLeftIcon className="h-5 w-5 mr-1" />
-                            <span>Retour au projet</span>
+                            <span>{t('projects.back_to_project')}</span>
                         </Link>
                     </div>
 
                     <div className="flex justify-between items-center">
                         <div>
-                            <h1 className="text-3xl font-bold text-gray-900">Kanban Board</h1>
+                            <h1 className="text-3xl font-bold text-gray-900">{t('tasks.kanban_board')}</h1>
                             <p className="mt-2 text-gray-600">{project?.name}</p>
                         </div>
                         <Link
@@ -229,7 +387,7 @@ const KanbanBoard: React.FC = () => {
                             className="flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
                         >
                             <PlusIcon className="h-5 w-5" />
-                            <span>Nouvelle tâche</span>
+                            <span>{t('tasks.new_task')}</span>
                         </Link>
                     </div>
                 </div>
@@ -243,6 +401,7 @@ const KanbanBoard: React.FC = () => {
                                 key={column.id}
                                 column={column}
                                 tasks={columnTasks}
+                                t={t}
                             />
                         );
                     })}
@@ -259,9 +418,10 @@ const KanbanBoard: React.FC = () => {
 interface DroppableColumnProps {
     column: { id: string; name: string; color: string };
     tasks: Task[];
+    t: (key: string) => string;
 }
 
-const DroppableColumn: React.FC<DroppableColumnProps> = ({ column, tasks }) => {
+const DroppableColumn: React.FC<DroppableColumnProps> = ({ column, tasks, t }) => {
     const { setNodeRef } = useSortable({
         id: column.id,
         data: {
@@ -286,7 +446,7 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({ column, tasks }) => {
 
                 {tasks.length === 0 && (
                     <div className="text-center py-8 text-gray-400 text-sm">
-                        Aucune tâche
+                        {t('tasks.no_tasks')}
                     </div>
                 )}
             </div>

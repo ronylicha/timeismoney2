@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Play, Square, Clock, DollarSign } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Play, Pause, Square, Clock, DollarSign, Calendar } from 'lucide-react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { useTimer } from '../../hooks/useTimer';
 import { useProjects } from '../../hooks/useProjects';
 import { useTasks } from '../../hooks/useTasks';
-import { formatDuration, getElapsedSeconds, isValidDate } from '../../utils/time';
-import { TimeEntry } from '../../types';
+import { formatDuration } from '../../utils/time';
+import { TimeEntry, Project, Task } from '../../types';
 
 interface TimerProps {
     onTimerStop?: (timeEntry: TimeEntry) => void;
@@ -14,7 +14,7 @@ interface TimerProps {
 
 export const Timer: React.FC<TimerProps> = ({ onTimerStop }) => {
     const { t } = useTranslation();
-    const { activeTimer, isLoading, startTimer, stopTimer } = useTimer();
+    const { activeTimer, isLoading, startTimer, stopTimer, currentTimer } = useTimer();
     const { projects } = useProjects();
     const [selectedProject, setSelectedProject] = useState<string>('');
     const [selectedTask, setSelectedTask] = useState<string>('');
@@ -25,37 +25,27 @@ export const Timer: React.FC<TimerProps> = ({ onTimerStop }) => {
 
     // Update elapsed time every second and check for long-running timer
     useEffect(() => {
-        let interval: number;
+        let interval: NodeJS.Timeout;
         let longRunningChecked = false;
 
-        if (activeTimer && !activeTimer.ended_at && activeTimer.started_at) {
-            // Validate the start time
-            if (!isValidDate(activeTimer.started_at)) {
-                console.error('Invalid started_at date:', activeTimer.started_at);
-                setElapsedSeconds(0);
-                return;
-            }
-
+        if (activeTimer && !activeTimer.ended_at) {
             interval = setInterval(() => {
-                try {
-                    const elapsed = getElapsedSeconds(activeTimer.started_at);
-                    setElapsedSeconds(elapsed);
+                const startTime = new Date(activeTimer.started_at).getTime();
+                const now = Date.now();
+                const elapsed = Math.floor((now - startTime) / 1000);
+                setElapsedSeconds(elapsed);
 
-                    // Check if timer has been running for 4 hours (14400 seconds)
-                    if (!longRunningChecked && elapsed >= 14400) {
-                        longRunningChecked = true;
-                        // Send long-running timer notification
-                        axios.post('/notifications/timer-long-running', {
-                            timer_id: activeTimer.id,
-                            project_name: activeTimer.project?.name || 'Unknown Project',
-                            duration_hours: Math.floor(elapsed / 3600)
-                        }).catch((error) => {
-                            console.error('Failed to send long-running timer notification:', error);
-                        });
-                    }
-                } catch (error) {
-                    console.error('Error calculating elapsed time:', error);
-                    setElapsedSeconds(0);
+                // Check if timer has been running for 4 hours (14400 seconds)
+                if (!longRunningChecked && elapsed >= 14400) {
+                    longRunningChecked = true;
+                    // Send long-running timer notification
+                    axios.post('/notifications/timer-long-running', {
+                        timer_id: activeTimer.id,
+                        project_name: activeTimer.project?.name || 'Unknown Project',
+                        duration_hours: Math.floor(elapsed / 3600)
+                    }).catch((error) => {
+                        console.error('Failed to send long-running timer notification:', error);
+                    });
                 }
             }, 1000);
         } else {
@@ -73,7 +63,7 @@ export const Timer: React.FC<TimerProps> = ({ onTimerStop }) => {
     }, [selectedProject, loadTasks]);
 
     // Auto-save description when timer is running and description changes
-    const autoSaveTimeoutRef = useRef<number>();
+    const autoSaveTimeoutRef = useRef<NodeJS.Timeout>();
     useEffect(() => {
         // Only auto-save if timer is running and description is different from active timer
         if (activeTimer && !activeTimer.ended_at && description !== activeTimer.description) {
@@ -111,7 +101,7 @@ export const Timer: React.FC<TimerProps> = ({ onTimerStop }) => {
             project_id: selectedProject,
             task_id: selectedTask || undefined,
             description,
-            is_billable: isBillable || true || true || true
+            is_billable: isBillable
         });
 
         // Clear form

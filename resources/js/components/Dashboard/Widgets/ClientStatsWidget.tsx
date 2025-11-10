@@ -1,6 +1,6 @@
 import React from 'react';
 import WidgetContainer from './WidgetContainer';
-import { Users, TrendingUp, TrendingDown } from 'lucide-react';
+import { Users, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface ClientStats {
@@ -50,7 +50,7 @@ const ClientStatsWidget: React.FC<ClientStatsWidgetProps> = ({ stats, isLoading 
                 {/* Total Clients */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <p className="text-3xl font-bold text-gray-800 dark:text-white">
+                        <p className="text-3xl font-bold text-gray-900 dark:text-white">
                             {stats.total}
                         </p>
                         <p className="text-sm text-gray-600 dark:text-gray-400">Total clients</p>

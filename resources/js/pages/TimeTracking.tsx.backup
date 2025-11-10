@@ -13,7 +13,6 @@ import {
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
-import { formatDuration } from '../utils/time';
 
 interface Timer {
     id: number;
@@ -83,12 +82,6 @@ const TimeTracking: React.FC = () => {
             });
             return response.data.data;
         },
-        // Refresh more frequently when timer is active
-        refetchInterval: (data) => {
-            // If there's a current timer running, refresh every 10 seconds
-            // Otherwise, refresh every 30 seconds
-            return currentTimer && !currentTimer.ended_at ? 10000 : 30000;
-        },
     });
 
     // Start timer mutation
@@ -135,8 +128,7 @@ const TimeTracking: React.FC = () => {
             const interval = setInterval(() => {
                 if (!currentTimer.paused_at) {
                     const elapsed = Math.floor((new Date().getTime() - startTime) / 1000);
-                    const totalTime = (currentTimer.total_seconds || 0) + elapsed;
-                    setElapsedTime(Math.max(0, totalTime));
+                    setElapsedTime(currentTimer.total_seconds + elapsed);
                 }
             }, 1000);
 
@@ -144,7 +136,12 @@ const TimeTracking: React.FC = () => {
         }
     }, [currentTimer]);
 
-
+    const formatDuration = (seconds: number) => {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
 
     const handleStartTimer = () => {
         if (!selectedProject) {
@@ -160,10 +157,7 @@ const TimeTracking: React.FC = () => {
 
     const getTotalToday = () => {
         if (!todayEntries) return 0;
-        return todayEntries.reduce((acc: number, entry: TimeEntry) => {
-            const duration = (entry as any).duration_seconds || entry.duration || 0;
-            return acc + (typeof duration === 'number' && duration > 0 ? duration : 0);
-        }, 0);
+        return todayEntries.reduce((acc: number, entry: TimeEntry) => acc + entry.duration, 0);
     };
 
     return (
@@ -288,12 +282,12 @@ const TimeTracking: React.FC = () => {
                                         </p>
                                         <p className="text-xs text-gray-500 mt-2 ml-8">
                                             {format(new Date(entry.started_at), 'HH:mm', { locale: fr })} -{' '}
-                                            {entry.ended_at ? format(new Date(entry.ended_at), 'HH:mm', { locale: fr }) : t('time.running')}
+                                            {format(new Date(entry.ended_at), 'HH:mm', { locale: fr })}
                                         </p>
                                     </div>
                                     <div className="text-right">
                                         <div className="text-lg font-semibold text-gray-900">
-                                            {formatDuration((entry as any).duration_seconds || entry.duration)}
+                                            {formatDuration(entry.duration)}
                                         </div>
                                     </div>
                                 </div>

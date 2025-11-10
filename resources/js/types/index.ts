@@ -180,6 +180,7 @@ export interface TimeEntry {
     started_at: string;
     ended_at?: string;
     duration_seconds?: number;
+    duration?: number; // For backward compatibility
     description?: string;
     is_billable: boolean;
     hourly_rate: number;

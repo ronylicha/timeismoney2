@@ -201,6 +201,14 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Get the user's 2FA settings
+     */
+    public function twoFactorAuthentication(): HasOne
+    {
+        return $this->hasOne(TwoFactorAuthentication::class);
+    }
+
+    /**
      * Check if user has an active timer
      */
     public function hasActiveTimer(): bool

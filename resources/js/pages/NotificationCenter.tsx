@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { format, formatDistanceToNow, isToday, isYesterday, parseISO } from 'date-fns';
@@ -7,7 +7,6 @@ import {
     BellIcon,
     CheckCircleIcon,
     XCircleIcon,
-    FunnelIcon,
     TrashIcon,
     CheckIcon,
     ClockIcon,
@@ -53,6 +52,9 @@ const NotificationCenter: React.FC = () => {
         timer: { label: t('notifications.types.timer'), icon: ClockIcon, color: 'blue' },
         invoice: { label: t('notifications.types.invoice'), icon: DocumentTextIcon, color: 'green' },
         payment: { label: t('notifications.types.payment'), icon: CurrencyEuroIcon, color: 'emerald' },
+        payment_received: { label: t('notifications.types.paymentReceived'), icon: CurrencyEuroIcon, color: 'emerald' },
+        supplier_invoice: { label: t('notifications.types.supplierInvoice'), icon: DocumentTextIcon, color: 'orange' },
+        supplier_invoice_received: { label: t('notifications.types.supplierInvoiceReceived'), icon: DocumentTextIcon, color: 'orange' },
         project: { label: t('notifications.types.project'), icon: FolderIcon, color: 'purple' },
         task: { label: t('notifications.types.task'), icon: CheckCircleIcon, color: 'indigo' },
         expense: { label: t('notifications.types.expense'), icon: XCircleIcon, color: 'red' },
@@ -62,7 +64,7 @@ const NotificationCenter: React.FC = () => {
     };
 
     // Fetch notifications with filters
-    const { data: notificationsData, isLoading, refetch } = useQuery({
+    const { data: notificationsData, isLoading } = useQuery({
         queryKey: ['notifications-center', selectedFilter, selectedType, searchQuery],
         queryFn: async () => {
             const params: any = { per_page: 100 };

@@ -28,6 +28,8 @@ const ProjectDetail = lazy(() => import('./pages/ProjectDetail'));
 const CreateProject = lazy(() => import('./pages/CreateProject'));
 const EditProject = lazy(() => import('./pages/EditProject'));
 const Tasks = lazy(() => import('./pages/Tasks'));
+const TaskDetail = lazy(() => import('./pages/TaskDetail'));
+const TaskForm = lazy(() => import('./components/Tasks/TaskForm'));
 const KanbanBoard = lazy(() => import('./pages/KanbanBoard'));
 const Clients = lazy(() => import('./pages/Clients'));
 const ClientDetail = lazy(() => import('./pages/ClientDetail'));
@@ -245,7 +247,9 @@ function App() {
                                         <Route path="/projects/:id/edit" element={<EditProject />} />
                                         <Route path="/projects/:id/kanban" element={<KanbanBoard />} />
                                         <Route path="/tasks" element={<Tasks />} />
-                                        <Route path="/tasks/new" element={<Tasks />} />
+                                        <Route path="/tasks/new" element={<TaskForm />} />
+                                        <Route path="/tasks/:id" element={<TaskDetail />} />
+                                        <Route path="/tasks/:id/edit" element={<TaskForm />} />
 
                                         {/* Clients */}
                                         <Route path="/clients" element={<Clients />} />

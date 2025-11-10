@@ -1,9 +1,8 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { TimeEntry, TimerStartData } from '../types';
 import { toast } from 'react-toastify';
-import { isValidDate } from '../utils/time';
 
 interface UseTimerReturn {
     activeTimer: TimeEntry | null;
@@ -28,15 +27,7 @@ export const useTimer = (): UseTimerReturn => {
         queryFn: async () => {
             try {
                 const response = await axios.get('/time-entries/current');
-                const timer = response.data.data || response.data.timer;
-                
-                // Validate the timer data
-                if (timer && timer.started_at && !isValidDate(timer.started_at)) {
-                    console.error('Invalid timer data received:', timer);
-                    return null;
-                }
-                
-                return timer;
+                return response.data.data || null;
             } catch (error: any) {
                 if (error.response?.status === 404) {
                     return null;
@@ -52,14 +43,7 @@ export const useTimer = (): UseTimerReturn => {
     const startTimerMutation = useMutation({
         mutationFn: async (data: TimerStartData) => {
             const response = await axios.post('/time-entries/start', data);
-            const timer = response.data.timer;
-            
-            // Validate the response
-            if (!timer || !timer.started_at || !isValidDate(timer.started_at)) {
-                throw new Error('Invalid timer response from server');
-            }
-            
-            return timer;
+            return response.data.timer;
         },
         onSuccess: (data) => {
             queryClient.setQueryData(['activeTimer'], data);
@@ -67,18 +51,16 @@ export const useTimer = (): UseTimerReturn => {
             toast.success('Timer started successfully');
 
             // Send timer started notification
-            if (data && data.id) {
-                axios.post('/notifications/timer-started', {
-                    timer_id: data.id,
-                    project_name: data.project?.name || 'Unknown Project',
-                    task_name: data.task?.name || null
-                }).catch((error) => {
-                    console.error('Failed to send timer notification:', error);
-                });
-            }
+            axios.post('/notifications/timer-started', {
+                timer_id: data.id,
+                project_name: data.project?.name || 'Unknown Project',
+                task_name: data.task?.name || null
+            }).catch((error) => {
+                console.error('Failed to send timer notification:', error);
+            });
         },
         onError: (error: any) => {
-            const message = error.response?.data?.message || error.message || 'Failed to start timer';
+            const message = error.response?.data?.message || 'Failed to start timer';
             toast.error(message);
             setError(error);
         },
@@ -88,14 +70,7 @@ export const useTimer = (): UseTimerReturn => {
     const stopTimerMutation = useMutation({
         mutationFn: async (description?: string) => {
             const response = await axios.post('/time-entries/stop', { description });
-            const timer = response.data.timer || response.data.time_entry;
-            
-            // Validate the response
-            if (timer && timer.started_at && !isValidDate(timer.started_at)) {
-                console.error('Invalid timer data in stop response:', timer);
-            }
-            
-            return timer;
+            return response.data.timer;
         },
         onSuccess: (data) => {
             queryClient.setQueryData(['activeTimer'], null);
@@ -104,7 +79,7 @@ export const useTimer = (): UseTimerReturn => {
             toast.success('Timer stopped successfully');
 
             // Send timer stopped notification
-            if (data && data.id) {
+            if (data) {
                 axios.post('/notifications/timer-stopped', {
                     timer_id: data.id,
                     project_name: data.project?.name || 'Unknown Project',
@@ -117,7 +92,7 @@ export const useTimer = (): UseTimerReturn => {
             }
         },
         onError: (error: any) => {
-            const message = error.response?.data?.message || error.message || 'Failed to stop timer';
+            const message = error.response?.data?.message || 'Failed to stop timer';
             toast.error(message);
             setError(error);
         },
@@ -134,7 +109,7 @@ export const useTimer = (): UseTimerReturn => {
             toast.success('Timer paused');
         },
         onError: (error: any) => {
-            const message = error.response?.data?.message || error.message || 'Failed to pause timer';
+            const message = error.response?.data?.message || 'Failed to pause timer';
             toast.error(message);
             setError(error);
         },
@@ -151,7 +126,7 @@ export const useTimer = (): UseTimerReturn => {
             toast.success('Timer resumed');
         },
         onError: (error: any) => {
-            const message = error.response?.data?.message || error.message || 'Failed to resume timer';
+            const message = error.response?.data?.message || 'Failed to resume timer';
             toast.error(message);
             setError(error);
         },
@@ -168,7 +143,7 @@ export const useTimer = (): UseTimerReturn => {
             toast.success('Time entry deleted');
         },
         onError: (error: any) => {
-            const message = error.response?.data?.message || error.message || 'Failed to delete time entry';
+            const message = error.response?.data?.message || 'Failed to delete time entry';
             toast.error(message);
             setError(error);
         },
@@ -180,7 +155,6 @@ export const useTimer = (): UseTimerReturn => {
                 const result = await startTimerMutation.mutateAsync(data);
                 return result;
             } catch (error) {
-                console.error('Start timer error:', error);
                 return null;
             }
         },
@@ -193,7 +167,6 @@ export const useTimer = (): UseTimerReturn => {
                 const result = await stopTimerMutation.mutateAsync(description);
                 return result;
             } catch (error) {
-                console.error('Stop timer error:', error);
                 return null;
             }
         },
@@ -201,28 +174,16 @@ export const useTimer = (): UseTimerReturn => {
     );
 
     const pauseTimer = useCallback(async () => {
-        try {
-            await pauseTimerMutation.mutateAsync();
-        } catch (error) {
-            console.error('Pause timer error:', error);
-        }
+        await pauseTimerMutation.mutateAsync();
     }, [pauseTimerMutation]);
 
     const resumeTimer = useCallback(async () => {
-        try {
-            await resumeTimerMutation.mutateAsync();
-        } catch (error) {
-            console.error('Resume timer error:', error);
-        }
+        await resumeTimerMutation.mutateAsync();
     }, [resumeTimerMutation]);
 
     const deleteTimer = useCallback(
         async (id: string) => {
-            try {
-                await deleteTimerMutation.mutateAsync(id);
-            } catch (error) {
-                console.error('Delete timer error:', error);
-            }
+            await deleteTimerMutation.mutateAsync(id);
         },
         [deleteTimerMutation]
     );
@@ -234,7 +195,7 @@ export const useTimer = (): UseTimerReturn => {
 
     return {
         activeTimer,
-        currentTimer: activeTimer || null,
+        currentTimer: activeTimer,
         isLoading,
         isRunning: !!activeTimer && !activeTimer.ended_at,
         startTimer,

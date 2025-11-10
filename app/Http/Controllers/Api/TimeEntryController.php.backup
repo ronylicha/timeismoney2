@@ -264,91 +264,10 @@ class TimeEntryController extends Controller
     /**
      * Get timesheet
      */
-    /**
-     * Get timesheet - returns structure expected by frontend
-     */
     public function timesheet(Request $request)
     {
-        $startDate = $request->start_date 
-            ? Carbon::parse($request->start_date)->startOfDay() 
-            : now()->startOfWeek();
-        $endDate = $request->end_date 
-            ? Carbon::parse($request->end_date)->endOfDay() 
-            : now()->endOfWeek();
-
-        // Build query
-        $query = TimeEntry::with(["project", "task", "user"])
-            ->where("tenant_id", auth()->user()->tenant_id)
-            ->whereBetween("started_at", [$startDate, $endDate]);
-
-        // Apply filters
-        if ($request->user_id) {
-            $query->where("user_id", $request->user_id);
-        } elseif (!auth()->user()->can("view_all_time_entries")) {
-            $query->where("user_id", auth()->id());
-        }
-
-        if ($request->project_id) {
-            $query->where("project_id", $request->project_id);
-        }
-
-        if ($request->boolean("billable_only")) {
-            $query->where("is_billable", true);
-        }
-
-        $entries = $query->orderBy("started_at", "desc")->get();
-
-        // Calculate totals
-        $totalDuration = $entries->sum("duration_seconds");
-        $billableDuration = $entries->where("is_billable", true)->sum("duration_seconds");
-        $nonBillableDuration = $totalDuration - $billableDuration;
-        $totalAmount = $entries->where("is_billable", true)->sum(function ($entry) {
-            return ($entry->duration_seconds / 3600) * $entry->hourly_rate;
-        });
-
-        // Group by date
-        $byDate = [];
-        foreach ($entries as $entry) {
-            $dateKey = $entry->started_at->format("Y-m-d");
-            if (!isset($byDate[$dateKey])) {
-                $byDate[$dateKey] = [];
-            }
-            $byDate[$dateKey][] = $entry;
-        }
-
-        // Group by project
-        $byProject = [];
-        foreach ($entries as $entry) {
-            if (!$entry->project) continue;
-            
-            $projectId = $entry->project_id;
-            if (!isset($byProject[$projectId])) {
-                $byProject[$projectId] = [
-                    "project" => $entry->project,
-                    "duration" => 0,
-                    "amount" => 0,
-                    "entries" => []
-                ];
-            }
-            
-            $byProject[$projectId]["duration"] += $entry->duration_seconds;
-            if ($entry->is_billable) {
-                $byProject[$projectId]["amount"] += ($entry->duration_seconds / 3600) * $entry->hourly_rate;
-            }
-            $byProject[$projectId]["entries"][] = $entry;
-        }
-
-        return response()->json([
-            "entries" => $entries,
-            "totals" => [
-                "total_duration" => $totalDuration,
-                "billable_duration" => $billableDuration,
-                "non_billable_duration" => $nonBillableDuration,
-                "total_amount" => $totalAmount
-            ],
-            "by_project" => $byProject,
-            "by_date" => $byDate
-        ]);
+        // Default to weekly timesheet
+        return $this->weeklyTimesheet($request);
     }
 
     /**

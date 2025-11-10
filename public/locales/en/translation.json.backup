@@ -684,7 +684,10 @@
       "unassigned": "Unassigned",
       "dates": "Dates"
     },
-
+    "hideAdvancedFilters": "Hide Advanced Filters",
+    "showAdvancedFilters": "Show Advanced Filters",
+    "clickToViewDetails": "Click to view details"
+  },
         "comments": {
             "addComment": "Add comment",
             "writeComment": "Write a comment...",
@@ -805,10 +808,7 @@
             "attachmentUploaded": "Attachment uploaded successfully",
             "dependencyAdded": "Dependency added successfully",
             "checklistUpdated": "Checklist updated successfully"
-        },
-        "hideAdvancedFilters": "Hide Advanced Filters",
-        "showAdvancedFilters": "Show Advanced Filters",
-        "clickToViewDetails": "Click to view details"
+        }
     },
     "clients": {
         "title": "Clients",

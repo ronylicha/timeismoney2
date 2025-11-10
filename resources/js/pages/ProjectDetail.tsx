@@ -9,44 +9,17 @@ import {
     PencilIcon,
     TrashIcon,
     ClockIcon,
-    CheckCircleIcon,
     ChartBarIcon,
     UserGroupIcon,
     CurrencyEuroIcon,
     PlusIcon,
     ViewColumnsIcon,
+    EyeIcon,
     XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { User, PaginatedResponse } from '../types';
-
-interface Project {
-    id: number;
-    name: string;
-    description: string;
-    client_id: number;
-    status: string;
-    billing_type: 'hourly' | 'fixed' | 'retainer' | 'maintenance';
-    budget: number;
-    hourly_rate: number;
-    daily_rate?: number;
-    estimated_hours?: number;
-    estimated_days?: number;
-    monthly_amount?: number;
-    contract_duration?: number;
-    billing_frequency?: 'monthly' | 'quarterly' | 'yearly';
-    start_date: string;
-    end_date: string | null;
-    client?: {
-        id: number;
-        name: string;
-        email: string;
-    };
-    tasks?: Task[];
-    time_entries?: TimeEntry[];
-    users?: TeamMember[];
-}
 
 interface Task {
     id: number;
@@ -201,14 +174,14 @@ const ProjectDetail: React.FC = () => {
     const getPriorityBadge = (priority: string) => {
         const colors = {
             low: 'bg-gray-100 text-gray-800',
-            medium: 'bg-yellow-100 text-yellow-800',
+            normal: 'bg-blue-100 text-blue-800',
             high: 'bg-orange-100 text-orange-800',
             urgent: 'bg-red-100 text-red-800',
         };
 
         const labels = {
             low: t('tasks.low'),
-            medium: t('tasks.medium'),
+            normal: t('tasks.normal'),
             high: t('tasks.high'),
             urgent: t('tasks.urgent'),
         };
@@ -545,7 +518,12 @@ const ProjectDetail: React.FC = () => {
                                 <div className="flex items-start justify-between">
                                     <div className="flex-1">
                                         <div className="flex items-center space-x-3 mb-2">
-                                            <h3 className="font-medium text-gray-900">{task.title}</h3>
+                                            <Link 
+                                                to={`/tasks/${task.id}`}
+                                                className="font-medium text-gray-900 hover:text-blue-600 transition"
+                                            >
+                                                {task.title}
+                                            </Link>
                                             {getTaskStatusBadge(task.status)}
                                             {getPriorityBadge(task.priority)}
                                         </div>
@@ -562,6 +540,16 @@ const ProjectDetail: React.FC = () => {
                                                 </span>
                                             )}
                                         </div>
+                                    </div>
+                                    <div className="flex items-center space-x-2 ml-4">
+                                        <Link
+                                            to={`/tasks/${task.id}`}
+                                            className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 transition text-sm"
+                                            title={t('common.view')}
+                                        >
+                                            <EyeIcon className="h-4 w-4" />
+                                            <span>{t('common.view')}</span>
+                                        </Link>
                                     </div>
                                 </div>
                             </div>
