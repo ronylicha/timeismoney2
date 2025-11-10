@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('tasks', function (Blueprint $table) {
             $table->string('code')->nullable()->after('title');
-            $table->json('labels')->nullable()->after('column_id');
+            $table->json('labels')->nullable()->after('description');
         });
     }
 

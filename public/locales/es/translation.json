@@ -1255,6 +1255,54 @@
             "description": "Automatice sus flujos de trabajo con más de 3000 aplicaciones"
         }
     },
+    "notifications": {
+        "title": "Notificaciones",
+        "markAsRead": "Marcar como leída",
+        "markAllAsRead": "Marcar todas como leídas",
+        "deleteAll": "Eliminar todo",
+        "noNotifications": "Sin notificaciones",
+        "noRecent": "Sin notificaciones recientes",
+        "viewAll": "Ver todas",
+        "settings": "Configuración de notificaciones",
+        "push": {
+            "enable": "Activar Notificaciones Push",
+            "disable": "Desactivar Notificaciones Push",
+            "enabled": "Notificaciones push activadas",
+            "disabled": "Notificaciones push desactivadas",
+            "permissionDenied": "Permiso de notificaciones push denegado",
+            "notSupported": "Las notificaciones push no son compatibles con este navegador",
+            "subscribe": "Suscribirse a Notificaciones",
+            "unsubscribe": "Cancelar Suscripción",
+            "title": "Notificaciones Push"
+        },
+        "description": "Vea todas sus notificaciones",
+        "stats": {
+            "unread": "No leídas",
+            "today": "Hoy",
+            "thisWeek": "Esta Semana",
+            "total": "Total"
+        },
+        "filters": {
+            "all": "Todas",
+            "unread": "No leídas ({count})",
+            "read": "Leídas"
+        },
+        "markedAsRead": "{count} notificación(es) marcada(s) como leída(s)",
+        "allMarkedAsRead": "Todas las notificaciones marcadas como leídas",
+        "deleted": "{count} notificación(es) eliminada(s)",
+        "searchPlaceholder": "Buscar notificaciones...",
+        "confirmDelete": "¿Está seguro de que desea eliminar estas notificaciones?",
+        "selectAll": "Seleccionar todo",
+        "loading": "Cargando notificaciones...",
+        "tryDifferentSearch": "Intente una búsqueda diferente",
+        "allCaughtUp": "¡Está al día!",
+        "today": "Hoy",
+        "yesterday": "Ayer",
+        "todayAt": "Hoy a las {time}",
+        "yesterdayAt": "Ayer a las {time}",
+        "readAgo": "Leído {time}",
+        "pagination": "Mostrando {from} a {to} de {total} resultados"
+    },
     "admin": {
         "title": "Administración",
         "users": {
