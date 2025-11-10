@@ -86,7 +86,8 @@
         "users": "Usuarios",
         "organizations": "Organizaciones",
         "auditLogs": "Registros de Auditoría",
-        "teamManagement": "Gestión de Equipo"
+        "teamManagement": "Gestión de Equipo",
+        "supplierInvoices": "Facturas de proveedor"
     },
     "auth": {
         "login": "Iniciar Sesión",
@@ -224,6 +225,8 @@
         "stripeEnabled": "Stripe activado",
         "stripeToggleError": "Error al cambiar el estado de Stripe",
         "notConfigured": "No configurado",
+        "enabled": "Activado",
+        "disabled": "Desactivado",
         "passwordUpdateSuccess": "Contraseña actualizada exitosamente",
         "connected": "Conectado",
         "notConnected": "No Conectado",

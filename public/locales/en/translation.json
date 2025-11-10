@@ -87,7 +87,8 @@
         "users": "Users",
         "organizations": "Organizations",
         "auditLogs": "Audit Logs",
-        "teamManagement": "Team Management"
+        "teamManagement": "Team Management",
+        "supplierInvoices": "Supplier Invoices"
     },
     "auth": {
         "login": "Login",
@@ -225,6 +226,8 @@
         "stripeEnabled": "Stripe enabled",
         "stripeToggleError": "Error toggling Stripe status",
         "notConfigured": "Not configured",
+        "enabled": "Enabled",
+        "disabled": "Disabled",
         "passwordUpdateSuccess": "Password updated successfully",
         "connected": "Connected",
         "notConnected": "Not Connected",
