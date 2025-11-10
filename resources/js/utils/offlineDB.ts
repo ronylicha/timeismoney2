@@ -1,8 +1,10 @@
 /**
  * Offline database using SQLite WASM for complete offline functionality
+ * Enhanced with iOS storage quota management
  */
 
 import initSqlJs, { Database, SqlJsStatic } from 'sql.js';
+import { checkStorageQuota, isIOSDevice } from './platform';
 
 export interface OfflineDB {
     db: Database;
@@ -19,6 +21,9 @@ export interface OfflineDB {
 
 let SQL: SqlJsStatic;
 let dbInstance: OfflineDB | null = null;
+
+// Storage quota warning state
+let hasWarnedAboutQuota = false;
 
 /**
  * Initialize SQLite WASM database
@@ -529,18 +534,71 @@ async function clearAllData(db: Database): Promise<void> {
 }
 
 /**
- * Save database to localStorage
+ * Save database to localStorage with quota management
  */
-function saveToLocalStorage(db: Database): void {
+async function saveToLocalStorage(db: Database): Promise<void> {
     try {
         const data = db.export();
         // Convert Uint8Array to base64 string for storage in browser
         const base64String = btoa(
             String.fromCharCode.apply(null, Array.from(data))
         );
+
+        const dataSize = base64String.length * 2; // UTF-16 encoding
+        const dataSizeMB = (dataSize / 1024 / 1024).toFixed(2);
+
+        // Check storage quota before saving (especially important on iOS)
+        if (isIOSDevice()) {
+            const quota = await checkStorageQuota();
+
+            // Warn if approaching limit (70%)
+            if (quota.isNearLimit && !hasWarnedAboutQuota) {
+                console.warn(
+                    `Storage quota warning: ${quota.percentUsed.toFixed(1)}% used ` +
+                    `(${(quota.used / 1024 / 1024).toFixed(2)} MB / ${(quota.total / 1024 / 1024).toFixed(2)} MB)`
+                );
+                hasWarnedAboutQuota = true;
+
+                // Notify user if in critical zone
+                if (quota.isCritical) {
+                    alert(
+                        'Attention: L\'espace de stockage est presque plein.\n' +
+                        'Veuillez synchroniser vos données et supprimer les anciennes entrées.'
+                    );
+                }
+            }
+
+            // Prevent saving if it would exceed quota
+            if (dataSize > quota.available) {
+                throw new Error(
+                    `Storage quota exceeded. ` +
+                    `Database size (${dataSizeMB} MB) exceeds available space ` +
+                    `(${(quota.available / 1024 / 1024).toFixed(2)} MB). ` +
+                    `Please sync your data and clear old entries.`
+                );
+            }
+        }
+
         localStorage.setItem('offlineDb', base64String);
+        console.debug(`Database saved: ${dataSizeMB} MB`);
+
     } catch (error) {
         console.error('Failed to save database to localStorage:', error);
+
+        // Handle QuotaExceededError specifically
+        if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+            alert(
+                'Espace de stockage insuffisant!\n\n' +
+                'L\'application a besoin de plus d\'espace.\n' +
+                'Sur iOS:\n' +
+                '1. Synchronisez vos données\n' +
+                '2. Supprimez les anciennes entrées\n' +
+                '3. Effacez le cache Safari si nécessaire'
+            );
+            throw error;
+        }
+
+        throw error;
     }
 }
 

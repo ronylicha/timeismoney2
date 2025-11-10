@@ -1,8 +1,17 @@
 // Service Worker for TimeIsMoney PWA
-const CACHE_NAME = 'tim2-v1.0.1';
-const STATIC_CACHE = 'tim2-static-v1.0.1';
-const DYNAMIC_CACHE = 'tim2-dynamic-v1.0.1';
+// Enhanced with iOS cache management
+const CACHE_VERSION = '3.2.0'; // Updated for iOS cache fix
+const CACHE_NAME = `tim2-v${CACHE_VERSION}`;
+const STATIC_CACHE = `tim2-static-v${CACHE_VERSION}`;
+const DYNAMIC_CACHE = `tim2-dynamic-v${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
+
+// iOS Detection
+const isIOS = /iphone|ipad|ipod/i.test(self.navigator.userAgent);
+
+// iOS has stricter cache limits - reduce cache size
+const MAX_CACHE_SIZE = isIOS ? 50 : 100; // Number of items to cache
+const MAX_CACHE_AGE = isIOS ? 1000 * 60 * 60 * 24 * 3 : 1000 * 60 * 60 * 24 * 7; // 3 days for iOS, 7 for others
 
 // Assets to cache on install
 const STATIC_ASSETS = [
@@ -31,18 +40,66 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
     console.log('[ServiceWorker] Activate');
     event.waitUntil(
-        caches.keys().then(cacheNames => {
-            return Promise.all(
-                cacheNames.map(cacheName => {
-                    if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
-                        console.log('[ServiceWorker] Removing old cache:', cacheName);
-                        return caches.delete(cacheName);
-                    }
-                })
-            );
-        }).then(() => self.clients.claim())
+        Promise.all([
+            // Clean up old caches
+            caches.keys().then(cacheNames => {
+                return Promise.all(
+                    cacheNames.map(cacheName => {
+                        if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
+                            console.log('[ServiceWorker] Removing old cache:', cacheName);
+                            return caches.delete(cacheName);
+                        }
+                    })
+                );
+            }),
+            // Clean up oversized caches (important for iOS)
+            limitCacheSize(DYNAMIC_CACHE, MAX_CACHE_SIZE),
+            // Clean up old cache entries
+            cleanOldCacheEntries(DYNAMIC_CACHE, MAX_CACHE_AGE)
+        ]).then(() => self.clients.claim())
     );
 });
+
+/**
+ * Limit cache size by removing oldest entries
+ * Critical for iOS which has stricter storage limits
+ */
+async function limitCacheSize(cacheName, maxItems) {
+    const cache = await caches.open(cacheName);
+    const keys = await cache.keys();
+
+    if (keys.length > maxItems) {
+        console.log(`[ServiceWorker] Cache ${cacheName} has ${keys.length} items, limiting to ${maxItems}`);
+        // Remove oldest entries (FIFO)
+        const keysToDelete = keys.slice(0, keys.length - maxItems);
+        await Promise.all(keysToDelete.map(key => cache.delete(key)));
+    }
+}
+
+/**
+ * Clean old cache entries based on age
+ * Helps iOS stay within storage limits
+ */
+async function cleanOldCacheEntries(cacheName, maxAge) {
+    const cache = await caches.open(cacheName);
+    const keys = await cache.keys();
+    const now = Date.now();
+
+    const cleanupPromises = keys.map(async (request) => {
+        const response = await cache.match(request);
+        if (response) {
+            const dateHeader = response.headers.get('date');
+            const cacheTime = dateHeader ? new Date(dateHeader).getTime() : 0;
+
+            if (now - cacheTime > maxAge) {
+                console.log('[ServiceWorker] Removing old cache entry:', request.url);
+                await cache.delete(request);
+            }
+        }
+    });
+
+    await Promise.all(cleanupPromises);
+}
 
 // Fetch event - serve from cache when offline
 self.addEventListener('fetch', event => {
@@ -67,10 +124,16 @@ self.addEventListener('fetch', event => {
                     // Clone the response before caching
                     const responseToCache = response.clone();
 
-                    // Cache successful API responses
+                    // Cache successful API responses (but be conservative on iOS)
                     if (response.status === 200) {
-                        caches.open(DYNAMIC_CACHE)
-                            .then(cache => cache.put(request, responseToCache));
+                        caches.open(DYNAMIC_CACHE).then(cache => {
+                            cache.put(request, responseToCache).then(() => {
+                                // iOS: Periodically clean up cache to stay within limits
+                                if (isIOS) {
+                                    limitCacheSize(DYNAMIC_CACHE, MAX_CACHE_SIZE);
+                                }
+                            });
+                        });
                     }
 
                     return response;
@@ -285,7 +348,53 @@ self.addEventListener('message', event => {
                     cacheNames.map(cacheName => caches.delete(cacheName))
                 );
             }).then(() => {
-                return event.ports[0].postMessage({ success: true });
+                if (event.ports && event.ports[0]) {
+                    return event.ports[0].postMessage({ success: true });
+                }
+            })
+        );
+    }
+
+    // iOS-specific: Force cache refresh
+    if (event.data.action === 'forceRefresh') {
+        event.waitUntil(
+            Promise.all([
+                // Clear dynamic cache
+                caches.delete(DYNAMIC_CACHE),
+                // Recreate with fresh data
+                caches.open(DYNAMIC_CACHE)
+            ]).then(() => {
+                if (event.ports && event.ports[0]) {
+                    event.ports[0].postMessage({ success: true });
+                }
+                // Notify all clients to reload
+                return self.clients.matchAll().then(clients => {
+                    clients.forEach(client => client.postMessage({
+                        type: 'CACHE_REFRESHED'
+                    }));
+                });
+            })
+        );
+    }
+
+    // Check cache size (useful for iOS debugging)
+    if (event.data.action === 'getCacheInfo') {
+        event.waitUntil(
+            Promise.all([
+                caches.open(STATIC_CACHE).then(cache => cache.keys()),
+                caches.open(DYNAMIC_CACHE).then(cache => cache.keys())
+            ]).then(([staticKeys, dynamicKeys]) => {
+                if (event.ports && event.ports[0]) {
+                    event.ports[0].postMessage({
+                        success: true,
+                        cacheInfo: {
+                            static: staticKeys.length,
+                            dynamic: dynamicKeys.length,
+                            isIOS: isIOS,
+                            maxCacheSize: MAX_CACHE_SIZE
+                        }
+                    });
+                }
             })
         );
     }
@@ -301,12 +410,16 @@ self.addEventListener('message', event => {
                     timestamp: Date.now()
                 });
             }).then(() => {
-                return event.ports[0].postMessage({ success: true });
+                if (event.ports && event.ports[0]) {
+                    return event.ports[0].postMessage({ success: true });
+                }
             }).catch(error => {
-                return event.ports[0].postMessage({
-                    success: false,
-                    error: error.message
-                });
+                if (event.ports && event.ports[0]) {
+                    return event.ports[0].postMessage({
+                        success: false,
+                        error: error.message
+                    });
+                }
             })
         );
     }
