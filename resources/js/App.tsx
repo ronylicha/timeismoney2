@@ -61,6 +61,7 @@ const AdminReports = lazy(() => import('./pages/Admin/Reports'));
 const Compliance = lazy(() => import('./pages/Compliance'));
 const FecExport = lazy(() => import('./pages/FecExport'));
 const CreditNotes = lazy(() => import('./pages/CreditNotes'));
+const SupplierInvoices = lazy(() => import('./pages/SupplierInvoices'));
 
 // Contexts
 import { AuthProvider } from './contexts/AuthContext';
@@ -262,6 +263,7 @@ function App() {
                                         <Route path="/quotes/new" element={<CreateQuote />} />
                                         <Route path="/quotes/:id/edit" element={<CreateQuote />} />
                                         <Route path="/quotes/:id" element={<QuoteDetail />} />
+                                        <Route path="/supplier-invoices" element={<SupplierInvoices />} />
 
                                         {/* Expenses */}
                                         <Route path="/expenses" element={<Expenses />} />

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Traits\BelongsToTenant;
 
 /**
  * Horodatage qualifié conforme NF525
@@ -33,7 +34,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class QualifiedTimestamp extends Model
 {
+    use BelongsToTenant;
     protected $fillable = [
+        'tenant_id',
         'timestampable_type',
         'timestampable_id',
         'action',

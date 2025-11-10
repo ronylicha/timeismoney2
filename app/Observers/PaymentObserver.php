@@ -13,12 +13,7 @@ use Illuminate\Support\Facades\Log;
  */
 class PaymentObserver
 {
-    private QualifiedTimestampService $timestampService;
-
-    public function __construct()
-    {
-        $this->timestampService = app(QualifiedTimestampService::class);
-    }
+    // No timestamp service in constructor - will be created per payment
 
     /**
      * Handle the Payment "created" event.
@@ -68,7 +63,8 @@ class PaymentObserver
     private function handlePaymentReceived(Payment $payment): void
     {
         try {
-            $timestamp = $this->timestampService->timestamp($payment, 'payment_received');
+            $timestampService = new QualifiedTimestampService($payment->invoice->tenant);
+            $timestamp = $timestampService->timestamp($payment, 'payment_received');
             
             Log::info('Payment received and timestamped', [
                 'payment_id' => $payment->id,

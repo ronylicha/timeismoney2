@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100"
+           xmlns:ram="urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100"
+           xmlns:qdt="urn:un:unece:uncefact:data:standard:QualifiedDataType:100"
+           xmlns:udt="urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100"
+           targetNamespace="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100"
+           elementFormDefault="qualified">
+    
+    <!-- Import du schéma COMFORT -->
+    <xs:include schemaLocation="FACTUR-X_COMFORT.xsd"/>
+    
+    <!-- Extensions pour le profil EXTENDED -->
+    <xs:complexType name="SupplyChainTradeTransactionType">
+        <xs:complexContent>
+            <xs:extension base="ram:SupplyChainTradeTransactionType">
+                <xs:sequence>
+                    <xs:element name="IncludedSupplyChainTradeLineItem" type="ram:SupplyChainTradeLineItemType" minOccurs="1" maxOccurs="unbounded"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    
+    <xs:complexType name="SupplyChainTradeLineItemType">
+        <xs:sequence>
+            <xs:element name="AssociatedDocumentLineDocument" type="ram:DocumentLineType" minOccurs="1"/>
+            <xs:element name="SpecifiedTradeProduct" type="ram:TradeProductType" minOccurs="1"/>
+            <xs:element name="SpecifiedLineTradeAgreement" type="ram:LineTradeAgreementType" minOccurs="0"/>
+            <xs:element name="SpecifiedLineTradeDelivery" type="ram:LineTradeDeliveryType" minOccurs="0"/>
+            <xs:element name="SpecifiedLineTradeSettlement" type="ram:LineTradeSettlementType" minOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    
+    <xs:complexType name="DocumentLineType">
+        <xs:sequence>
+            <xs:element name="LineID" type="udt:IDType" minOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    
+    <xs:complexType name="TradeProductType">
+        <xs:sequence>
+            <xs:element name="Name" type="udt:TextType" minOccurs="1"/>
+            <xs:element name="Description" type="udt:TextType" minOccurs="0"/>
+            <xs:element name="GlobalID" type="udt:IDType" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    
+    <xs:complexType name="LineTradeAgreementType">
+        <xs:sequence>
+            <xs:element name="GrossPriceProductTradePrice" type="ram:TradePriceType" minOccurs="0"/>
+            <xs:element name="NetPriceProductTradePrice" type="ram:TradePriceType" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+    
+    <xs:complexType name="LineTradeDeliveryType">
+        <xs:sequence>
+            <xs:element name="BilledQuantity" type="udt:QuantityType" minOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    
+    <xs:complexType name="LineTradeSettlementType">
+        <xs:sequence>
+            <xs:element name="ApplicableTradeTax" type="ram:TradeTaxType" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="SpecifiedTradeSettlementLineMonetarySummation" type="ram:TradeSettlementLineMonetarySummationType" minOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    
+    <xs:complexType name="TradePriceType">
+        <xs:sequence>
+            <xs:element name="ChargeAmount" type="udt:AmountType" minOccurs="1"/>
+            <xs:element name="BasisQuantity" type="udt:QuantityType" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+    
+    <xs:complexType name="TradeSettlementLineMonetarySummationType">
+        <xs:sequence>
+            <xs:element name="LineTotalAmount" type="udt:AmountType" minOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    
+    <xs:complexType name="QuantityType">
+        <xs:simpleContent>
+            <xs:extension base="xs:decimal">
+                <xs:attribute name="unitCode" type="qdt:UnitCodeType" use="required"/>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+    
+    <xs:simpleType name="UnitCodeType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="C62"/>
+            <xs:enumeration value="H87"/>
+            <xs:enumeration value="DAY"/>
+            <xs:enumeration value="KGM"/>
+            <xs:enumeration value="LTR"/>
+            <xs:enumeration value="MTR"/>
+            <xs:enumeration value="MTK"/>
+            <xs:enumeration value="MTQ"/>
+            <xs:enumeration value="TNE"/>
+        </xs:restriction>
+    </xs:simpleType>
+    
+</xs:schema>

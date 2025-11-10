@@ -7,7 +7,7 @@
 
     <p>Bonjour {{ $client->contact_name ?: $client->name }},</p>
 
-    <p>Nous nous permettons de vous rappeler que la facture <strong>{{ $invoice->invoice_number }}</strong> d'un montant de <strong>{{ number_format($invoice->total, 2, ',', ' ') }} €</strong> est en attente de paiement.</p>
+    <p>Je me permets de vous rappeler que ma facture <strong>{{ $invoice->invoice_number }}</strong> d'un montant de <strong>{{ number_format($invoice->total, 2, ',', ' ') }} €</strong> est en attente de paiement.</p>
 
     <div class="warning-box">
         <table style="width: 100%; border: none; margin: 0;">
@@ -78,11 +78,11 @@
     </p>
 
     <p>
-        Pour toute question ou si vous rencontrez des difficultés, n'hésitez pas à nous contacter au plus vite.
+        Pour toute question ou si vous rencontrez des difficultés, n'hésitez pas à me contacter au plus vite.
     </p>
 
     <p style="margin-top: 30px;">
         Cordialement,<br>
-        <strong>{{ $tenant->name }}</strong>
+        {{ $tenant->name }}
     </p>
 @endsection

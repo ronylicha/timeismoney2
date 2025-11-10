@@ -114,8 +114,8 @@ const CreateInvoice: React.FC = () => {
     // Check if invoice can be edited
     useEffect(() => {
         if (existingInvoice && isEditMode) {
-            if (existingInvoice.status !== 'draft') {
-                toast.error('Seules les factures en brouillon peuvent être modifiées');
+            if (['paid', 'cancelled'].includes(existingInvoice.status)) {
+                toast.error('Les factures payées ou annulées ne peuvent pas être modifiées');
                 navigate(`/invoices/${id}`);
                 return;
             }

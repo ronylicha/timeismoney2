@@ -74,6 +74,40 @@ class Tenant extends Model
         'stripe_webhook_secret',
         'stripe_settings',
         'stripe_connected_at',
+        // PDP settings
+        'pdp_enabled',
+        'pdp_mode',
+        'pdp_base_url',
+        'pdp_oauth_url',
+        'pdp_client_id',
+        'pdp_client_secret',
+        'pdp_scope',
+        'pdp_timeout',
+        'pdp_retry_attempts',
+        'pdp_retry_delay',
+        'pdp_simulation_auto_approve',
+        'pdp_simulation_processing_delay',
+        'pdp_simulation_error_rate',
+        'pdp_webhook_enabled',
+        'pdp_webhook_url',
+        'pdp_webhook_secret',
+        'pdp_notifications_email_enabled',
+        'pdp_connected_at',
+        'pdp_connection_error',
+        // Timestamp settings
+        'timestamp_enabled',
+        'timestamp_provider',
+        'timestamp_tsa_url',
+        'timestamp_api_key',
+        'timestamp_api_secret',
+        'timestamp_certificate_id',
+        'timestamp_include_certificate',
+        'timestamp_use_sandbox',
+        'timestamp_retry_max_attempts',
+        'timestamp_retry_delay_seconds',
+        'timestamp_actions',
+        'timestamp_connected_at',
+        'timestamp_connection_error',
     ];
 
     protected $casts = [
@@ -92,11 +126,24 @@ class Tenant extends Model
         'stripe_enabled' => 'boolean',
         'stripe_settings' => 'array',
         'stripe_connected_at' => 'datetime',
+        'pdp_enabled' => 'boolean',
+        'pdp_connected_at' => 'datetime',
+        'pdp_simulation_auto_approve' => 'boolean',
+        'pdp_webhook_enabled' => 'boolean',
+        'pdp_notifications_email_enabled' => 'boolean',
+        'timestamp_enabled' => 'boolean',
+        'timestamp_include_certificate' => 'boolean',
+        'timestamp_use_sandbox' => 'boolean',
+        'timestamp_connected_at' => 'datetime',
+        'timestamp_actions' => 'array',
     ];
 
     protected $hidden = [
         'stripe_secret_key',
         'stripe_webhook_secret',
+        'pdp_client_secret',
+        'pdp_webhook_secret',
+        'timestamp_api_secret',
     ];
 
     protected $attributes = [
@@ -398,12 +445,283 @@ class Tenant extends Model
                 ],
             ]);
         } catch (\Exception $e) {
-            // Log the error
+            // Log error
             \Illuminate\Support\Facades\Log::error('Failed to send VAT threshold alert', [
                 'tenant_id' => $this->id,
                 'percentage' => $percentage,
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * Check if PDP is configured for this tenant
+     */
+    public function hasPdpConfigured(): bool
+    {
+        return $this->pdp_enabled &&
+               !empty($this->pdp_client_id) &&
+               !empty($this->pdp_client_secret) &&
+               !empty($this->pdp_base_url);
+    }
+
+    /**
+     * Get PDP base URL
+     */
+    public function getPdpBaseUrl(): ?string
+    {
+        return $this->pdp_enabled ? $this->pdp_base_url : null;
+    }
+
+    /**
+     * Get PDP OAuth URL
+     */
+    public function getPdpOAuthUrl(): ?string
+    {
+        return $this->pdp_enabled ? ($this->pdp_oauth_url ?? 'https://auth.pdp.dgfip.fr/oauth/token') : null;
+    }
+
+    /**
+     * Get PDP client ID
+     */
+    public function getPdpClientId(): ?string
+    {
+        return $this->pdp_enabled ? $this->pdp_client_id : null;
+    }
+
+    /**
+     * Get PDP client secret
+     */
+    public function getPdpClientSecret(): ?string
+    {
+        return $this->pdp_enabled ? $this->pdp_client_secret : null;
+    }
+
+    /**
+     * Get PDP scope
+     */
+    public function getPdpScope(): string
+    {
+        return $this->pdp_enabled ? ($this->pdp_scope ?? 'invoice_submit invoice_read') : '';
+    }
+
+    /**
+     * Get PDP timeout
+     */
+    public function getPdpTimeout(): int
+    {
+        return $this->pdp_enabled ? ($this->pdp_timeout ?? 30) : 30;
+    }
+
+    /**
+     * Get PDP retry attempts
+     */
+    public function getPdpRetryAttempts(): int
+    {
+        return $this->pdp_enabled ? ($this->pdp_retry_attempts ?? 3) : 3;
+    }
+
+    /**
+     * Get PDP retry delay
+     */
+    public function getPdpRetryDelay(): int
+    {
+        return $this->pdp_enabled ? ($this->pdp_retry_delay ?? 5) : 5;
+    }
+
+    /**
+     * Get PDP mode
+     */
+    public function getPdpMode(): string
+    {
+        return $this->pdp_enabled ? ($this->pdp_mode ?? 'simulation') : 'simulation';
+    }
+
+    /**
+     * Get PDP simulation auto approve setting
+     */
+    public function getPdpSimulationAutoApprove(): bool
+    {
+        return $this->pdp_enabled ? ($this->pdp_simulation_auto_approve ?? true) : true;
+    }
+
+    /**
+     * Get PDP simulation processing delay
+     */
+    public function getPdpSimulationProcessingDelay(): int
+    {
+        return $this->pdp_enabled ? ($this->pdp_simulation_processing_delay ?? 30) : 30;
+    }
+
+    /**
+     * Get PDP simulation error rate
+     */
+    public function getPdpSimulationErrorRate(): int
+    {
+        return $this->pdp_enabled ? ($this->pdp_simulation_error_rate ?? 0) : 0;
+    }
+
+    /**
+     * Get PDP webhook URL
+     */
+    public function getPdpWebhookUrl(): ?string
+    {
+        return $this->pdp_enabled && $this->pdp_webhook_enabled ? $this->pdp_webhook_url : null;
+    }
+
+    /**
+     * Get PDP webhook secret
+     */
+    public function getPdpWebhookSecret(): ?string
+    {
+        return $this->pdp_enabled && $this->pdp_webhook_enabled ? $this->pdp_webhook_secret : null;
+    }
+
+    /**
+     * Check if PDP notifications are enabled
+     */
+    public function isPdpNotificationsEmailEnabled(): bool
+    {
+        return $this->pdp_enabled ? ($this->pdp_notifications_email_enabled ?? true) : false;
+    }
+
+    /**
+     * Mark PDP as connected
+     */
+    public function markPdpAsConnected(): void
+    {
+        $this->update([
+            'pdp_connected_at' => now(),
+            'pdp_connection_error' => null,
+        ]);
+    }
+
+    /**
+     * Mark PDP connection error
+     */
+    public function markPdpConnectionError(string $error): void
+    {
+        $this->update([
+            'pdp_connection_error' => $error,
+        ]);
+    }
+
+    /**
+     * Get all PDP submissions for this tenant
+     */
+    public function pdpSubmissions(): HasMany
+    {
+        return $this->hasMany(PdpSubmission::class);
+    }
+
+    /**
+     * Check if timestamp is configured for this tenant
+     */
+    public function hasTimestampConfigured(): bool
+    {
+        return $this->timestamp_enabled &&
+               !empty($this->timestamp_provider);
+    }
+
+    /**
+     * Get timestamp provider
+     */
+    public function getTimestampProvider(): string
+    {
+        return $this->timestamp_enabled ? ($this->timestamp_provider ?? 'simple') : 'simple';
+    }
+
+    /**
+     * Get timestamp TSA URL
+     */
+    public function getTimestampTsaUrl(): ?string
+    {
+        return $this->timestamp_enabled ? $this->timestamp_tsa_url : null;
+    }
+
+    /**
+     * Get timestamp API key
+     */
+    public function getTimestampApiKey(): ?string
+    {
+        return $this->timestamp_enabled ? $this->timestamp_api_key : null;
+    }
+
+    /**
+     * Get timestamp API secret
+     */
+    public function getTimestampApiSecret(): ?string
+    {
+        return $this->timestamp_enabled ? $this->timestamp_api_secret : null;
+    }
+
+    /**
+     * Check if timestamp should use sandbox
+     */
+    public function getTimestampUseSandbox(): bool
+    {
+        return $this->timestamp_enabled ? ($this->timestamp_use_sandbox ?? true) : true;
+    }
+
+    /**
+     * Get timestamp retry max attempts
+     */
+    public function getTimestampRetryMaxAttempts(): int
+    {
+        return $this->timestamp_enabled ? ($this->timestamp_retry_max_attempts ?? 3) : 3;
+    }
+
+    /**
+     * Get timestamp retry delay seconds
+     */
+    public function getTimestampRetryDelaySeconds(): int
+    {
+        return $this->timestamp_enabled ? ($this->timestamp_retry_delay_seconds ?? 60) : 60;
+    }
+
+    /**
+     * Get timestamp actions
+     */
+    public function getTimestampActions(): array
+    {
+        if (!$this->timestamp_enabled) {
+            return [];
+        }
+
+        return $this->timestamp_actions ?? [
+            'invoice_validated',
+            'invoice_paid',
+            'invoice_cancelled',
+            'credit_note_created',
+        ];
+    }
+
+    /**
+     * Mark timestamp as connected
+     */
+    public function markTimestampAsConnected(): void
+    {
+        $this->update([
+            'timestamp_connected_at' => now(),
+            'timestamp_connection_error' => null,
+        ]);
+    }
+
+    /**
+     * Mark timestamp connection error
+     */
+    public function markTimestampConnectionError(string $error): void
+    {
+        $this->update([
+            'timestamp_connection_error' => $error,
+        ]);
+    }
+
+    /**
+     * Get all qualified timestamps for this tenant
+     */
+    public function qualifiedTimestamps(): HasMany
+    {
+        return $this->hasMany(QualifiedTimestamp::class);
     }
 }

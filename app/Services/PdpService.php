@@ -18,15 +18,23 @@ use Illuminate\Support\Str;
  */
 class PdpService
 {
+    private ?\App\Models\Tenant $tenant;
     private string $baseUrl;
     private string $oauthUrl;
     private ?string $accessToken = null;
     private ?\DateTime $tokenExpires = null;
 
-    public function __construct()
+    public function __construct(?\App\Models\Tenant $tenant = null)
     {
-        $this->baseUrl = config('pdp.base_url');
-        $this->oauthUrl = config('pdp.oauth_url');
+        // Get current tenant if not provided
+        $this->tenant = $tenant ?? tenant();
+        
+        if (!$this->tenant || !$this->tenant->hasPdpConfigured()) {
+            throw new \Exception('PDP n\'est pas configuré pour ce tenant. Veuillez configurer les paramètres PDP dans les paramètres du tenant.');
+        }
+        
+        $this->baseUrl = $this->tenant->getPdpBaseUrl();
+        $this->oauthUrl = $this->tenant->getPdpOAuthUrl();
     }
 
     /**
@@ -35,7 +43,21 @@ class PdpService
     public function submitDocument(Invoice|CreditNote $model, string $facturXPath, PdpSubmission $submission): array
     {
         try {
-            if (config('pdp.mode') === 'simulation') {
+            // Validate file size
+            if (!Storage::exists($facturXPath)) {
+                throw new \Exception('Le fichier Factur-X n\'existe pas: ' . $facturXPath);
+            }
+            
+            $fileSize = Storage::size($facturXPath);
+            $maxFileSize = config('pdp.files.max_size', 10 * 1024 * 1024); // 10MB default
+            
+            if ($fileSize > $maxFileSize) {
+                throw new \Exception('Le fichier est trop volumineux (' . round($fileSize / 1024 / 1024, 2) . 'MB). La taille maximale autorisée est de ' . round($maxFileSize / 1024 / 1024, 2) . 'MB.');
+            }
+            
+            $mode = $this->tenant->getPdpMode();
+            
+            if ($mode === 'simulation') {
                 return $this->simulateSubmission($model, $facturXPath, $submission);
             }
 
@@ -86,22 +108,9 @@ class PdpService
      */
     private function simulateSubmission(Invoice|CreditNote $model, string $facturXPath, PdpSubmission $submission): array
     {
-        Log::info('PDP simulation mode - submitting document', [
-            'model_type' => get_class($model),
-            'model_id' => $model->id,
-            'submission_id' => $submission->submission_id,
-        ]);
-
-        // Simuler une validation basique
-        if (!$this->validateDocumentForSimulation($model, $facturXPath)) {
-            return [
-                'success' => false,
-                'error' => 'Document invalide pour la simulation PDP',
-            ];
-        }
-
-        // Simuler une erreur aléatoire si configuré
-        $errorRate = config('pdp.simulation.error_rate', 0);
+        // Get tenant-specific settings
+        $processingDelay = $this->tenant->getPdpSimulationProcessingDelay();
+        $errorRate = $this->tenant->getPdpSimulationErrorRate();
         if ($errorRate > 0 && rand(1, 100) <= $errorRate) {
             return [
                 'success' => false,
@@ -119,7 +128,7 @@ class PdpService
             'response_data' => [
                 'message' => 'Document soumis avec succès (simulation)',
                 'pdp_reference' => 'REF-' . $pdpId,
-                'processing_time' => config('pdp.simulation.processing_delay', 30) . ' seconds',
+                'processing_time' => $processingDelay . ' seconds',
                 'mode' => 'simulation',
             ],
         ];
@@ -137,7 +146,7 @@ class PdpService
 
         // Simuler différents statuts selon le temps écoulé
         $timeSinceSubmission = now()->diffInSeconds($submission->submitted_at ?? now());
-        $processingDelay = config('pdp.simulation.processing_delay', 30);
+        $processingDelay = $this->tenant->getPdpSimulationProcessingDelay();
 
         if ($timeSinceSubmission < $processingDelay / 2) {
             // Première moitié du temps : en traitement
@@ -161,7 +170,7 @@ class PdpService
             ];
         } else {
             // Après le délai : succès (sauf si erreur simulée)
-            $errorRate = config('pdp.simulation.error_rate', 0);
+            $errorRate = $this->tenant->getPdpSimulationErrorRate();
             if ($errorRate > 0 && rand(1, 100) <= $errorRate) {
                 return [
                     'success' => true,
@@ -201,7 +210,8 @@ class PdpService
         $submissionData = $this->prepareSubmissionData($model, $facturXPath);
 
         // Envoyer la requête
-        $response = Http::timeout(config('pdp.timeout', 30))
+        $timeout = $this->tenant->getPdpTimeout();
+        $response = Http::timeout($timeout)
             ->withToken($token)
             ->post($this->baseUrl . '/api/' . config('pdp.api_version', 'v1') . '/invoices', $submissionData);
 
@@ -232,7 +242,8 @@ class PdpService
             throw new \Exception('Impossible d\'obtenir le token d\'accès PDP');
         }
 
-        $response = Http::timeout(config('pdp.timeout', 30))
+        $timeout = $this->tenant->getPdpTimeout();
+        $response = Http::timeout($timeout)
             ->withToken($token)
             ->get($this->baseUrl . '/api/' . config('pdp.api_version', 'v1') . '/invoices/' . $submission->pdp_id);
 
@@ -262,9 +273,9 @@ class PdpService
         // Obtenir un nouveau token
         $response = Http::asForm()->post($this->oauthUrl, [
             'grant_type' => 'client_credentials',
-            'client_id' => config('pdp.client_id'),
-            'client_secret' => config('pdp.client_secret'),
-            'scope' => config('pdp.scope'),
+            'client_id' => $this->tenant->getPdpClientId(),
+            'client_secret' => $this->tenant->getPdpClientSecret(),
+            'scope' => $this->tenant->getPdpScope(),
         ]);
 
         if (!$response->successful()) {

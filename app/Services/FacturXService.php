@@ -66,12 +66,18 @@ class FacturXService
                 'path' => $path
             ]);
             
-            // Soumettre automatiquement au PDP si activé
-            if (config('pdp.enabled', false) && $invoice->status === 'sent') {
-                $this->submitToPdp($invoice);
+            // 7. Signature électronique si activée
+            $signedPath = $path;
+            if (config('electronic_signature.enabled', false)) {
+                $signedPath = $this->signFacturXDocument($path, $invoice);
             }
             
-            return $path;
+            // Soumettre automatiquement au PDP si activé
+            if (config('pdp.enabled', false) && $invoice->status === 'sent') {
+                $this->submitToPdp($invoice, $signedPath);
+            }
+            
+            return $signedPath;
             
         } catch (\Exception $e) {
             Log::error('Failed to generate FacturX invoice', [
@@ -583,6 +589,56 @@ class FacturXService
     private function validateXmlContent(string $xmlContent): bool
     {
         try {
+            // Utiliser le service de validation XSD si disponible
+            $xsdService = app(XsdValidationService::class);
+            
+            if ($xsdService->schemasAvailable()) {
+                $validation = $xsdService->validateXml($xmlContent, 'BASIC');
+                
+                Log::info('XSD validation result', [
+                    'valid' => $validation['valid'],
+                    'errors_count' => count($validation['errors']),
+                    'warnings_count' => count($validation['warnings']),
+                    'compliance_score' => $validation['compliance_score'] ?? 0,
+                ]);
+                
+                // Accepter si score de conformité >= 80%
+                $minScore = config('facturx.min_compliance_score', 80);
+                if (($validation['compliance_score'] ?? 0) < $minScore) {
+                    Log::warning('XML compliance score too low', [
+                        'score' => $validation['compliance_score'],
+                        'min_required' => $minScore,
+                        'errors' => $validation['errors'],
+                    ]);
+                    
+                    // Ne pas bloquer la génération mais logger les erreurs
+                    foreach ($validation['errors'] as $error) {
+                        Log::warning('XSD validation error', $error);
+                    }
+                }
+                
+                return $validation['valid'] || ($validation['compliance_score'] ?? 0) >= $minScore;
+            }
+            
+            // Fallback: validation basique si XSD non disponible
+            return $this->basicXmlValidation($xmlContent);
+            
+        } catch (\Exception $e) {
+            Log::error('XML validation failed', [
+                'error' => $e->getMessage(),
+            ]);
+            
+            // En cas d'erreur de validation, continuer avec validation basique
+            return $this->basicXmlValidation($xmlContent);
+        }
+    }
+    
+    /**
+     * Validation basique du XML (fallback)
+     */
+    private function basicXmlValidation(string $xmlContent): bool
+    {
+        try {
             // Vérifier que le XML est bien formé
             $xml = new \DOMDocument();
             $xml->loadXML($xmlContent);
@@ -622,7 +678,7 @@ class FacturXService
     /**
      * Soumet automatiquement une facture au PDP après génération Factur-X
      */
-    private function submitToPdp(Invoice $invoice): void
+    private function submitToPdp(Invoice $invoice, string $documentPath): void
     {
         try {
             $submission = \App\Models\PdpSubmission::create([
@@ -635,7 +691,7 @@ class FacturXService
                 'ip_address' => request()->ip(),
             ]);
 
-            \App\Jobs\SendToPdpJob::dispatch($invoice, $submission->submission_id)
+            \App\Jobs\SendToPdpJob::dispatch($invoice, $submission->submission_id, $documentPath)
                 ->delay(now()->addMinutes(5)); // Délai de 5 minutes
 
             Log::info('Auto-submission to PDP scheduled', [
@@ -680,6 +736,88 @@ class FacturXService
                 'credit_note_id' => $creditNote->id,
                 'error' => $e->getMessage(),
             ]);
+        }
+    }
+
+    /**
+     * Signe un document Factur-X électroniquement
+     */
+    private function signFacturXDocument(string $pdfPath, Invoice $invoice): ?string
+    {
+        try {
+            $signatureService = app(ElectronicSignatureService::class);
+            
+            if (!$signatureService->isConfigured()) {
+                Log::warning('Electronic signature service not configured, skipping signing', [
+                    'invoice_id' => $invoice->id,
+                    'pdf_path' => $pdfPath,
+                ]);
+                return $pdfPath;
+            }
+
+            $signerInfo = [
+                'name' => auth()->user()->name ?? $invoice->tenant->name,
+                'email' => auth()->user()->email ?? $invoice->tenant->email,
+                'role' => 'Responsable Facturation',
+                'location' => $invoice->tenant->city ?? 'France',
+                'reason' => 'Signature de facture Factur-X #' . $invoice->invoice_number,
+                'level' => config('electronic_signature.signature_level', 'QES'),
+            ];
+
+            $result = $signatureService->signFacturXDocument($pdfPath, $signerInfo);
+
+            if ($result['success']) {
+                // Enregistrer la signature dans la base de données
+                \App\Models\ElectronicSignature::createSignature([
+                    'signable_type' => Invoice::class,
+                    'signable_id' => $invoice->id,
+                    'signature_id' => $result['signature_info']['id'],
+                    'signer_name' => $signerInfo['name'],
+                    'signer_email' => $signerInfo['email'],
+                    'signer_role' => $signerInfo['role'],
+                    'signature_level' => $signerInfo['level'],
+                    'original_file_path' => $pdfPath,
+                    'signed_file_path' => $result['signed_path'],
+                    'timestamp_info' => $result['timestamp_info'],
+                    'validation_result' => $result['validation_result'],
+                    'processing_time' => $result['processing_time'],
+                    'status' => $result['validation_result']['valid'] ? 'valid' : 'failed',
+                    'metadata' => [
+                        'invoice_id' => $invoice->id,
+                        'invoice_number' => $invoice->invoice_number,
+                        'signature_method' => 'electronic',
+                        'compliance_level' => 'eIDAS QES',
+                    ],
+                ]);
+
+                Log::info('Factur-X document signed successfully', [
+                    'invoice_id' => $invoice->id,
+                    'original_path' => $pdfPath,
+                    'signed_path' => $result['signed_path'],
+                    'signature_id' => $result['signature_info']['id'],
+                    'processing_time' => $result['processing_time'],
+                ]);
+
+                return $result['signed_path'];
+            } else {
+                Log::error('Failed to sign Factur-X document', [
+                    'invoice_id' => $invoice->id,
+                    'pdf_path' => $pdfPath,
+                    'error' => $result['error'],
+                ]);
+
+                return $pdfPath; // Retourner le fichier non signé en cas d'échec
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Exception during Factur-X signing', [
+                'invoice_id' => $invoice->id,
+                'pdf_path' => $pdfPath,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return $pdfPath; // Retourner le fichier non signé en cas d'exception
         }
     }
 }

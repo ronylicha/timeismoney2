@@ -22,13 +22,11 @@ use Illuminate\Support\Facades\Log;
  */
 class CreditNoteObserver
 {
-    private QualifiedTimestampService $timestampService;
     private ArchiveService $archiveService;
     private FacturXService $facturXService;
 
     public function __construct()
     {
-        $this->timestampService = app(QualifiedTimestampService::class);
         $this->archiveService = app(ArchiveService::class);
         $this->facturXService = app(FacturXService::class);
     }
@@ -65,7 +63,8 @@ class CreditNoteObserver
     {
         try {
             // 1. Créer un horodatage qualifié
-            $timestamp = $this->timestampService->timestamp($creditNote, 'credit_note_created');
+            $timestampService = new QualifiedTimestampService($creditNote->tenant);
+            $timestamp = $timestampService->timestamp($creditNote, 'credit_note_created');
             
             Log::info('Credit note created and timestamped', [
                 'credit_note_id' => $creditNote->id,

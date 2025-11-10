@@ -7,7 +7,7 @@
 
     <p>Bonjour {{ $client->contact_name ?: $client->name }},</p>
 
-    <p>Nous avons le plaisir de vous transmettre notre devis <strong>{{ $quote->quote_number }}</strong> d'un montant de <strong>{{ number_format($quote->total, 2, ',', ' ') }} €</strong>.</p>
+    <p>J'ai le plaisir de vous transmettre mon devis <strong>{{ $quote->quote_number }}</strong> d'un montant de <strong>{{ number_format($quote->total, 2, ',', ' ') }} €</strong>.</p>
 
     <div class="info-box">
         <table style="width: 100%; border: none; margin: 0;">
@@ -74,11 +74,11 @@
     </p>
 
     <p>
-        Nous restons à votre disposition pour toute question ou modification.
+        Je reste à votre disposition pour toute question ou modification.
     </p>
 
     <p style="margin-top: 30px;">
         Cordialement,<br>
-        <strong>{{ $tenant->name }}</strong>
+        {{ $tenant->name }}
     </p>
 @endsection

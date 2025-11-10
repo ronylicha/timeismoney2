@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100"
+           targetNamespace="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100"
+           elementFormDefault="qualified">
+    
+    <!-- Document racine -->
+    <xs:element name="CrossIndustryInvoice">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="ExchangedDocument" minOccurs="1">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="ID" type="xs:string" minOccurs="1"/>
+                            <xs:element name="TypeCode" type="xs:string" minOccurs="1"/>
+                            <xs:element name="IssueDateTime" type="xs:dateTime" minOccurs="1"/>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="ExchangedDocumentContext" minOccurs="1">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="GuidelineSpecifiedDocumentContextParameter" minOccurs="1">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="ID" type="xs:string" minOccurs="1"/>
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="SupplyChainTradeTransaction" minOccurs="1">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="ApplicableHeaderTradeAgreement" minOccurs="1">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="SellerTradeParty" minOccurs="1">
+                                            <xs:complexType>
+                                                <xs:sequence>
+                                                    <xs:element name="Name" type="xs:string" minOccurs="1"/>
+                                                    <xs:element name="PostalTradeAddress" minOccurs="1">
+                                                        <xs:complexType>
+                                                            <xs:sequence>
+                                                                <xs:element name="CountryID" type="xs:string" minOccurs="1"/>
+                                                            </xs:sequence>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:sequence>
+                                            </xs:complexType>
+                                        </xs:element>
+                                        <xs:element name="BuyerTradeParty" minOccurs="1">
+                                            <xs:complexType>
+                                                <xs:sequence>
+                                                    <xs:element name="Name" type="xs:string" minOccurs="1"/>
+                                                    <xs:element name="PostalTradeAddress" minOccurs="1">
+                                                        <xs:complexType>
+                                                            <xs:sequence>
+                                                                <xs:element name="CountryID" type="xs:string" minOccurs="1"/>
+                                                            </xs:sequence>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:sequence>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="ApplicableHeaderTradeSettlement" minOccurs="1">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="InvoiceCurrencyCode" type="xs:string" minOccurs="1"/>
+                                        <xs:element name="SpecifiedTradeSettlementHeaderMonetarySummation" minOccurs="1">
+                                            <xs:complexType>
+                                                <xs:sequence>
+                                                    <xs:element name="GrandTotalAmount" type="xs:decimal" minOccurs="1"/>
+                                                </xs:sequence>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    
+</xs:schema>

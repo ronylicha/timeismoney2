@@ -25,6 +25,9 @@ use App\Http\Controllers\Api\GoogleCalendarController;
 use App\Http\Controllers\Api\TenantSettingsController;
 use App\Http\Controllers\Api\ComplianceController;
 use App\Http\Controllers\Api\PdpController;
+use App\Http\Controllers\Api\SignatureController;
+use App\Http\Controllers\Api\SupplierInvoiceController;
+use App\Http\Controllers\Api\PdpWebhookController;
 
 /*
 |--------------------------------------------------------------------------
@@ -38,6 +41,9 @@ Route::post('/login', [LoginController::class, 'login']);
 
 // Stripe Webhook (must be public for Stripe to access)
 Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handleWebhook'])->name('stripe.webhook');
+
+// PDP Webhook (must be public for PDP to access)
+Route::post('/webhooks/pdp', [PdpWebhookController::class, 'handleWebhook'])->name('pdp.webhook');
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -154,6 +160,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/submissions/{submission_id}/retry', [PdpController::class, 'retrySubmission']);
     });
 
+    // Supplier Invoices
+    Route::apiResource('supplier-invoices', SupplierInvoiceController::class);
+    Route::post('/supplier-invoices/{supplier_invoice}/submit-pdp', [SupplierInvoiceController::class, 'submitToPdp']);
+    Route::get('/supplier-invoices/{supplier_invoice}/pdp-status', [SupplierInvoiceController::class, 'getPdpStatus']);
+    Route::get('/supplier-invoices/stats', [SupplierInvoiceController::class, 'getStats']);
+    Route::post('/supplier-invoices/import-from-pdp', [SupplierInvoiceController::class, 'importFromPdp']);
+
     // Quotes
     Route::apiResource('quotes', QuoteController::class);
     Route::post('/quotes/{quote}/send', [QuoteController::class, 'send']);
@@ -197,6 +210,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index']);
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
     Route::get('/dashboard/activity', [DashboardController::class, 'activity']);
+
+    // Electronic Signatures
+    Route::prefix('signatures')->group(function () {
+        Route::get('/', [SignatureController::class, 'index']);
+        Route::get('/statistics', [SignatureController::class, 'statistics']);
+        Route::get('/config', [SignatureController::class, 'config']);
+        Route::post('/sign', [SignatureController::class, 'sign']);
+        Route::post('/verify', [SignatureController::class, 'verify']);
+        Route::post('/validate', [SignatureController::class, 'validate']);
+        Route::get('/export', [SignatureController::class, 'export']);
+        Route::get('/{signature}', [SignatureController::class, 'show']);
+        Route::get('/{signature}/download', [SignatureController::class, 'download']);
+    });
     Route::get('/dashboard/charts', [DashboardController::class, 'charts']);
     Route::get('/dashboard/widgets', [DashboardController::class, 'widgets']);
     Route::post('/dashboard/widgets', [DashboardController::class, 'saveWidget']);
@@ -218,6 +244,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/settings/stripe', [SettingsController::class, 'updateStripeSettings']);
     Route::post('/settings/stripe/test', [SettingsController::class, 'testStripeConnection']);
     Route::post('/settings/stripe/disable', [SettingsController::class, 'disableStripe']);
+
+    // PDP Settings (Tenant-specific)
+    Route::get('/settings/pdp', [SettingsController::class, 'getPdpSettings']);
+    Route::post('/settings/pdp', [SettingsController::class, 'updatePdpSettings']);
+    Route::post('/settings/pdp/test', [SettingsController::class, 'testPdpConnection']);
+    Route::post('/settings/pdp/disable', [SettingsController::class, 'disablePdp']);
+
+    // Timestamp Settings (Tenant-specific)
+    Route::get('/settings/timestamp', [SettingsController::class, 'getTimestampSettings']);
+    Route::post('/settings/timestamp', [SettingsController::class, 'updateTimestampSettings']);
+    Route::patch('/settings/timestamp', [SettingsController::class, 'updateTimestampSettings']);
+    Route::post('/settings/timestamp/test', [SettingsController::class, 'testTimestampConnection']);
 
     // Tenant Billing Settings
     Route::get('/settings/billing', [TenantSettingsController::class, 'getBillingSettings']);

@@ -7,7 +7,7 @@
 
     <p>Bonjour {{ $client->contact_name ?: $client->name }},</p>
 
-    <p>Nous accusons réception de votre paiement de <strong>{{ number_format($amount, 2, ',', ' ') }} €</strong> pour la facture <strong>{{ $invoice->invoice_number }}</strong>.</p>
+    <p>J'accuse réception de votre paiement de <strong>{{ number_format($amount, 2, ',', ' ') }} €</strong> pour ma facture <strong>{{ $invoice->invoice_number }}</strong>.</p>
 
     <div class="success-box">
         <table style="width: 100%; border: none; margin: 0;">
@@ -47,11 +47,11 @@
     @endif
 
     <p style="margin-top: 30px;">
-        Nous vous remercions pour votre confiance et restons à votre disposition pour toute question.
+        Je vous remercie pour votre confiance et reste à votre disposition pour toute question.
     </p>
 
     <p style="margin-top: 30px;">
         Cordialement,<br>
-        <strong>{{ $tenant->name }}</strong>
+        {{ $tenant->name }}
     </p>
 @endsection

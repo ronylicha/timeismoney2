@@ -10,13 +10,12 @@ use Illuminate\Support\Facades\Log;
 
 class InvoiceObserver
 {
-    private QualifiedTimestampService $timestampService;
     private ArchiveService $archiveService;
     private FacturXService $facturXService;
 
     public function __construct()
     {
-        $this->timestampService = app(QualifiedTimestampService::class);
+        // Note: Observers run in model context, so we need to get tenant from model
         $this->archiveService = app(ArchiveService::class);
         $this->facturXService = app(FacturXService::class);
     }
@@ -75,7 +74,8 @@ class InvoiceObserver
     {
         try {
             // 1. Créer un horodatage qualifié
-            $timestamp = $this->timestampService->timestamp($invoice, 'invoice_validated');
+            $timestampService = new QualifiedTimestampService($invoice->tenant);
+            $timestamp = $timestampService->timestamp($invoice, 'invoice_validated');
             
             Log::info('Invoice validated and timestamped', [
                 'invoice_id' => $invoice->id,
@@ -103,7 +103,8 @@ class InvoiceObserver
     private function handleInvoicePaid(Invoice $invoice): void
     {
         try {
-            $timestamp = $this->timestampService->timestamp($invoice, 'invoice_paid');
+            $timestampService = new QualifiedTimestampService($invoice->tenant);
+            $timestamp = $timestampService->timestamp($invoice, 'invoice_paid');
             
             Log::info('Invoice paid and timestamped', [
                 'invoice_id' => $invoice->id,
@@ -126,7 +127,8 @@ class InvoiceObserver
     private function handleInvoiceCancelled(Invoice $invoice): void
     {
         try {
-            $timestamp = $this->timestampService->timestamp($invoice, 'invoice_cancelled');
+            $timestampService = new QualifiedTimestampService($invoice->tenant);
+            $timestamp = $timestampService->timestamp($invoice, 'invoice_cancelled');
             
             Log::info('Invoice cancelled and timestamped', [
                 'invoice_id' => $invoice->id,

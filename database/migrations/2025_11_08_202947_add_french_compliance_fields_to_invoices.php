@@ -30,12 +30,25 @@ return new class extends Migration
             $table->decimal('early_payment_discount', 5, 2)->nullable()->after('recovery_indemnity');
 
             // Index pour améliorer les performances des requêtes par type
-            $table->index('type');
+            if (DB::getDriverName() !== 'sqlite') {
+                $table->index('type', 'invoices_type_index');
+            }
         });
 
         // Modifier l'enum type pour ajouter 'final' (facture de solde)
-        // Syntaxe MySQL/MariaDB
-        DB::statement("ALTER TABLE invoices MODIFY COLUMN type ENUM('invoice', 'quote', 'credit_note', 'advance', 'final', 'recurring') NOT NULL DEFAULT 'invoice'");
+        // Syntaxe adaptée selon le SGBD
+        if (DB::getDriverName() === 'sqlite') {
+            // SQLite: recréer la table
+            if (!Schema::hasColumn('invoices', 'type_new')) {
+                DB::statement("ALTER TABLE invoices ADD COLUMN type_new VARCHAR(20) NOT NULL DEFAULT 'invoice'");
+                DB::statement("UPDATE invoices SET type_new = type");
+                DB::statement("ALTER TABLE invoices DROP COLUMN type");
+                DB::statement("ALTER TABLE invoices RENAME COLUMN type_new TO type");
+            }
+        } else {
+            // MySQL/MariaDB
+            DB::statement("ALTER TABLE invoices MODIFY COLUMN type ENUM('invoice', 'quote', 'credit_note', 'advance', 'final', 'recurring') NOT NULL DEFAULT 'invoice'");
+        }
     }
 
     /**
@@ -44,10 +57,21 @@ return new class extends Migration
     public function down(): void
     {
         // Restaurer l'enum original (sans 'final')
-        DB::statement("ALTER TABLE invoices MODIFY COLUMN type ENUM('invoice', 'quote', 'credit_note', 'advance', 'recurring') NOT NULL DEFAULT 'invoice'");
+        if (DB::getDriverName() === 'sqlite') {
+            // SQLite: recréer la table
+            DB::statement("ALTER TABLE invoices ADD COLUMN type_new VARCHAR(20) NOT NULL DEFAULT 'invoice'");
+            DB::statement("UPDATE invoices SET type_new = CASE type WHEN 'final' THEN 'invoice' ELSE type END");
+            DB::statement("ALTER TABLE invoices DROP COLUMN type");
+            DB::statement("ALTER TABLE invoices RENAME COLUMN type_new TO type");
+        } else {
+            // MySQL/MariaDB
+            DB::statement("ALTER TABLE invoices MODIFY COLUMN type ENUM('invoice', 'quote', 'credit_note', 'advance', 'recurring') NOT NULL DEFAULT 'invoice'");
+        }
 
         Schema::table('invoices', function (Blueprint $table) {
-            $table->dropIndex(['type']);
+            if (Schema::hasIndex('invoices', 'invoices_type_index')) {
+                $table->dropIndex(['type']);
+            }
             $table->dropColumn([
                 'advance_percentage',
                 'legal_mentions',

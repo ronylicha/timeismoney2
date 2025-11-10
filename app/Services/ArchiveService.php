@@ -28,14 +28,12 @@ class ArchiveService
     private string $archiveBasePath;
     private string $defaultDisk;
     private int $retentionYears;
-    private QualifiedTimestampService $timestampService;
     
     public function __construct()
     {
         $this->archiveBasePath = config('archive.base_path', 'archives');
         $this->defaultDisk = config('archive.storage_disk', 'local');
         $this->retentionYears = config('archive.retention_years', 10);
-        $this->timestampService = app(QualifiedTimestampService::class);
     }
 
     /**
@@ -85,7 +83,8 @@ class ArchiveService
         
         // Créer un horodatage qualifié
         try {
-            $timestamp = $this->timestampService->timestamp($archive, 'invoice_validated');
+            $timestampService = new QualifiedTimestampService($invoice->tenant);
+            $timestamp = $timestampService->timestamp($archive, 'invoice_validated');
             $archive->update(['qualified_timestamp_id' => $timestamp->id]);
         } catch (\Exception $e) {
             Log::warning('Failed to timestamp archive', [
@@ -146,7 +145,8 @@ class ArchiveService
         ]);
         
         try {
-            $timestamp = $this->timestampService->timestamp($archive, 'credit_note_created');
+            $timestampService = new QualifiedTimestampService($creditNote->tenant);
+            $timestamp = $timestampService->timestamp($archive, 'credit_note_created');
             $archive->update(['qualified_timestamp_id' => $timestamp->id]);
         } catch (\Exception $e) {
             Log::warning('Failed to timestamp credit note archive', [
@@ -203,7 +203,9 @@ class ArchiveService
         ]);
         
         try {
-            $timestamp = $this->timestampService->timestamp($archive, 'invoice_validated');
+            $tenant = \App\Models\Tenant::find($tenantId);
+            $timestampService = new QualifiedTimestampService($tenant);
+            $timestamp = $timestampService->timestamp($archive, 'invoice_validated');
             $archive->update(['qualified_timestamp_id' => $timestamp->id]);
         } catch (\Exception $e) {
             Log::warning('Failed to timestamp FEC archive', [

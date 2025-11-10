@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
+import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import {
     PlusIcon,
     MagnifyingGlassIcon,
@@ -34,6 +35,15 @@ const Invoices: React.FC = () => {
     const { t } = useTranslation();
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+
+    // Check PDP configuration
+    const { data: pdpConfig } = useQuery({
+        queryKey: ['pdp-config'],
+        queryFn: async () => {
+            const response = await axios.get('/settings/pdp/config');
+            return response.data;
+        },
+    });
 
     const { data: invoices, isLoading } = useQuery({
         queryKey: ['invoices', searchTerm, statusFilter],
@@ -114,6 +124,36 @@ const Invoices: React.FC = () => {
 
     return (
         <div className="p-6">
+            {/* PDP Configuration Alert */}
+            {pdpConfig && !pdpConfig.configured && (
+                <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
+                    <div className="flex">
+                        <div className="flex-shrink-0">
+                            <ExclamationTriangleIcon className="h-5 w-5 text-red-400" />
+                        </div>
+                        <div className="ml-3">
+                            <h3 className="text-sm font-medium text-red-800">
+                                PDP Non Configuré
+                            </h3>
+                            <div className="mt-2 text-sm text-red-700">
+                                <p>
+                                    Le Portail Public de Facturation n'est pas configuré pour votre entreprise. 
+                                    La facturation électronique B2B est obligatoire en France.
+                                </p>
+                                <div className="mt-3">
+                                    <Link
+                                        to="/settings"
+                                        className="font-medium text-red-800 underline hover:text-red-900"
+                                    >
+                                        Configurer le PDP maintenant →
+                                    </Link>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="mb-8">
                 <div className="flex justify-between items-center">
                     <div>

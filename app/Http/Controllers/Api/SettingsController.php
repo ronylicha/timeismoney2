@@ -298,4 +298,247 @@ class SettingsController extends Controller
             ]
         ]);
     }
+
+    /**
+     * Get PDP configuration for current tenant
+     */
+    public function getPdpSettings()
+    {
+        $user = auth()->user();
+
+        if (!$user->hasPermission('manage_settings')) {
+            return response()->json(['message' => 'Insufficient permissions'], 403);
+        }
+
+        $tenant = $user->tenant;
+
+        return response()->json([
+            'data' => [
+                'pdp_enabled' => $tenant->pdp_enabled,
+                'pdp_mode' => $tenant->pdp_mode,
+                'pdp_base_url' => $tenant->pdp_base_url,
+                'pdp_oauth_url' => $tenant->pdp_oauth_url,
+                'pdp_client_id' => $tenant->pdp_client_id,
+                'pdp_scope' => $tenant->pdp_scope,
+                'pdp_timeout' => $tenant->pdp_timeout,
+                'pdp_retry_attempts' => $tenant->pdp_retry_attempts,
+                'pdp_retry_delay' => $tenant->pdp_retry_delay,
+                'pdp_simulation_auto_approve' => $tenant->pdp_simulation_auto_approve,
+                'pdp_simulation_processing_delay' => $tenant->pdp_simulation_processing_delay,
+                'pdp_simulation_error_rate' => $tenant->pdp_simulation_error_rate,
+                'pdp_webhook_enabled' => $tenant->pdp_webhook_enabled,
+                'pdp_webhook_url' => $tenant->pdp_webhook_url,
+                'pdp_notifications_email_enabled' => $tenant->pdp_notifications_email_enabled,
+                'pdp_configured' => $tenant->hasPdpConfigured(),
+            ]
+        ]);
+    }
+
+    /**
+     * Update PDP configuration for current tenant
+     */
+    public function updatePdpSettings(Request $request)
+    {
+        $user = auth()->user();
+
+        if (!$user->hasPermission('manage_settings')) {
+            return response()->json(['message' => 'Insufficient permissions'], 403);
+        }
+
+        $validated = $request->validate([
+            'pdp_enabled' => 'boolean',
+            'pdp_mode' => 'required|in:simulation,production',
+            'pdp_base_url' => 'required|url',
+            'pdp_oauth_url' => 'nullable|url',
+            'pdp_client_id' => 'required|string',
+            'pdp_client_secret' => 'required|string',
+            'pdp_scope' => 'nullable|string',
+            'pdp_timeout' => 'nullable|integer|min:1|max:300',
+            'pdp_retry_attempts' => 'nullable|integer|min:0|max:10',
+            'pdp_retry_delay' => 'nullable|integer|min:1|max:60',
+            'pdp_simulation_auto_approve' => 'boolean',
+            'pdp_simulation_processing_delay' => 'nullable|integer|min:0|max:300',
+            'pdp_simulation_error_rate' => 'nullable|integer|min:0|max:100',
+            'pdp_webhook_enabled' => 'boolean',
+            'pdp_webhook_url' => 'nullable|url',
+            'pdp_webhook_secret' => 'nullable|string',
+            'pdp_notifications_email_enabled' => 'boolean',
+        ]);
+
+        $tenant = $user->tenant;
+        $tenant->update($validated);
+
+        return response()->json([
+            'message' => 'PDP configuration updated successfully',
+            'data' => [
+                'pdp_enabled' => $tenant->pdp_enabled,
+                'pdp_configured' => $tenant->hasPdpConfigured(),
+            ]
+        ]);
+    }
+
+    /**
+     * Test PDP connection for current tenant
+     */
+    public function testPdpConnection()
+    {
+        $user = auth()->user();
+
+        if (!$user->hasPermission('manage_settings')) {
+            return response()->json(['message' => 'Insufficient permissions'], 403);
+        }
+
+        $tenant = $user->tenant;
+
+        if (!$tenant->hasPdpConfigured()) {
+            return response()->json([
+                'message' => 'PDP is not configured for this tenant',
+                'success' => false
+            ], 400);
+        }
+
+        try {
+            $pdpService = new \App\Services\PdpService($tenant);
+            $result = $pdpService->testConnection();
+
+            return response()->json([
+                'message' => 'PDP connection successful',
+                'success' => true,
+                'data' => $result
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'PDP connection failed',
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Disable PDP for current tenant
+     */
+    public function disablePdp()
+    {
+        $user = auth()->user();
+
+        if (!$user->hasPermission('manage_settings')) {
+            return response()->json(['message' => 'Insufficient permissions'], 403);
+        }
+
+        $tenant = $user->tenant;
+        $tenant->update(['pdp_enabled' => false]);
+
+        return response()->json([
+            'message' => 'PDP disabled successfully',
+            'data' => [
+                'pdp_enabled' => false
+            ]
+        ]);
+    }
+
+    /**
+     * Get Timestamp configuration for current tenant
+     */
+    public function getTimestampSettings()
+    {
+        $user = auth()->user();
+
+        if (!$user->hasPermission('manage_settings')) {
+            return response()->json(['message' => 'Insufficient permissions'], 403);
+        }
+
+        $tenant = $user->tenant;
+
+        return response()->json([
+            'data' => [
+                'timestamp_enabled' => $tenant->timestamp_enabled,
+                'timestamp_provider' => $tenant->timestamp_provider,
+                'timestamp_tsa_url' => $tenant->timestamp_tsa_url,
+                'timestamp_configured' => $tenant->hasTimestampConfigured(),
+            ]
+        ]);
+    }
+
+    /**
+     * Update Timestamp configuration for current tenant
+     */
+    public function updateTimestampSettings(Request $request)
+    {
+        $user = auth()->user();
+
+        if (!$user->hasPermission('manage_settings')) {
+            return response()->json(['message' => 'Insufficient permissions'], 403);
+        }
+
+        $validated = $request->validate([
+            'timestamp_enabled' => 'boolean',
+            'timestamp_provider' => 'required|in:simple,universign,openapi',
+            'timestamp_tsa_url' => 'required_if:timestamp_provider,universign,openapi|url',
+            'timestamp_api_key' => 'required_if:timestamp_provider,universign,openapi|string',
+            'timestamp_api_secret' => 'required_if:timestamp_provider,universign|nullable|string',
+            'timestamp_certificate_id' => 'nullable|string',
+            'timestamp_include_certificate' => 'nullable|boolean',
+        ]);
+
+        $tenant = $user->tenant;
+        $tenant->update($validated);
+
+        return response()->json([
+            'message' => 'Timestamp configuration updated successfully',
+            'data' => [
+                'timestamp_enabled' => $tenant->timestamp_enabled,
+                'timestamp_configured' => $tenant->hasTimestampConfigured(),
+            ]
+        ]);
+    }
+
+    /**
+     * Test Timestamp connection for current tenant
+     */
+    public function testTimestampConnection()
+    {
+        $user = auth()->user();
+
+        if (!$user->hasPermission('manage_settings')) {
+            return response()->json(['message' => 'Insufficient permissions'], 403);
+        }
+
+        $tenant = $user->tenant;
+
+        if (!$tenant->hasTimestampConfigured()) {
+            return response()->json([
+                'message' => 'Timestamp is not configured for this tenant',
+                'success' => false
+            ], 400);
+        }
+
+        try {
+            $timestampService = new \App\Services\QualifiedTimestampService($tenant);
+            // Test by creating a simple timestamp
+            $testModel = new \stdClass();
+            $testModel->id = 'test';
+            $testModel->test = true;
+            
+            $timestamp = $timestampService->timestamp($testModel, 'test');
+            
+            return response()->json([
+                'message' => 'Timestamp connection successful',
+                'success' => true,
+                'data' => [
+                    'timestamp_id' => $timestamp->id,
+                    'provider' => $timestamp->tsa_provider,
+                    'status' => $timestamp->status,
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Timestamp connection failed',
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 422);
+        }
+    }
 }

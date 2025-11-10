@@ -38,12 +38,18 @@ class SendToPdpJob implements ShouldQueue
     public string $submissionId;
 
     /**
+     * Chemin du document à soumettre (signé si disponible)
+     */
+    public ?string $documentPath;
+
+    /**
      * Create a new job instance.
      */
-    public function __construct(Invoice|CreditNote $model, string $submissionId)
+    public function __construct(Invoice|CreditNote $model, string $submissionId, ?string $documentPath = null)
     {
         $this->model = $model;
         $this->submissionId = $submissionId;
+        $this->documentPath = $documentPath;
         
         // Queue prioritaire pour les soumissions PDP
         $this->onQueue('pdp');
@@ -71,8 +77,8 @@ class SendToPdpJob implements ShouldQueue
                 'submitted_at' => now(),
             ]);
 
-            // Générer le fichier Factur-X si nécessaire
-            $facturXPath = $this->getOrCreateFacturX($facturXService, $submission);
+            // Utiliser le document fourni ou générer le fichier Factur-X si nécessaire
+            $facturXPath = $this->documentPath ?: $this->getOrCreateFacturX($facturXService, $submission);
             
             if (!$facturXPath) {
                 throw new \Exception('Impossible de générer le fichier Factur-X');
@@ -169,14 +175,5 @@ class SendToPdpJob implements ShouldQueue
         }
 
         return $facturXPath;
-    }
-}
-
-    /**
-     * Execute the job.
-     */
-    public function handle(): void
-    {
-        //
     }
 }

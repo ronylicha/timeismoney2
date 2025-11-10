@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Traits\BelongsToTenant;
 
 /**
  * Modèle de suivi des soumissions au Portail Public de Facturation (PDP)
@@ -38,6 +40,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class PdpSubmission extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'submittable_type',
         'submittable_id',
@@ -165,7 +168,7 @@ class PdpSubmission extends Model
     /**
      * Marque la soumission comme rejetée
      */
-    public function markAsRejected(string $errorMessage, string $errorCode = null, array $responseData = []): void
+    public function markAsRejected(string $errorMessage, ?string $errorCode = null, array $responseData = []): void
     {
         $this->update([
             'status' => 'rejected',
@@ -180,7 +183,7 @@ class PdpSubmission extends Model
     /**
      * Marque la soumission en erreur technique
      */
-    public function markAsError(string $errorMessage, string $errorCode = null): void
+    public function markAsError(string $errorMessage, ?string $errorCode = null): void
     {
         $this->update([
             'status' => 'error',

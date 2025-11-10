@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100"
+           xmlns:ram="urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100"
+           xmlns:qdt="urn:un:unece:uncefact:data:standard:QualifiedDataType:100"
+           xmlns:udt="urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100"
+           targetNamespace="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100"
+           elementFormDefault="qualified">
+    
+    <!-- Import du schéma de base -->
+    <xs:include schemaLocation="FACTUR-X_BASIC.xsd"/>
+    
+    <!-- Extensions pour le profil COMFORT -->
+    <xs:complexType name="ExchangedDocumentType">
+        <xs:complexContent>
+            <xs:extension base="ram:ExchangedDocumentType">
+                <xs:sequence>
+                    <xs:element name="IncludedNote" type="ram:NoteType" minOccurs="0" maxOccurs="unbounded"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    
+    <xs:complexType name="NoteType">
+        <xs:sequence>
+            <xs:element name="Content" type="udt:TextType" minOccurs="1"/>
+            <xs:element name="SubjectCode" type="udt:CodeType" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+    
+    <xs:complexType name="HeaderTradeAgreementType">
+        <xs:complexContent>
+            <xs:extension base="ram:HeaderTradeAgreementType">
+                <xs:sequence>
+                    <xs:element name="BuyerReference" type="udt:TextType" minOccurs="0"/>
+                    <xs:element name="SellerOrderReferencedDocument" type="ram:ReferencedDocumentType" minOccurs="0"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    
+    <xs:complexType name="ReferencedDocumentType">
+        <xs:sequence>
+            <xs:element name="IssuerAssignedID" type="udt:IDType" minOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    
+    <xs:complexType name="TradePartyType">
+        <xs:complexContent>
+            <xs:extension base="ram:TradePartyType">
+                <xs:sequence>
+                    <xs:element name="URIUniversalCommunication" type="ram:UniversalCommunicationType" minOccurs="0"/>
+                    <xs:element name="SpecifiedTaxRegistration" type="ram:TaxRegistrationType" minOccurs="0" maxOccurs="2"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    
+    <xs:complexType name="UniversalCommunicationType">
+        <xs:sequence>
+            <xs:element name="URIID" type="udt:IDType" minOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    
+    <xs:complexType name="HeaderTradeSettlementType">
+        <xs:complexContent>
+            <xs:extension base="ram:HeaderTradeSettlementType">
+                <xs:sequence>
+                    <xs:element name="ApplicableTradeTax" type="ram:TradeTaxType" minOccurs="0" maxOccurs="unbounded"/>
+                    <xs:element name="BillingSpecifiedPeriod" type="ram:SpecifiedPeriodType" minOccurs="0"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    
+    <xs:complexType name="TradeTaxType">
+        <xs:sequence>
+            <xs:element name="CalculatedAmount" type="udt:AmountType" minOccurs="1"/>
+            <xs:element name="TypeCode" type="qdt:TaxTypeCodeType" minOccurs="1"/>
+            <xs:element name="CategoryCode" type="qdt:TaxCategoryCodeType" minOccurs="1"/>
+            <xs:element name="RateApplicablePercent" type="udt:PercentType" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+    
+    <xs:complexType name="SpecifiedPeriodType">
+        <xs:sequence>
+            <xs:element name="StartDateTime" type="udt:DateTimeType" minOccurs="0"/>
+            <xs:element name="EndDateTime" type="udt:DateTimeType" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+    
+    <xs:simpleType name="TaxTypeCodeType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="VAT"/>
+        </xs:restriction>
+    </xs:simpleType>
+    
+    <xs:simpleType name="TaxCategoryCodeType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="S"/>
+            <xs:enumeration value="E"/>
+            <xs:enumeration value="Z"/>
+            <xs:enumeration value="AE"/>
+            <xs:enumeration value="K"/>
+        </xs:restriction>
+    </xs:simpleType>
+    
+    <xs:complexType name="PercentType">
+        <xs:simpleContent>
+            <xs:extension base="xs:decimal"/>
+        </xs:simpleContent>
+    </xs:complexType>
+    
+    <xs:complexType name="CodeType">
+        <xs:simpleContent>
+            <xs:extension base="xs:string"/>
+        </xs:simpleContent>
+    </xs:complexType>
+    
+</xs:schema>

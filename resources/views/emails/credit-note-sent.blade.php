@@ -7,7 +7,7 @@
 
     <p>Bonjour {{ $client->contact_name ?: $client->name }},</p>
 
-    <p>Nous vous informons qu'un avoir <strong>{{ $creditNote->credit_note_number }}</strong> a été émis pour un montant de <strong>{{ number_format($creditNote->total, 2, ',', ' ') }} €</strong>.</p>
+    <p>Je vous informe que j'ai émis un avoir <strong>{{ $creditNote->credit_note_number }}</strong> pour un montant de <strong>{{ number_format($creditNote->total, 2, ',', ' ') }} €</strong>.</p>
 
     <div class="success-box">
         <table style="width: 100%; border: none; margin: 0;">
@@ -61,11 +61,11 @@
     </p>
 
     <p>
-        Pour toute question, n'hésitez pas à nous contacter.
+        Pour toute question, n'hésitez pas à me contacter.
     </p>
 
     <p style="margin-top: 30px;">
         Cordialement,<br>
-        <strong>{{ $tenant->name }}</strong>
+        {{ $tenant->name }}
     </p>
 @endsection

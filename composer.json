@@ -17,9 +17,11 @@
         "maatwebsite/excel": "^3.1",
         "minishlink/web-push": "*",
         "pragmarx/google2fa": "^9.0",
+        "setasign/fpdi": "^2.6",
         "spatie/laravel-activitylog": "^4.10",
         "spatie/laravel-permission": "^6.23",
-        "stripe/stripe-php": "^18.2"
+        "stripe/stripe-php": "^18.2",
+        "tecnickcom/tcpdf": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

@@ -314,7 +314,7 @@ const InvoiceDetail: React.FC = () => {
                             <span>{t('invoices.downloadPDF')}</span>
                         </button>
 
-                        {/* FacturX only available for validated invoices (not draft) */}
+                        {/* FacturX available for invoices that are not draft (can be modified but still valid) */}
                         {invoice.status !== 'draft' && (
                             <DownloadFacturXButton
                                 invoiceId={invoice.id}
@@ -331,8 +331,8 @@ const InvoiceDetail: React.FC = () => {
                             <span>{t('common.print')}</span>
                         </button>
 
-                        {/* Suppression autorisée uniquement pour les brouillons (conformité fiscale) */}
-                        {invoice.status === 'draft' && (
+                        {/* Suppression autorisée pour les brouillons et envoyées (conformité fiscale) */}
+                        {(invoice.status === 'draft' || invoice.status === 'sent') && (
                             <button
                                 onClick={() => setShowDeleteConfirm(true)}
                                 className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm"

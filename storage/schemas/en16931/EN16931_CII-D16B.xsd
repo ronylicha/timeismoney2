@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100"
+           xmlns:ram="urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100"
+           xmlns:qdt="urn:un:unece:uncefact:data:standard:QualifiedDataType:100"
+           xmlns:udt="urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100"
+           targetNamespace="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100"
+           elementFormDefault="qualified">
+    
+    <!-- Schéma principal EN 16931 -->
+    <xs:include schemaLocation="FACTUR-X_EXTENDED.xsd"/>
+    
+    <!-- Définition complète du type CrossIndustryInvoice -->
+    <xs:complexType name="CrossIndustryInvoiceType">
+        <xs:sequence>
+            <xs:element name="ExchangedDocument" type="ram:ExchangedDocumentType" minOccurs="1"/>
+            <xs:element name="ExchangedDocumentContext" type="ram:ExchangedDocumentContextType" minOccurs="1"/>
+            <xs:element name="SupplyChainTradeTransaction" type="ram:SupplyChainTradeTransactionType" minOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    
+    <!-- Redéfinition pour inclure tous les éléments -->
+    <xs:complexType name="ExchangedDocumentType">
+        <xs:complexContent>
+            <xs:extension base="ram:ExchangedDocumentType">
+                <xs:sequence>
+                    <xs:element name="IncludedNote" type="ram:NoteType" minOccurs="0" maxOccurs="unbounded"/>
+                    <xs:element name="CopyIndicator" type="udt:IndicatorType" minOccurs="0"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    
+    <xs:complexType name="IndicatorType">
+        <xs:simpleContent>
+            <xs:extension base="xs:boolean"/>
+        </xs:simpleContent>
+    </xs:complexType>
+    
+    <xs:complexType name="ExchangedDocumentContextType">
+        <xs:complexContent>
+            <xs:extension base="ram:ExchangedDocumentContextType">
+                <xs:sequence>
+                    <xs:element name="BusinessProcessSpecifiedDocumentContextParameter" type="ram:DocumentContextParameterType" minOccurs="0"/>
+                    <xs:element name="GuidelineSpecifiedDocumentContextParameter" type="ram:DocumentContextParameterType" minOccurs="1"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    
+    <xs:complexType name="DocumentContextParameterType">
+        <xs:sequence>
+            <xs:element name="ID" type="udt:IDType" minOccurs="1"/>
+            <xs:element name="SchemeID" type="udt:IDType" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+    
+    <!-- Types de paiement -->
+    <xs:complexType name="HeaderTradeSettlementType">
+        <xs:complexContent>
+            <xs:extension base="ram:HeaderTradeSettlementType">
+                <xs:sequence>
+                    <xs:element name="PaymentReference" type="udt:TextType" minOccurs="0"/>
+                    <xs:element name="SpecifiedTradePaymentTerms" type="ram:TradePaymentTermsType" minOccurs="0"/>
+                    <xs:element name="SpecifiedTradeSettlementPaymentMeans" type="ram:TradeSettlementPaymentMeansType" minOccurs="0" maxOccurs="unbounded"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    
+    <xs:complexType name="TradePaymentTermsType">
+        <xs:sequence>
+            <xs:element name="Description" type="udt:TextType" minOccurs="0"/>
+            <xs:element name="DueDateDateTime" type="udt:DateTimeType" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+    
+    <xs:complexType name="TradeSettlementPaymentMeansType">
+        <xs:sequence>
+            <xs:element name="TypeCode" type="qdt:PaymentMeansCodeType" minOccurs="1"/>
+            <xs:element name="PayeePartyCreditorFinancialAccount" type="ram:PartyCreditorFinancialAccountType" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+    
+    <xs:complexType name="PartyCreditorFinancialAccountType">
+        <xs:sequence>
+            <xs:element name="IBANID" type="udt:IDType" minOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    
+    <xs:simpleType name="PaymentMeansCodeType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="30"/>
+            <xs:enumeration value="31"/>
+            <xs:enumeration value="42"/>
+            <xs:enumeration value="48"/>
+            <xs:enumeration value="49"/>
+            <xs:enumeration value="57"/>
+            <xs:enumeration value="58"/>
+            <xs:enumeration value="59"/>
+            <xs:enumeration value="97"/>
+        </xs:restriction>
+    </xs:simpleType>
+    
+</xs:schema>

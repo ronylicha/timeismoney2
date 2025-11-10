@@ -7,7 +7,7 @@
 
     <p>Bonjour {{ $client->contact_name ?: $client->name }},</p>
 
-    <p>Nous vous confirmons la bonne réception de votre acceptation du devis <strong>{{ $quote->quote_number }}</strong>.</p>
+    <p>Je vous confirme la bonne réception de votre acceptation de mon devis <strong>{{ $quote->quote_number }}</strong>.</p>
 
     <div class="success-box" style="margin: 20px 0; padding: 20px; background-color: #f0fdf4; border-left: 4px solid #16a34a; border-radius: 4px;">
         <p style="margin: 0 0 10px 0; font-size: 16px; color: #16a34a;">
@@ -38,7 +38,7 @@
             <strong>Prochaines étapes:</strong>
         </p>
         <ul style="margin: 0; padding-left: 20px;">
-            <li>Nous commencerons les travaux selon les modalités convenues</li>
+            <li>Je commencerai les travaux selon les modalités convenues</li>
             @if($quote->payment_conditions)
             <li>Conditions de paiement: {{ $quote->payment_conditions }}</li>
             @endif
@@ -62,11 +62,11 @@
     @endif
 
     <p style="margin-top: 30px;">
-        Nous vous remercions pour votre confiance et restons à votre disposition pour toute question.
+        Je vous remercie pour votre confiance et reste à votre disposition pour toute question.
     </p>
 
     <p style="margin-top: 30px;">
         Cordialement,<br>
-        <strong>{{ $tenant->name }}</strong>
+        {{ $tenant->name }}
     </p>
 @endsection

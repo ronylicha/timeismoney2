@@ -85,6 +85,8 @@
                 <div style="margin-top: 15px;">
                     @if($invoice->status === 'paid')
                         <span class="status-badge status-paid">Payée</span>
+                    @elseif($invoice->status === 'sent')
+                        <span class="status-badge status-sent">Envoyée</span>
                     @elseif($invoice->status === 'unpaid' && $invoice->due_date && now()->greaterThan($invoice->due_date))
                         <span class="status-badge status-overdue">En retard</span>
                     @elseif($invoice->status === 'unpaid')

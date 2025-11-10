@@ -19,7 +19,6 @@ class TenantFactory extends Factory
         return [
             'name' => fake()->company(),
             'slug' => fake()->unique()->slug(),
-            'domain' => fake()->unique()->domainName(),
             'type' => 'company',
             'is_active' => true,
             'company_name' => fake()->company(),

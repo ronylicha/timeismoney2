@@ -7,7 +7,7 @@
 
     <p>Bonjour {{ $client->contact_name ?: $client->name }},</p>
 
-    <p>Veuillez trouver ci-joint la facture <strong>{{ $invoice->invoice_number }}</strong> d'un montant de <strong>{{ number_format($invoice->total, 2, ',', ' ') }} €</strong>.</p>
+    <p>Je vous transmets ma facture <strong>{{ $invoice->invoice_number }}</strong> d'un montant de <strong>{{ number_format($invoice->total, 2, ',', ' ') }} €</strong>.</p>
 
     <div class="info-box">
         <table style="width: 100%; border: none; margin: 0;">
@@ -84,11 +84,11 @@
     </div>
 
     <p style="margin-top: 20px;">
-        Pour toute question concernant cette facture, n'hésitez pas à nous contacter.
+        Pour toute question concernant cette facture, n'hésitez pas à me contacter.
     </p>
 
     <p style="margin-top: 30px;">
         Cordialement,<br>
-        <strong>{{ $tenant->name }}</strong>
+        {{ $tenant->name }}
     </p>
 @endsection
