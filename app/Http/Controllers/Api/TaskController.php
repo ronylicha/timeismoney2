@@ -151,8 +151,8 @@ class TaskController extends Controller
             'parent_id' => 'nullable|exists:tasks,id',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'required|in:todo,in_progress,review,completed',
-            'priority' => 'required|in:low,medium,high,critical',
+            'status' => 'required|in:todo,in_progress,review,done,cancelled',
+            'priority' => 'required|in:low,normal,high,urgent',
             'type' => 'nullable|in:task,bug,feature,improvement',
             'estimated_hours' => 'nullable|numeric|min:0',
             'start_date' => 'nullable|date',
@@ -237,8 +237,8 @@ class TaskController extends Controller
         $validated = $request->validate([
             'title' => 'string|max:255',
             'description' => 'nullable|string',
-            'status' => 'in:todo,in_progress,review,completed',
-            'priority' => 'in:low,medium,high,critical',
+            'status' => 'in:todo,in_progress,review,done,cancelled',
+            'priority' => 'in:low,normal,high,urgent',
             'type' => 'nullable|in:task,bug,feature,improvement',
             'estimated_hours' => 'nullable|numeric|min:0',
             'start_date' => 'nullable|date',
@@ -247,8 +247,8 @@ class TaskController extends Controller
             'labels' => 'nullable|array'
         ]);
 
-        // If status changed and it's completed, set completed_at
-        if (isset($validated['status']) && $validated['status'] === 'completed' && $task->status !== 'completed') {
+        // If status changed and it's done, set completed_at
+        if (isset($validated['status']) && $validated['status'] === 'done' && $task->status !== 'done') {
             $validated['completed_at'] = now();
             $validated['actual_hours'] = $task->tracked_hours;
         }
@@ -267,7 +267,7 @@ class TaskController extends Controller
     public function updateStatus(Request $request, Task $task)
     {
         $validated = $request->validate([
-            'status' => 'required|in:todo,in_progress,review,completed',
+            'status' => 'required|in:todo,in_progress,review,done,cancelled',
             'position' => 'nullable|integer|min:0',
             'column_id' => 'nullable|string' // For custom columns
         ]);
@@ -304,8 +304,8 @@ class TaskController extends Controller
             }
         }
 
-        // If status is completed, update completed_at
-        if ($validated['status'] === 'completed' && !$task->completed_at) {
+        // If status is done, update completed_at
+        if ($validated['status'] === 'done' && !$task->completed_at) {
             $task->completed_at = now();
             $task->actual_hours = $task->tracked_hours;
         }

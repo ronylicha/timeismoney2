@@ -30,7 +30,7 @@ interface Task {
     id: number;
     title: string;
     description?: string;
-    status: 'todo' | 'in_progress' | 'review' | 'completed';
+    status: 'todo' | 'in_progress' | 'review' | 'done' | 'cancelled';
     priority: 'low' | 'normal' | 'high' | 'urgent';
     type?: 'task' | 'bug' | 'feature' | 'improvement';
     project_id: number;

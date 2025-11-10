@@ -19,7 +19,7 @@ interface Task {
     id?: number;
     title: string;
     description?: string;
-    status: 'todo' | 'in_progress' | 'review' | 'completed';
+    status: 'todo' | 'in_progress' | 'review' | 'done' | 'cancelled';
     priority: 'low' | 'normal' | 'high' | 'urgent';
     type?: 'task' | 'bug' | 'feature' | 'improvement';
     project_id: number;
@@ -382,7 +382,8 @@ const TaskForm: React.FC<TaskFormProps> = ({
                             <option value="todo">{t('tasks.status.todo')}</option>
                             <option value="in_progress">{t('tasks.status.inProgress')}</option>
                             <option value="review">{t('tasks.status.inReview')}</option>
-                            <option value="completed">{t('tasks.status.completed')}</option>
+                            <option value="done">{t('tasks.status.done')}</option>
+                            <option value="cancelled">{t('tasks.status.cancelled')}</option>
                         </select>
                     </div>
 
