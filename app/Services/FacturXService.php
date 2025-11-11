@@ -156,97 +156,202 @@ class FacturXService
     /**
      * Valide que toutes les données obligatoires EN 16931 sont présentes
      *
-     * @throws \Exception si des données obligatoires sont manquantes
+     * @throws \App\Exceptions\FacturXValidationException si des données obligatoires sont manquantes
      */
     private function validateMandatoryFields(Invoice $invoice): void
     {
         $errors = [];
+        $missingFields = [
+            'tenant' => [],
+            'client' => [],
+            'invoice' => []
+        ];
+
         $tenant = $invoice->tenant;
         $client = $invoice->client;
 
         // === Données vendeur (émetteur) - OBLIGATOIRES EN 16931 ===
         if (empty($tenant->siret)) {
             $errors[] = "SIRET de l'émetteur obligatoire (EN 16931 BT-30)";
+            $missingFields['tenant'][] = [
+                'field' => 'siret',
+                'label' => 'SIRET',
+                'description' => 'Numéro SIRET de votre entreprise (14 chiffres)',
+                'location' => 'Paramètres > Facturation > Informations légales'
+            ];
         }
 
         if (empty($tenant->vat_number)) {
             $errors[] = "Numéro de TVA intracommunautaire de l'émetteur obligatoire (EN 16931 BT-31)";
+            $missingFields['tenant'][] = [
+                'field' => 'vat_number',
+                'label' => 'TVA intracommunautaire',
+                'description' => 'Numéro de TVA intracommunautaire (ex: FR12345678901)',
+                'location' => 'Paramètres > Facturation > Informations légales'
+            ];
         }
 
         if (empty($tenant->address_line1)) {
             $errors[] = "Adresse de l'émetteur obligatoire (EN 16931 BT-35)";
+            $missingFields['tenant'][] = [
+                'field' => 'address_line1',
+                'label' => 'Adresse',
+                'description' => 'Adresse complète de votre entreprise',
+                'location' => 'Paramètres > Facturation > Adresse'
+            ];
         }
 
         if (empty($tenant->city)) {
             $errors[] = "Ville de l'émetteur obligatoire (EN 16931 BT-37)";
+            $missingFields['tenant'][] = [
+                'field' => 'city',
+                'label' => 'Ville',
+                'description' => 'Ville de votre entreprise',
+                'location' => 'Paramètres > Facturation > Adresse'
+            ];
         }
 
         if (empty($tenant->postal_code)) {
             $errors[] = "Code postal de l'émetteur obligatoire (EN 16931 BT-38)";
+            $missingFields['tenant'][] = [
+                'field' => 'postal_code',
+                'label' => 'Code postal',
+                'description' => 'Code postal de votre entreprise',
+                'location' => 'Paramètres > Facturation > Adresse'
+            ];
         }
 
         // === Données client (acheteur) - OBLIGATOIRES EN 16931 ===
         if (empty($client->name)) {
             $errors[] = "Nom du client obligatoire (EN 16931 BT-44)";
+            $missingFields['client'][] = [
+                'field' => 'name',
+                'label' => 'Nom du client',
+                'description' => 'Nom ou raison sociale du client',
+                'location' => 'Fiche client'
+            ];
         }
 
         if (empty($client->address)) {
             $errors[] = "Adresse du client obligatoire (EN 16931 BT-50)";
+            $missingFields['client'][] = [
+                'field' => 'address',
+                'label' => 'Adresse du client',
+                'description' => 'Adresse complète du client',
+                'location' => 'Fiche client'
+            ];
         }
 
         if (empty($client->city)) {
             $errors[] = "Ville du client obligatoire (EN 16931 BT-52)";
+            $missingFields['client'][] = [
+                'field' => 'city',
+                'label' => 'Ville du client',
+                'description' => 'Ville du client',
+                'location' => 'Fiche client'
+            ];
         }
 
         if (empty($client->postal_code)) {
             $errors[] = "Code postal du client obligatoire (EN 16931 BT-53)";
+            $missingFields['client'][] = [
+                'field' => 'postal_code',
+                'label' => 'Code postal du client',
+                'description' => 'Code postal du client',
+                'location' => 'Fiche client'
+            ];
         }
 
         // === Informations de paiement - OBLIGATOIRES ===
         if (empty($tenant->iban) && strtolower($invoice->payment_method ?? 'bank_transfer') === 'bank_transfer') {
             $errors[] = "IBAN obligatoire pour paiement par virement (EN 16931 BT-84)";
+            $missingFields['tenant'][] = [
+                'field' => 'iban',
+                'label' => 'IBAN',
+                'description' => 'IBAN de votre compte bancaire pour recevoir les paiements',
+                'location' => 'Paramètres > Facturation > Informations bancaires'
+            ];
         }
 
         // === Date de facture - OBLIGATOIRE ===
         if (empty($invoice->date) && empty($invoice->invoice_date)) {
             $errors[] = "Date de facture obligatoire (EN 16931 BT-2)";
+            $missingFields['invoice'][] = [
+                'field' => 'date',
+                'label' => 'Date de facture',
+                'description' => 'Date d\'émission de la facture',
+                'location' => 'Facture'
+            ];
         }
 
         // === Numéro de facture - OBLIGATOIRE ===
         if (empty($invoice->invoice_number)) {
             $errors[] = "Numéro de facture obligatoire (EN 16931 BT-1)";
+            $missingFields['invoice'][] = [
+                'field' => 'invoice_number',
+                'label' => 'Numéro de facture',
+                'description' => 'Numéro unique de la facture',
+                'location' => 'Facture'
+            ];
         }
 
         // === Montants - OBLIGATOIRES ===
         if (!isset($invoice->total) || $invoice->total <= 0) {
             $errors[] = "Montant total obligatoire et doit être positif (EN 16931 BT-112)";
+            $missingFields['invoice'][] = [
+                'field' => 'total',
+                'label' => 'Montant total',
+                'description' => 'Le montant total de la facture doit être positif',
+                'location' => 'Facture'
+            ];
         }
 
         if (!isset($invoice->subtotal)) {
             $errors[] = "Montant HT obligatoire (EN 16931 BT-109)";
+            $missingFields['invoice'][] = [
+                'field' => 'subtotal',
+                'label' => 'Montant HT',
+                'description' => 'Montant hors taxes de la facture',
+                'location' => 'Facture'
+            ];
         }
 
         // === Items - Au moins 1 ligne obligatoire ===
         if ($invoice->items->isEmpty()) {
             $errors[] = "Au moins une ligne de facture est obligatoire (EN 16931 BG-25)";
+            $missingFields['invoice'][] = [
+                'field' => 'items',
+                'label' => 'Lignes de facture',
+                'description' => 'La facture doit contenir au moins une ligne',
+                'location' => 'Facture'
+            ];
         }
 
-        // Si des erreurs sont détectées, lever une exception
+        // Si des erreurs sont détectées, lever une exception détaillée
         if (!empty($errors)) {
-            $errorMessage = "❌ Génération FacturX impossible - Données obligatoires EN 16931 manquantes:\n\n" .
-                          implode("\n", array_map(fn($e) => "  • $e", $errors)) .
-                          "\n\n💡 Complétez ces informations dans les paramètres du tenant et du client.";
+            // Filtrer les champs vides
+            $missingFields = array_filter($missingFields, fn($fields) => !empty($fields));
 
             Log::error('FacturX validation failed - Missing mandatory EN 16931 fields', [
                 'invoice_id' => $invoice->id,
+                'invoice_number' => $invoice->invoice_number,
                 'errors' => $errors,
+                'missing_fields' => $missingFields,
+                'tenant_id' => $tenant->id,
+                'client_id' => $client->id,
             ]);
 
-            throw new \Exception($errorMessage);
+            throw new \App\Exceptions\FacturXValidationException(
+                'Données obligatoires manquantes pour générer le FacturX',
+                $errors,
+                $missingFields,
+                $invoice
+            );
         }
 
         Log::info('FacturX validation passed - All mandatory EN 16931 fields present', [
             'invoice_id' => $invoice->id,
+            'invoice_number' => $invoice->invoice_number,
         ]);
     }
 

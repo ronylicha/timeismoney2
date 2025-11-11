@@ -697,25 +697,52 @@ class InvoiceController extends Controller
      */
     public function downloadFacturX(Invoice $invoice, FacturXService $facturXService)
     {
-        // Generate if doesn't exist
-        if (!$invoice->facturx_path) {
-            $path = $facturXService->generateFacturX($invoice);
-            if ($path) {
-                $invoice->update([
-                    'facturx_path' => $path,
-                    'facturx_generated_at' => now(),
-                    'electronic_format' => 'facturx'
-                ]);
+        try {
+            // Generate if doesn't exist
+            if (!$invoice->facturx_path) {
+                $path = $facturXService->generateFacturX($invoice);
+                if ($path) {
+                    $invoice->update([
+                        'facturx_path' => $path,
+                        'facturx_generated_at' => now(),
+                        'electronic_format' => 'facturx'
+                    ]);
+                }
             }
-        }
 
-        if (!$invoice->facturx_path || !Storage::exists($invoice->facturx_path)) {
+            if (!$invoice->facturx_path || !Storage::exists($invoice->facturx_path)) {
+                return response()->json([
+                    'message' => 'Fichier FacturX introuvable ou impossible à générer',
+                    'error' => 'FACTURX_NOT_FOUND'
+                ], 404);
+            }
+
+            return Storage::download($invoice->facturx_path);
+
+        } catch (\App\Exceptions\FacturXValidationException $e) {
+            // Gestion spécifique des erreurs de validation FacturX
+            Log::warning('FacturX download failed - validation error', [
+                'invoice_id' => $invoice->id,
+                'invoice_number' => $invoice->invoice_number,
+                'missing_fields' => $e->getMissingFields(),
+            ]);
+
+            return response()->json($e->toApiResponse(), 422);
+
+        } catch (\Exception $e) {
+            // Autres erreurs
+            Log::error('FacturX download failed - unexpected error', [
+                'invoice_id' => $invoice->id,
+                'invoice_number' => $invoice->invoice_number,
+                'error' => $e->getMessage(),
+            ]);
+
             return response()->json([
-                'message' => 'FacturX file not found or could not be generated'
-            ], 404);
+                'message' => 'Erreur lors du téléchargement FacturX',
+                'error' => 'FACTURX_DOWNLOAD_ERROR',
+                'details' => $e->getMessage()
+            ], 500);
         }
-
-        return Storage::download($invoice->facturx_path);
     }
 
     /**
@@ -726,11 +753,12 @@ class InvoiceController extends Controller
         try {
             // Force regeneration
             $path = $facturXService->generateFacturX($invoice);
-            
+
             if (!$path) {
                 return response()->json([
-                    'message' => 'Failed to generate FacturX',
-                    'error' => 'Service returned null'
+                    'message' => 'Échec de génération FacturX',
+                    'error' => 'FACTURX_GENERATION_FAILED',
+                    'details' => 'Le service a retourné une valeur nulle. Vérifiez les logs pour plus de détails.'
                 ], 500);
             }
 
@@ -745,11 +773,30 @@ class InvoiceController extends Controller
                 'path' => $path,
                 'invoice' => $invoice->fresh()
             ]);
-            
+
+        } catch (\App\Exceptions\FacturXValidationException $e) {
+            // Gestion spécifique des erreurs de validation FacturX
+            Log::warning('FacturX generation failed - validation error', [
+                'invoice_id' => $invoice->id,
+                'invoice_number' => $invoice->invoice_number,
+                'missing_fields' => $e->getMissingFields(),
+            ]);
+
+            return response()->json($e->toApiResponse(), 422);
+
         } catch (\Exception $e) {
+            // Autres erreurs
+            Log::error('FacturX generation failed - unexpected error', [
+                'invoice_id' => $invoice->id,
+                'invoice_number' => $invoice->invoice_number,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             return response()->json([
                 'message' => 'Échec de génération FacturX',
-                'error' => $e->getMessage()
+                'error' => 'FACTURX_GENERATION_ERROR',
+                'details' => $e->getMessage()
             ], 500);
         }
     }
