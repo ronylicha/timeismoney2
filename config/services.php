@@ -90,4 +90,20 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI', env('APP_URL') . '/api/auth/google/callback'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | HSM Service Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for Hardware Security Module integration
+    | Used for secure key storage and cryptographic operations
+    |
+    */
+    'hsm' => [
+        'mode' => env('HSM_MODE', 'simulator'),
+        'provider' => env('HSM_PROVIDER'),
+        'cloud_provider' => env('HSM_CLOUD_PROVIDER'),
+        'simulator_storage' => env('HSM_SIMULATOR_KEY_STORAGE', 'hsm-simulator'),
+    ],
+
 ];
