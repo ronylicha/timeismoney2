@@ -83,7 +83,7 @@ const PWAUpdatePrompt: React.FC = () => {
         } catch (error) {
             console.error('Failed to update:', error);
             setIsUpdating(false);
-            alert('Erreur lors de la mise à jour. Veuillez réessayer.');
+            alert(t('pwa.update.updateError'));
         }
     };
 

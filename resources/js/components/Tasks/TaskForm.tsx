@@ -506,7 +506,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                                                 className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
                                             >
                                                 <div className="font-medium">{availableTask.title}</div>
-                                                <div className="text-sm text-gray-500">{t('tasks.status')}: {availableTask.status}</div>
+                                                <div className="text-sm text-gray-500">{t('common.status')}: {availableTask.status}</div>
                                             </div>
                                         ))}
                                 </div>

@@ -2312,7 +2312,8 @@
             "updateNow": "Mettre à jour maintenant",
             "later": "Plus tard",
             "close": "Fermer",
-            "info": "Redémarrez l'application pour obtenir la dernière version"
+            "info": "Redémarrez l'application pour obtenir la dernière version",
+            "updateError": "Erreur lors de la mise à jour. Veuillez réessayer."
         },
         "status": {
             "online": "En ligne",

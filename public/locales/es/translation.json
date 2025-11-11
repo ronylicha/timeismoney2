@@ -2324,7 +2324,8 @@
             "updateNow": "Actualizar ahora",
             "later": "Más tarde",
             "close": "Cerrar",
-            "info": "Reinicie la aplicación para obtener la última versión"
+            "info": "Reinicie la aplicación para obtener la última versión",
+            "updateError": "Error al actualizar. Por favor, inténtelo de nuevo."
         },
         "status": {
             "online": "En línea",

@@ -2305,7 +2305,8 @@
             "updateNow": "Update now",
             "later": "Later",
             "close": "Close",
-            "info": "Restart the application to get the latest version"
+            "info": "Restart the application to get the latest version",
+            "updateError": "Update failed. Please try again."
         },
         "status": {
             "online": "Online",
