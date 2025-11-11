@@ -13,7 +13,8 @@ import {
     ClockIcon,
     BanknotesIcon,
     ReceiptPercentIcon,
-    ClipboardDocumentCheckIcon
+    ClipboardDocumentCheckIcon,
+    ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import {
     TimeEntry,
@@ -91,6 +92,39 @@ const CreateInvoice: React.FC = () => {
     const [selectedExpenses, setSelectedExpenses] = useState<Set<string>>(new Set());
     const [selectedAdvances, setSelectedAdvances] = useState<Set<string>>(new Set());
     const [availableAdvances, setAvailableAdvances] = useState<any[]>([]);
+
+    // Check invoicing compliance (FacturX requirements)
+    const { data: complianceStatus, isLoading: isLoadingCompliance } = useQuery({
+        queryKey: ['invoicing-compliance'],
+        queryFn: async () => {
+            const response = await axios.get('/settings/invoicing-compliance-status');
+            return response.data;
+        },
+    });
+
+    // Redirect if not compliant and not in edit mode
+    useEffect(() => {
+        if (!isEditMode && complianceStatus && !complianceStatus.can_create_invoice) {
+            toast.error(
+                <div>
+                    <div className="font-bold mb-2 flex items-center">
+                        <ExclamationTriangleIcon className="h-5 w-5 mr-2" />
+                        Paramètres de facturation incomplets
+                    </div>
+                    <div className="text-sm">
+                        {complianceStatus.validation_message}
+                    </div>
+                    <div className="text-sm mt-2">
+                        Vous allez être redirigé vers les paramètres...
+                    </div>
+                </div>,
+                { autoClose: 5000 }
+            );
+            setTimeout(() => {
+                navigate('/settings/billing');
+            }, 2000);
+        }
+    }, [complianceStatus, isEditMode, navigate]);
 
     // Fetch billing settings for default conditions
     const { data: billingSettings } = useQuery({

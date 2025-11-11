@@ -598,4 +598,40 @@ class SettingsController extends Controller
             ], 422);
         }
     }
+
+    /**
+     * Get invoicing compliance status
+     * Check if tenant has all required fields for FacturX generation
+     */
+    public function getInvoicingComplianceStatus()
+    {
+        $tenant = auth()->user()->tenant;
+        $complianceService = app(\App\Services\InvoicingComplianceService::class);
+
+        // Validate with a dummy client (only checking tenant fields)
+        $dummyClient = new \App\Models\Client([
+            'name' => 'Test',
+            'address' => 'Test',
+            'city' => 'Test',
+            'postal_code' => '00000',
+        ]);
+
+        $validation = $complianceService->validateInvoiceCreation($tenant, $dummyClient);
+
+        // Extract only tenant-related missing fields
+        $tenantMissingFields = [];
+        foreach ($validation['missing_fields'] as $field => $details) {
+            if (in_array($field, ['siret', 'vat_number', 'address_line1', 'city', 'postal_code', 'iban'])) {
+                $tenantMissingFields[$field] = $details;
+            }
+        }
+
+        return response()->json([
+            'can_create_invoice' => empty($tenantMissingFields),
+            'missing_fields' => $tenantMissingFields,
+            'validation_message' => empty($tenantMissingFields)
+                ? 'Tous les paramètres de facturation sont configurés'
+                : 'Paramètres de facturation incomplets',
+        ]);
+    }
 }

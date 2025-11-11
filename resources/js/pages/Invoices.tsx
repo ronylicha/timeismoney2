@@ -45,6 +45,15 @@ const Invoices: React.FC = () => {
         },
     });
 
+    // Check invoicing compliance (FacturX requirements)
+    const { data: complianceStatus, isLoading: isLoadingCompliance } = useQuery({
+        queryKey: ['invoicing-compliance'],
+        queryFn: async () => {
+            const response = await axios.get('/settings/invoicing-compliance-status');
+            return response.data;
+        },
+    });
+
     const { data: invoices, isLoading } = useQuery({
         queryKey: ['invoices', searchTerm, statusFilter],
         queryFn: async () => {
@@ -160,13 +169,29 @@ const Invoices: React.FC = () => {
                         <h1 className="text-3xl font-bold text-gray-900">{t('invoices.title')}</h1>
                         <p className="mt-2 text-gray-600">{t('invoices.subtitle')}</p>
                     </div>
-                    <Link
-                        to="/invoices/new"
-                        className="flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
-                    >
-                        <PlusIcon className="h-5 w-5" />
-                        <span>{t('invoices.newInvoice')}</span>
-                    </Link>
+                    {complianceStatus?.can_create_invoice ? (
+                        <Link
+                            to="/invoices/new"
+                            className="flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
+                        >
+                            <PlusIcon className="h-5 w-5" />
+                            <span>{t('invoices.newInvoice')}</span>
+                        </Link>
+                    ) : (
+                        <div className="flex items-center space-x-3">
+                            <div className="text-right mr-2">
+                                <p className="text-sm font-medium text-red-600">Paramètres incomplets</p>
+                                <p className="text-xs text-gray-500">Configuration FacturX requise</p>
+                            </div>
+                            <Link
+                                to="/settings/billing"
+                                className="flex items-center space-x-2 bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 transition"
+                            >
+                                <ExclamationTriangleIcon className="h-5 w-5" />
+                                <span>Compléter les paramètres</span>
+                            </Link>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -208,13 +233,35 @@ const Invoices: React.FC = () => {
                     <DocumentTextIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">{t('invoices.noInvoices')}</h3>
                     <p className="text-gray-600 mb-6">{t('invoices.createFirstInvoice')}</p>
-                    <Link
-                        to="/invoices/new"
-                        className="inline-flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
-                    >
-                        <PlusIcon className="h-5 w-5" />
-                        <span>{t('invoices.createInvoice')}</span>
-                    </Link>
+                    {complianceStatus?.can_create_invoice ? (
+                        <Link
+                            to="/invoices/new"
+                            className="inline-flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
+                        >
+                            <PlusIcon className="h-5 w-5" />
+                            <span>{t('invoices.createInvoice')}</span>
+                        </Link>
+                    ) : (
+                        <div className="inline-flex flex-col items-center">
+                            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4 max-w-md">
+                                <div className="flex items-start">
+                                    <ExclamationTriangleIcon className="h-6 w-6 text-orange-600 mr-3 flex-shrink-0 mt-0.5" />
+                                    <div className="text-left">
+                                        <h4 className="font-medium text-orange-900 mb-1">Configuration FacturX requise</h4>
+                                        <p className="text-sm text-orange-700">
+                                            Complétez vos paramètres de facturation pour créer des factures conformes EN 16931.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <Link
+                                to="/settings/billing"
+                                className="inline-flex items-center space-x-2 bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 transition"
+                            >
+                                <span>Compléter les paramètres de facturation</span>
+                            </Link>
+                        </div>
+                    )}
                 </div>
             ) : (
                 <div className="bg-white rounded-lg shadow overflow-hidden">

@@ -264,7 +264,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/settings/billing', [TenantSettingsController::class, 'updateBillingSettings']);
     Route::post('/settings/billing/logo', [TenantSettingsController::class, 'uploadLogo']);
     Route::delete('/settings/billing/logo', [TenantSettingsController::class, 'deleteLogo']);
-    
+
+    // Invoicing Compliance Status (check if FacturX requirements are met)
+    Route::get('/settings/invoicing-compliance-status', [SettingsController::class, 'getInvoicingComplianceStatus']);
+
     // VAT Threshold Status (for dashboard widget)
     Route::get('/tenant/vat-threshold-status', [TenantSettingsController::class, 'getVatThresholdStatus']);
 
