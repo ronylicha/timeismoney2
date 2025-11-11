@@ -331,8 +331,8 @@ const InvoiceDetail: React.FC = () => {
                             <span>{t('common.print')}</span>
                         </button>
 
-                        {/* Suppression autorisée pour les brouillons et envoyées (conformité fiscale) */}
-                        {(invoice.status === 'draft' || invoice.status === 'sent') && (
+                        {/* Suppression autorisée uniquement pour les brouillons (conformité fiscale NF525) */}
+                        {invoice.status === 'draft' && (
                             <button
                                 onClick={() => setShowDeleteConfirm(true)}
                                 className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm"

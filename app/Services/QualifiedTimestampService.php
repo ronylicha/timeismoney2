@@ -150,25 +150,29 @@ class QualifiedTimestampService
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
             ];
-            
+
             // 1. Vérifier les certificats gratuits disponibles (10 par jour)
             $availabilityResponse = Http::withHeaders($headers)
                 ->timeout(30)
-                ->get($this->tsaUrl . '/availability');
-            
+                ->get($this->tsaUrl . '/marche');
+
             if ($availabilityResponse->successful()) {
                 $availability = $availabilityResponse->json();
                 $freeCertificates = $availability['free_certificates'] ?? 0;
                 $totalAvailable = $availability['total_available'] ?? 0;
-                
+
                 Log::info('OpenAPI.com availability check', [
                     'tenant_id' => $this->tenant->id,
                     'free_certificates' => $freeCertificates,
                     'total_available' => $totalAvailable
                 ]);
-                
+
                 if ($totalAvailable <= 0) {
-                    throw new \Exception('No certificates available. Free daily limit (10) reached or no purchased credits.');
+                    Log::warning('No timestamps available', [
+                        'message' => 'Free daily limit (10) may be reached or no purchased credits',
+                        'tenant_id' => $this->tenant->id
+                    ]);
+                    // Continue anyway - let the marca endpoint decide
                 }
             } else {
                 Log::warning('Could not check availability, proceeding anyway', [

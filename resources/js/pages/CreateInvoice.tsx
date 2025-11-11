@@ -260,6 +260,29 @@ const CreateInvoice: React.FC = () => {
             navigate(`/invoices/${invoiceId}`);
         },
         onError: (error: any) => {
+            // Gestion spécifique des erreurs de conformité facturation
+            if (error.response?.status === 422 && error.response?.data?.error === 'INVOICING_COMPLIANCE_ERROR') {
+                const validation = error.response.data.validation;
+                const formattedMessage = error.response.data.formatted_message;
+
+                // Afficher le message d'erreur formaté
+                toast.error(
+                    <div>
+                        <div className="font-bold mb-2">Paramètres de facturation incomplets</div>
+                        <div className="text-sm whitespace-pre-line">{formattedMessage}</div>
+                        <button
+                            onClick={() => navigate('/settings/billing')}
+                            className="mt-2 text-blue-600 hover:text-blue-800 underline text-sm"
+                        >
+                            → Accéder aux paramètres
+                        </button>
+                    </div>,
+                    { autoClose: 10000 }
+                );
+                return;
+            }
+
+            // Autres erreurs
             const defaultMessage = isEditMode ? 'Erreur lors de la mise à jour de la facture' : t('invoices.createError');
             const message = error.response?.data?.message || defaultMessage;
             toast.error(message);

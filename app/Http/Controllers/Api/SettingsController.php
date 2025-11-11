@@ -496,6 +496,10 @@ class SettingsController extends Controller
                 'timestamp_enabled' => $tenant->timestamp_enabled,
                 'timestamp_provider' => $tenant->timestamp_provider,
                 'timestamp_tsa_url' => $tenant->timestamp_tsa_url,
+                'timestamp_api_key' => $tenant->timestamp_api_key, // Will be empty in form for security
+                'timestamp_certificate_id' => $tenant->timestamp_certificate_id,
+                'timestamp_include_certificate' => $tenant->timestamp_include_certificate ?? false,
+                'timestamp_use_sandbox' => $tenant->timestamp_use_sandbox ?? true,
                 'timestamp_configured' => $tenant->hasTimestampConfigured(),
             ]
         ]);
@@ -515,15 +519,28 @@ class SettingsController extends Controller
         $validated = $request->validate([
             'timestamp_enabled' => 'boolean',
             'timestamp_provider' => 'required|in:simple,universign,openapi',
-            'timestamp_tsa_url' => 'required_if:timestamp_provider,universign,openapi|url',
-            'timestamp_api_key' => 'required_if:timestamp_provider,universign,openapi|string',
-            'timestamp_api_secret' => 'required_if:timestamp_provider,universign|nullable|string',
+            'timestamp_tsa_url' => 'required_if:timestamp_provider,universign,openapi|nullable|url',
+            'timestamp_api_key' => 'nullable|string',
+            'timestamp_api_secret' => 'nullable|string',
             'timestamp_certificate_id' => 'nullable|string',
             'timestamp_include_certificate' => 'nullable|boolean',
+            'timestamp_use_sandbox' => 'nullable|boolean',
         ]);
 
         $tenant = $user->tenant;
-        $tenant->update($validated);
+
+        // Don't overwrite sensitive fields if they are empty (user wants to keep existing value)
+        $updateData = $validated;
+
+        if (empty($validated['timestamp_api_key'])) {
+            unset($updateData['timestamp_api_key']);
+        }
+
+        if (empty($validated['timestamp_api_secret'])) {
+            unset($updateData['timestamp_api_secret']);
+        }
+
+        $tenant->update($updateData);
 
         return response()->json([
             'message' => 'Timestamp configuration updated successfully',

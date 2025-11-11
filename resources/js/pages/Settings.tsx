@@ -253,6 +253,7 @@ const Settings: React.FC = () => {
         timestamp_certificate_id: '',
         timestamp_include_certificate: false,
         timestamp_enabled: true,
+        timestamp_use_sandbox: true,
     });
 
     // Fetch Google Calendar status
@@ -336,6 +337,7 @@ const Settings: React.FC = () => {
                 timestamp_certificate_id: timestampSettings.timestamp_certificate_id || '',
                 timestamp_include_certificate: timestampSettings.timestamp_include_certificate ?? false,
                 timestamp_enabled: timestampSettings.timestamp_enabled ?? true,
+                timestamp_use_sandbox: timestampSettings.timestamp_use_sandbox ?? true,
             });
         }
     }, [timestampSettings]);
@@ -1476,31 +1478,51 @@ const Settings: React.FC = () => {
 
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Clé API OpenAPI.com <span className="text-red-500">*</span>
+                                                Token Bearer {!timestampSettings?.timestamp_api_key && <span className="text-red-500">*</span>}
                                             </label>
                                             <input
                                                 type="password"
                                                 value={timestampForm.timestamp_api_key}
                                                 onChange={(e) => setTimestampForm({ ...timestampForm, timestamp_api_key: e.target.value })}
                                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                placeholder="Clé API OpenAPI.com"
-                                                required
+                                                placeholder={timestampSettings?.timestamp_api_key ? "••••••••••••••••" : "Token d'authentification"}
+                                                required={!timestampSettings?.timestamp_api_key}
                                             />
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                {timestampSettings?.timestamp_api_key && !timestampForm.timestamp_api_key ?
+                                                    "✓ Token déjà configuré. Laissez vide pour conserver la valeur actuelle." :
+                                                    "Token Bearer pour l'authentification API"}
+                                            </p>
                                         </div>
 
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Identifiant de certificat
+                                                Clé API (API Key)
                                             </label>
                                             <input
                                                 type="text"
                                                 value={timestampForm.timestamp_certificate_id || ''}
                                                 onChange={(e) => setTimestampForm({ ...timestampForm, timestamp_certificate_id: e.target.value })}
                                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                placeholder="ID du certificat de signature"
+                                                placeholder={timestampSettings?.timestamp_certificate_id || "Clé API OpenAPI.com"}
                                             />
                                             <p className="text-xs text-gray-500 mt-1">
-                                                Optionnel: Identifiant du certificat à utiliser pour l'horodatage
+                                                Optionnel: Clé API pour fonctionnalités avancées
+                                            </p>
+                                        </div>
+
+                                        <div className="md:col-span-2">
+                                            <label className="flex items-center space-x-2">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={timestampForm.timestamp_use_sandbox || false}
+                                                    onChange={(e) => setTimestampForm({ ...timestampForm, timestamp_use_sandbox: e.target.checked })}
+                                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                                />
+                                                <span className="text-sm text-gray-700">Mode Sandbox (Test)</span>
+                                            </label>
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                Activez pour utiliser l'environnement de test. Désactivez pour la production.
                                             </p>
                                         </div>
 

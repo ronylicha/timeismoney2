@@ -156,7 +156,7 @@ const EditClient: React.FC = () => {
         }
     };
 
-    const handleAddressChange = (address: string, components: {
+    const handleAddressChange = (fullAddress: string, components: {
         street?: string;
         housenumber?: string;
         city?: string;
@@ -177,9 +177,14 @@ const EditClient: React.FC = () => {
             countryCode = foundCountry?.code || 'FR';
         }
 
+        // Build street address (number + street only, no city/postal)
+        const streetAddress = [components.housenumber, components.street]
+            .filter(Boolean)
+            .join(' ') || fullAddress.split(',')[0] || '';
+
         setFormData(prev => ({
             ...prev,
-            address: address,
+            address: streetAddress,
             city: components.city || '',
             postal_code: components.postal_code || '',
             country: countryCode
@@ -468,46 +473,77 @@ const EditClient: React.FC = () => {
                     </h2>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Champ de recherche d'adresse */}
                         <div className="md:col-span-2">
                             <AddressAutocomplete
-                                value={formData.address}
+                                value=""
                                 onChange={handleAddressChange}
-                                placeholder={t('clients.searchAddress')}
+                                placeholder="Rechercher une adresse..."
                                 className="w-full"
-                                name="address"
-                                id="client-address"
-                                label={t('clients.address')}
+                                name="address-search"
+                                id="client-address-search"
+                                label="Rechercher une adresse"
                                 showLabel={true}
                                 required={false}
                             />
+                            <p className="mt-1 text-xs text-gray-500">
+                                Utilisez ce champ pour rechercher et sélectionner une adresse. Les champs ci-dessous seront remplis automatiquement.
+                            </p>
+                        </div>
+
+                        {/* Champ adresse (rempli automatiquement) */}
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                {t('clients.address')} <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                name="address"
+                                value={formData.address}
+                                onChange={handleInputChange}
+                                className={getFieldClass('address')}
+                                placeholder="Numéro et nom de rue"
+                                required
+                            />
+                            {getFieldError('address') && (
+                                <p className="mt-1 text-sm text-red-600">{getFieldError('address')}</p>
+                            )}
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                {t('clients.postalCode')}
+                                {t('clients.postalCode')} <span className="text-red-500">*</span>
                             </label>
                             <input
                                 type="text"
                                 name="postal_code"
                                 value={formData.postal_code}
                                 onChange={handleInputChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className={getFieldClass('postal_code')}
                                 placeholder={t('clients.postalCodePlaceholder')}
+                                required
                             />
+                            {getFieldError('postal_code') && (
+                                <p className="mt-1 text-sm text-red-600">{getFieldError('postal_code')}</p>
+                            )}
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                {t('clients.city')}
+                                {t('clients.city')} <span className="text-red-500">*</span>
                             </label>
                             <input
                                 type="text"
                                 name="city"
                                 value={formData.city}
                                 onChange={handleInputChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className={getFieldClass('city')}
                                 placeholder={t('clients.cityPlaceholder')}
+                                required
                             />
+                            {getFieldError('city') && (
+                                <p className="mt-1 text-sm text-red-600">{getFieldError('city')}</p>
+                            )}
                         </div>
 
                         <div>

@@ -95,12 +95,29 @@ class InvoiceController extends Controller
             'custom_items.*.tax_rate' => 'nullable|numeric|min:0|max:100'
         ]);
 
+        // === VALIDATION DE CONFORMITÉ AVANT CRÉATION ===
+        $tenant = auth()->user()->tenant;
+        $client = \App\Models\Client::findOrFail($validated['client_id']);
+
+        $complianceService = app(\App\Services\InvoicingComplianceService::class);
+        $validation = $complianceService->validateInvoiceCreation($tenant, $client);
+
+        if (!$validation['can_create_invoice']) {
+            $errorMessage = $complianceService->formatValidationMessage($validation);
+
+            return response()->json([
+                'message' => 'Paramètres de facturation incomplets',
+                'error' => 'INVOICING_COMPLIANCE_ERROR',
+                'validation' => $validation,
+                'formatted_message' => $errorMessage,
+            ], 422);
+        }
+
         DB::beginTransaction();
         try {
             // Get tenant and check VAT threshold
-            $tenant = auth()->user()->tenant;
-            $tenant->checkVatThreshold(); // Auto-check and apply VAT if threshold exceeded
-            
+            $tenant->checkVatThreshold(); // Auto-check and apply VAT if threshold was exceeded
+
             // Get default tax rate (may have changed if threshold was exceeded)
             $defaultTaxRate = $tenant->fresh()->getDefaultTaxRate();
             

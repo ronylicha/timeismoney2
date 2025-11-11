@@ -13,6 +13,7 @@ import {
 import { toast } from 'react-toastify';
 import { COUNTRIES } from '../constants/countries';
 import VatConfigWizard from '../components/VatConfigWizard';
+import AddressAutocomplete from '../components/AddressAutocomplete';
 
 interface BillingSettings {
     company_name: string;
@@ -258,6 +259,41 @@ const TenantBillingSettings: React.FC = () => {
 
     const handleInputChange = useCallback((field: keyof BillingSettings, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
+    }, []);
+
+    const handleAddressChange = useCallback((fullAddress: string, components: {
+        street?: string;
+        housenumber?: string;
+        city?: string;
+        postal_code?: string;
+        country?: string;
+        latitude?: string;
+        longitude?: string;
+    }) => {
+        // Convert country name to ISO code if needed
+        let countryCode = components.country || 'FR';
+
+        // If the country from API is a full name, try to match it to a code
+        if (countryCode && countryCode.length > 2) {
+            const foundCountry = COUNTRIES.find(c =>
+                c.name.toLowerCase() === countryCode.toLowerCase() ||
+                c.nameFr?.toLowerCase() === countryCode.toLowerCase()
+            );
+            countryCode = foundCountry?.code || 'FR';
+        }
+
+        // Build street address (number + street only, no city/postal)
+        const streetAddress = [components.housenumber, components.street]
+            .filter(Boolean)
+            .join(' ') || fullAddress.split(',')[0] || '';
+
+        setFormData(prev => ({
+            ...prev,
+            address_line1: streetAddress,
+            city: components.city || '',
+            postal_code: components.postal_code || '',
+            country: countryCode
+        }));
     }, []);
 
     const handleSave = useCallback((e: React.FormEvent) => {
@@ -714,18 +750,40 @@ const TenantBillingSettings: React.FC = () => {
                 <div className="bg-white rounded-lg shadow p-6">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('settings.addressInformation')}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Champ de recherche d'adresse */}
+                        <div className="md:col-span-2">
+                            <AddressAutocomplete
+                                value=""
+                                onChange={handleAddressChange}
+                                placeholder="Rechercher une adresse..."
+                                className="w-full"
+                                name="address-search"
+                                id="tenant-address-search"
+                                label="Rechercher une adresse"
+                                showLabel={true}
+                                required={false}
+                            />
+                            <p className="mt-1 text-xs text-gray-500">
+                                Utilisez ce champ pour rechercher et sélectionner une adresse. Les champs ci-dessous seront remplis automatiquement.
+                            </p>
+                        </div>
+
+                        {/* Adresse ligne 1 (remplie automatiquement) */}
                         <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                {t('settings.addressLine1')}
+                                {t('settings.addressLine1')} <span className="text-red-500">*</span>
                             </label>
                             <input
                                 type="text"
                                 value={formData.address_line1}
                                 onChange={(e) => handleInputChange('address_line1', e.target.value)}
-                                placeholder={t('settings.addressLine1Placeholder')}
+                                placeholder="Numéro et nom de rue"
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                required
                             />
                         </div>
+
+                        {/* Adresse ligne 2 (complément optionnel) */}
                         <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 {t('settings.addressLine2')}
@@ -738,9 +796,10 @@ const TenantBillingSettings: React.FC = () => {
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
                         </div>
+
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                {t('settings.postalCode')}
+                                {t('settings.postalCode')} <span className="text-red-500">*</span>
                             </label>
                             <input
                                 type="text"
@@ -748,11 +807,12 @@ const TenantBillingSettings: React.FC = () => {
                                 onChange={(e) => handleInputChange('postal_code', e.target.value)}
                                 placeholder={t('settings.postalCodePlaceholder')}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                required
                             />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                {t('settings.city')}
+                                {t('settings.city')} <span className="text-red-500">*</span>
                             </label>
                             <input
                                 type="text"
@@ -760,6 +820,7 @@ const TenantBillingSettings: React.FC = () => {
                                 onChange={(e) => handleInputChange('city', e.target.value)}
                                 placeholder={t('settings.cityPlaceholder')}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                required
                             />
                         </div>
                         <div className="md:col-span-2">
