@@ -102,30 +102,6 @@ const CreateInvoice: React.FC = () => {
         },
     });
 
-    // Redirect if not compliant and not in edit mode
-    useEffect(() => {
-        if (!isEditMode && complianceStatus && !complianceStatus.can_create_invoice) {
-            toast.error(
-                <div>
-                    <div className="font-bold mb-2 flex items-center">
-                        <ExclamationTriangleIcon className="h-5 w-5 mr-2" />
-                        Paramètres de facturation incomplets
-                    </div>
-                    <div className="text-sm">
-                        {complianceStatus.validation_message}
-                    </div>
-                    <div className="text-sm mt-2">
-                        Vous allez être redirigé vers les paramètres...
-                    </div>
-                </div>,
-                { autoClose: 5000 }
-            );
-            setTimeout(() => {
-                navigate('/settings/billing');
-            }, 2000);
-        }
-    }, [complianceStatus, isEditMode, navigate]);
-
     // Fetch billing settings for default conditions
     const { data: billingSettings } = useQuery({
         queryKey: ['billing-settings'],
@@ -607,6 +583,82 @@ const CreateInvoice: React.FC = () => {
 
         createInvoiceMutation.mutate({ endpoint, payload });
     };
+
+    // Show blocking screen if not compliant (only for new invoices)
+    if (!isEditMode && complianceStatus && !complianceStatus.can_create_invoice) {
+        return (
+            <div className="p-6 max-w-4xl mx-auto">
+                <div className="mb-8">
+                    <Link
+                        to="/invoices"
+                        className="flex items-center text-gray-600 hover:text-gray-900 transition mb-4"
+                    >
+                        <ArrowLeftIcon className="h-5 w-5 mr-1" />
+                        <span>{t('invoices.backToInvoices')}</span>
+                    </Link>
+                </div>
+
+                <div className="bg-white rounded-lg shadow-lg p-8">
+                    <div className="flex flex-col items-center text-center">
+                        <div className="bg-orange-100 rounded-full p-4 mb-6">
+                            <ExclamationTriangleIcon className="h-16 w-16 text-orange-600" />
+                        </div>
+
+                        <h1 className="text-2xl font-bold text-gray-900 mb-3">
+                            Configuration FacturX requise
+                        </h1>
+
+                        <p className="text-gray-600 mb-6 max-w-md">
+                            Pour créer des factures conformes à la norme EN 16931, vous devez d'abord compléter
+                            vos paramètres de facturation.
+                        </p>
+
+                        {complianceStatus.missing_fields && Object.keys(complianceStatus.missing_fields).length > 0 && (
+                            <div className="bg-orange-50 border border-orange-200 rounded-lg p-6 mb-6 text-left w-full max-w-md">
+                                <h3 className="font-semibold text-orange-900 mb-3">Champs obligatoires manquants :</h3>
+                                <ul className="space-y-2">
+                                    {Object.entries(complianceStatus.missing_fields).map(([key, details]: [string, any]) => (
+                                        <li key={key} className="flex items-start text-sm">
+                                            <span className="text-orange-600 mr-2">•</span>
+                                            <div>
+                                                <span className="font-medium text-orange-900">{details.label}</span>
+                                                <p className="text-orange-700 text-xs mt-0.5">{details.description}</p>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <Link
+                                to="/settings/billing"
+                                className="inline-flex items-center justify-center px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-medium"
+                            >
+                                <ExclamationTriangleIcon className="h-5 w-5 mr-2" />
+                                Compléter les paramètres de facturation
+                            </Link>
+
+                            <Link
+                                to="/invoices"
+                                className="inline-flex items-center justify-center px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium"
+                            >
+                                Retour aux factures
+                            </Link>
+                        </div>
+
+                        <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg text-left max-w-md">
+                            <p className="text-sm text-blue-800">
+                                <strong>ℹ️ Information :</strong> La norme FacturX (EN 16931) sera obligatoire
+                                pour toutes les entreprises françaises dès septembre 2026. Ces paramètres garantissent
+                                la conformité de vos factures électroniques.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="p-6 max-w-6xl mx-auto">

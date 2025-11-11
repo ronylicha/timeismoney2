@@ -103,33 +103,72 @@ class InvoicingComplianceService
         if (empty($tenant->legal_form)) {
             $warnings[] = [
                 'field' => 'legal_form',
-                'message' => 'Le type d\'entreprise (SARL, SAS, EI, etc.) devrait être renseigné',
+                'message' => 'Le type d\'entreprise (SARL, SAS, EI, etc.) devrait être renseigné pour déterminer les mentions légales obligatoires',
                 'severity' => 'warning',
                 'category' => 'identification',
             ];
         }
 
-        // 5. Capital social (obligatoire pour certaines formes juridiques)
-        if (in_array($tenant->legal_form, ['SARL', 'SAS', 'SA']) && empty($tenant->capital)) {
-            $warnings[] = [
-                'field' => 'capital',
-                'message' => 'Le capital social doit être mentionné sur les factures pour les ' . $tenant->legal_form,
-                'severity' => 'warning',
-                'category' => 'legal',
-            ];
+        // 5. Capital social (OBLIGATOIRE pour les sociétés UNIQUEMENT)
+        // Source: Mentions obligatoires factures 2025 - Gouvernement français
+        // Les sociétés (SARL, EURL, SAS, SASU, SA) DOIVENT mentionner leur capital social
+        // Les EI, auto-entrepreneurs et associations n'ont PAS de capital social
+        $societiesWithCapital = ['SARL', 'EURL', 'SAS', 'SASU', 'SA', 'SNC', 'SCS', 'SCA'];
+
+        if (in_array(strtoupper($tenant->legal_form ?? ''), $societiesWithCapital)) {
+            if (empty($tenant->capital) && $tenant->capital !== 0) {
+                $errors[] = [
+                    'field' => 'capital',
+                    'message' => 'Le capital social est OBLIGATOIRE sur les factures pour les ' . $tenant->legal_form . ' (mention légale)',
+                    'severity' => 'critical',
+                    'category' => 'legal',
+                ];
+            }
         }
 
-        // 6. RCS / RM (selon type d'entreprise)
-        if (in_array($tenant->legal_form, ['SARL', 'SAS', 'SA']) && empty($tenant->rcs_number)) {
-            $warnings[] = [
-                'field' => 'rcs_number',
-                'message' => 'Le numéro RCS doit être mentionné pour les sociétés commerciales',
-                'severity' => 'warning',
-                'category' => 'legal',
-            ];
+        // 6. RCS (OBLIGATOIRE pour les sociétés commerciales)
+        // Source: Mentions obligatoires factures 2025
+        // Les sociétés commerciales DOIVENT mentionner leur numéro RCS + ville du greffe
+        $commercialCompanies = ['SARL', 'EURL', 'SAS', 'SASU', 'SA', 'SNC'];
+
+        if (in_array(strtoupper($tenant->legal_form ?? ''), $commercialCompanies)) {
+            if (empty($tenant->rcs_number)) {
+                $errors[] = [
+                    'field' => 'rcs_number',
+                    'message' => 'Le numéro RCS est OBLIGATOIRE pour les sociétés commerciales (' . $tenant->legal_form . ')',
+                    'severity' => 'critical',
+                    'category' => 'legal',
+                ];
+            }
+            if (empty($tenant->rcs_city)) {
+                $errors[] = [
+                    'field' => 'rcs_city',
+                    'message' => 'La ville du greffe RCS est OBLIGATOIRE pour les sociétés commerciales (' . $tenant->legal_form . ')',
+                    'severity' => 'critical',
+                    'category' => 'legal',
+                ];
+            }
         }
 
-        // 7. Coordonnées bancaires (obligatoire pour factures électroniques)
+        // 7. RM (pour les artisans)
+        // Les artisans inscrits au Répertoire des Métiers doivent mentionner leur numéro RM
+        $artisanForms = ['EI', 'EIRL', 'AUTO'];
+
+        if (in_array(strtoupper($tenant->legal_form ?? ''), $artisanForms)) {
+            if (!empty($tenant->rm_number)) {
+                // Si RM renseigné, c'est un artisan - tout est OK
+            } else {
+                // RM non renseigné - avertissement car peut être artisan
+                $warnings[] = [
+                    'field' => 'rm_number',
+                    'message' => 'Si vous êtes artisan, le numéro RM doit être mentionné sur vos factures',
+                    'severity' => 'info',
+                    'category' => 'legal',
+                ];
+            }
+        }
+
+        // 8. Coordonnées bancaires (obligatoire pour factures électroniques)
         if (empty($tenant->iban)) {
             $errors[] = [
                 'field' => 'iban',
