@@ -21,6 +21,7 @@ interface BillingSettings {
     siret: string;
     rcs_number: string;
     rcs_city: string;
+    rm_number: string;
     capital: number | null;
     ape_code: string;
     vat_number: string;
@@ -94,6 +95,7 @@ const TenantBillingSettings: React.FC = () => {
         siret: '',
         rcs_number: '',
         rcs_city: '',
+        rm_number: '',
         capital: null,
         ape_code: '',
         vat_number: '',
@@ -146,6 +148,7 @@ const TenantBillingSettings: React.FC = () => {
                 siret: billingSettings.siret || '',
                 rcs_number: billingSettings.rcs_number || '',
                 rcs_city: billingSettings.rcs_city || '',
+                rm_number: billingSettings.rm_number || '',
                 capital: billingSettings.capital,
                 ape_code: billingSettings.ape_code || '',
                 vat_number: billingSettings.vat_number || '',
@@ -450,6 +453,22 @@ const TenantBillingSettings: React.FC = () => {
                                 placeholder={t('settings.rcsCityPlaceholder')}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Numéro RM (Répertoire des Métiers)
+                                <span className="text-gray-500 text-xs ml-1">(Pour les artisans)</span>
+                            </label>
+                            <input
+                                type="text"
+                                value={formData.rm_number}
+                                onChange={(e) => handleInputChange('rm_number', e.target.value)}
+                                placeholder="Ex: 123456789"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                                Obligatoire si vous êtes inscrit au Répertoire des Métiers
+                            </p>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">

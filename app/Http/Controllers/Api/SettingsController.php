@@ -608,30 +608,52 @@ class SettingsController extends Controller
         $tenant = auth()->user()->tenant;
         $complianceService = app(\App\Services\InvoicingComplianceService::class);
 
-        // Validate with a dummy client (only checking tenant fields)
-        $dummyClient = new \App\Models\Client([
-            'name' => 'Test',
-            'address' => 'Test',
-            'city' => 'Test',
-            'postal_code' => '00000',
-        ]);
+        // Check only tenant compliance (not client-specific)
+        $tenantValidation = $complianceService->canTenantCreateInvoices($tenant);
 
-        $validation = $complianceService->validateInvoiceCreation($tenant, $dummyClient);
+        // Extract only critical errors (not warnings)
+        $criticalErrors = array_filter($tenantValidation['errors'], function($error) {
+            return $error['severity'] === 'critical';
+        });
 
-        // Extract only tenant-related missing fields
-        $tenantMissingFields = [];
-        foreach ($validation['missing_fields'] as $field => $details) {
-            if (in_array($field, ['siret', 'vat_number', 'address_line1', 'city', 'postal_code', 'iban'])) {
-                $tenantMissingFields[$field] = $details;
-            }
+        // Format missing fields for frontend
+        $missingFields = [];
+        foreach ($criticalErrors as $error) {
+            $missingFields[$error['field']] = [
+                'label' => $this->getFieldLabel($error['field']),
+                'description' => $error['message'],
+                'location' => 'Paramètres > Facturation'
+            ];
         }
 
         return response()->json([
-            'can_create_invoice' => empty($tenantMissingFields),
-            'missing_fields' => $tenantMissingFields,
-            'validation_message' => empty($tenantMissingFields)
+            'can_create_invoice' => empty($criticalErrors),
+            'missing_fields' => $missingFields,
+            'warnings' => $tenantValidation['warnings'],
+            'validation_message' => empty($criticalErrors)
                 ? 'Tous les paramètres de facturation sont configurés'
                 : 'Paramètres de facturation incomplets',
         ]);
+    }
+
+    /**
+     * Get human-readable field label
+     */
+    private function getFieldLabel(string $field): string
+    {
+        $labels = [
+            'siret' => 'SIRET',
+            'vat_number' => 'Numéro de TVA',
+            'address_line1' => 'Adresse',
+            'city' => 'Ville',
+            'postal_code' => 'Code postal',
+            'iban' => 'IBAN',
+            'capital' => 'Capital social',
+            'rcs_number' => 'Numéro RCS',
+            'rcs_city' => 'Ville du greffe RCS',
+            'legal_form' => 'Forme juridique',
+        ];
+
+        return $labels[$field] ?? ucfirst($field);
     }
 }
