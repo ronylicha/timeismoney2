@@ -39,7 +39,7 @@ return [
     |
     */
     'cloud' => [
-        'provider' => env('HSM_CLOUD_PROVIDER'), // aws, azure, gcp
+        'provider' => env('HSM_CLOUD_PROVIDER'), // aws, certigna, azure, gcp
         'key_id' => env('HSM_CLOUD_KEY_ID'),
         'region' => env('HSM_CLOUD_REGION'),
         'access_key' => env('HSM_CLOUD_ACCESS_KEY'),

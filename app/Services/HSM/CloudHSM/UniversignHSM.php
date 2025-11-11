@@ -30,9 +30,14 @@ class UniversignHSM implements HSMInterface
 
     public function __construct()
     {
-        $this->sandbox = config('services.hsm.universign.sandbox', true);
-        $this->apiUser = config('services.hsm.universign.api_user');
-        $this->apiPassword = config('services.hsm.universign.api_password');
+        $this->sandbox = env('UNIVERSIGN_SANDBOX', true);
+        $this->apiUser = env('UNIVERSIGN_API_USER');
+        $this->apiPassword = env('UNIVERSIGN_API_PASSWORD');
+
+        // Validate configuration
+        if (empty($this->apiUser) || empty($this->apiPassword)) {
+            throw new \Exception('Universign credentials not configured. Please set UNIVERSIGN_API_USER and UNIVERSIGN_API_PASSWORD in .env');
+        }
 
         // Use different endpoints for production and sandbox
         $this->apiUrl = $this->sandbox

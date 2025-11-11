@@ -65,6 +65,7 @@ class HSMManager
         }
 
         return match($provider) {
+            'certigna' => new CloudHSM\CertignaHSM(),
             'universign' => new CloudHSM\UniversignHSM(),
             'thales' => throw new Exception('Thales HSM not yet implemented'),
             'safenet' => throw new Exception('SafeNet HSM not yet implemented'),
@@ -89,6 +90,7 @@ class HSMManager
 
         return match($provider) {
             'aws' => new CloudHSM\AWSCloudHSM(),
+            'certigna' => new CloudHSM\CertignaHSM(),
             'universign' => new CloudHSM\UniversignHSM(),
             'azure' => throw new Exception('Azure Key Vault not yet implemented'),
             'gcp' => throw new Exception('Google Cloud HSM not yet implemented'),

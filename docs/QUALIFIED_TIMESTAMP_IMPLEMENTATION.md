@@ -99,7 +99,7 @@ TIMESTAMP_PROVIDER=simple
 
 ## 📞 Choix du Provider TSA
 
-### Option 1 : Universign (Recommandé TPE/PME)
+### Option 1 : Certigna (Recommandé TPE/PME)
 
 **Pourquoi :**
 - API REST moderne
@@ -215,7 +215,7 @@ public function updated(Invoice $model)
 
 ### TPE (< 500 factures/an)
 
-**Provider recommandé :** Universign
+**Provider recommandé :** Certigna
 
 | Élément | Coût |
 |---------|------|
@@ -379,9 +379,10 @@ if ($service->validate($timestamp)) {
 - eIDAS : Règlement européen identification électronique
 
 ### Contacts providers
-- **Universign :** contact@universign.com
-- **ChamberSign :** contact@chambersign.fr  
+- **Certigna :** support@certigna.fr / +33 (0)1 86 95 02 30
+- **ChamberSign :** contact@chambersign.fr
 - **Certeurope :** contact@certeurope.fr
+- **Universign :** contact@universign.com (alternative)
 
 ### Support technique
 Consulter les logs :

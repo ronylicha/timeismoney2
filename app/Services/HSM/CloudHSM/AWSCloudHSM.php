@@ -27,12 +27,17 @@ class AWSCloudHSM implements HSMInterface
     {
         $this->config = [
             'version' => 'latest',
-            'region' => config('services.hsm.aws.region', 'eu-west-3'), // Paris region
+            'region' => config('hsm.cloud.region', env('HSM_CLOUD_REGION', 'eu-west-3')), // Paris region
             'credentials' => [
-                'key' => config('services.hsm.aws.access_key'),
-                'secret' => config('services.hsm.aws.secret_key'),
+                'key' => config('hsm.cloud.access_key', env('HSM_CLOUD_ACCESS_KEY')),
+                'secret' => config('hsm.cloud.secret_key', env('HSM_CLOUD_SECRET_KEY')),
             ]
         ];
+
+        // Validate configuration
+        if (empty($this->config['credentials']['key']) || empty($this->config['credentials']['secret'])) {
+            throw new \Exception('AWS KMS credentials not configured. Please set HSM_CLOUD_ACCESS_KEY and HSM_CLOUD_SECRET_KEY in .env');
+        }
 
         $this->kmsClient = new KmsClient($this->config);
 

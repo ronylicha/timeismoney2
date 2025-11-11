@@ -405,38 +405,47 @@ composer require aws/aws-sdk-php
 - AWS KMS : ~1$/mois par clé + 0.03$ pour 10 000 opérations
 - AWS CloudHSM : ~1 600$/mois par HSM (haute sécurité)
 
-#### Option 2 : Universign (Recommandé pour la France)
+#### Option 2 : Certigna (Recommandé pour la France)
 
-Universign est un Tiers de Confiance français certifié eIDAS, idéal pour la conformité européenne :
+Certigna est un Tiers de Confiance français certifié eIDAS, proposant des certificats qualifiés RGS** / eIDAS pour la conformité française et européenne :
 
 ```env
-# .env pour production Universign
+# .env pour production Certigna
 HSM_MODE=cloud
-HSM_CLOUD_PROVIDER=universign
-UNIVERSIGN_API_USER=your_api_user
-UNIVERSIGN_API_PASSWORD=your_api_password
-UNIVERSIGN_SANDBOX=false  # true pour tests
+HSM_CLOUD_PROVIDER=certigna
+CERTIGNA_API_KEY=your_api_key
+CERTIGNA_CERTIFICATE_ID=your_certificate_id
+CERTIGNA_SANDBOX=false  # true pour tests
 
-# Informations du signataire
-UNIVERSIGN_SIGNER_FIRSTNAME=John
-UNIVERSIGN_SIGNER_LASTNAME=Doe
-UNIVERSIGN_SIGNER_EMAIL=signature@timeismoney.com
-UNIVERSIGN_SIGNER_PHONE=+33123456789
+# Si certificat téléchargé localement (optionnel)
+CERTIGNA_CERTIFICATE_PATH=/path/to/certificate.p12
+CERTIGNA_PRIVATE_KEY_PATH=/path/to/private.key
+CERTIGNA_PRIVATE_KEY_PASSWORD=your_password
 ```
 
-**Avantages Universign** :
-- ✅ Certifié eIDAS (signatures qualifiées QES)
+**Produit utilisé** : Certigna ID RGS** / eIDAS
+- ✅ Certificat qualifié personne physique
+- ✅ Signature électronique qualifiée (QES)
+- ✅ Conformité eIDAS et RGS** (Référentiel Général de Sécurité)
 - ✅ Horodatage qualifié inclus
-- ✅ Conformité française/européenne
+- ✅ Valeur légale équivalente à la signature manuscrite
+- ✅ Validité dans tous les pays de l'UE
 - ✅ Support technique en français
-- ✅ Archivage légal intégré
 
-**Coûts approximatifs** :
-- Pack Starter : ~99€/mois (100 signatures)
-- Pack Business : ~299€/mois (500 signatures)
-- Enterprise : Sur devis
+**Avantages Certigna** :
+- ✅ Groupe Tessi (leader français de la dématérialisation)
+- ✅ Certification ANSSI (Agence Nationale de la Sécurité des Systèmes d'Information)
+- ✅ Conformité NF525, eIDAS, RGS**
+- ✅ Conservation légale longue durée
+- ✅ Tarif compétitif et transparent
 
-**Inscription** : https://www.universign.com
+**Coût** :
+- Certificat 3 ans : **216€ HT** (soit 72€/an)
+- Support inclus
+- Horodatage qualifié inclus
+- Pas de frais cachés
+
+**Inscription** : https://www.certigna.com/tarif/tarif-certificat-personne-physique/
 
 ### Utilisation dans l'Application
 
@@ -460,31 +469,38 @@ $isValid = $hsm->verify($data, $signature, $keyId);
 
 ### Migration Développement → Production
 
-1. **Phase de Test** (Universign Sandbox)
+1. **Phase de Test** (Certigna Sandbox)
    ```env
    HSM_MODE=cloud
-   HSM_CLOUD_PROVIDER=universign
-   UNIVERSIGN_SANDBOX=true
+   HSM_CLOUD_PROVIDER=certigna
+   CERTIGNA_SANDBOX=true
    ```
 
-2. **Génération des Certificats**
+2. **Acquisition du Certificat RGS** / eIDAS**
+   - Commander sur https://www.certigna.com/tarif/tarif-certificat-personne-physique/
+   - Suivre la procédure de validation d'identité
+   - Télécharger le certificat (.p12) et la clé privée
+
+3. **Configuration du Certificat**
+   ```env
+   CERTIGNA_CERTIFICATE_PATH=/path/to/certificate.p12
+   CERTIGNA_PRIVATE_KEY_PATH=/path/to/private.key
+   CERTIGNA_PRIVATE_KEY_PASSWORD=your_password
+   ```
+
+4. **Migration des Clés**
    ```bash
-   php artisan hsm:generate-certificate --level=QES
+   php artisan hsm:migrate-keys --from=simulator --to=certigna
    ```
 
-3. **Migration des Clés**
-   ```bash
-   php artisan hsm:migrate-keys --from=simulator --to=universign
-   ```
-
-4. **Validation**
+5. **Validation**
    ```bash
    php artisan hsm:validate-signatures
    ```
 
-5. **Passage en Production**
+6. **Passage en Production**
    ```env
-   UNIVERSIGN_SANDBOX=false
+   CERTIGNA_SANDBOX=false
    ```
 
 ### Niveaux de Signature Électronique
@@ -493,14 +509,14 @@ $isValid = $hsm->verify($data, $signature, $keyId);
 |--------|-------------|-------|------------|
 | **SES** | Simple Electronic Signature | Documents internes | Non (Simulator OK) |
 | **AES** | Advanced Electronic Signature | Contrats commerciaux | Recommandé |
-| **QES** | Qualified Electronic Signature | Équivalent légal signature manuscrite | Obligatoire (Universign/CloudHSM) |
+| **QES** | Qualified Electronic Signature | Équivalent légal signature manuscrite | Obligatoire (Certigna/CloudHSM) |
 
 ### Conformité eIDAS
 
 Pour être conforme au règlement européen eIDAS :
 
 1. **Signature Qualifiée (QES)** :
-   - Utiliser Universign ou un TSP certifié
+   - Utiliser Certigna ou un TSP certifié
    - Certificat qualifié obligatoire
    - Horodatage qualifié requis
 
@@ -517,6 +533,12 @@ Pour être conforme au règlement européen eIDAS :
 ### Commandes Artisan HSM
 
 ```bash
+# Tester la configuration HSM
+php artisan hsm:test                    # Test avec config actuelle
+php artisan hsm:test --provider=aws     # Test AWS KMS
+php artisan hsm:test --provider=certigna    # Test Certigna
+php artisan hsm:test --provider=simulator   # Test Simulator
+
 # Vérifier le statut HSM
 php artisan hsm:status
 
@@ -530,8 +552,12 @@ php artisan hsm:generate-key --id=invoice-2025 --algorithm=RS256
 php artisan hsm:test-sign --key=main-signing-key
 
 # Migrer les clés vers un nouveau provider
-php artisan hsm:migrate --from=simulator --to=universign
+php artisan hsm:migrate --from=simulator --to=aws
 ```
+
+📖 **Guides Complets** :
+- AWS KMS : [docs/HSM_AWS_SETUP.md](docs/HSM_AWS_SETUP.md)
+- Certigna RGS** / eIDAS : [docs/HSM_CERTIGNA_SETUP.md](docs/HSM_CERTIGNA_SETUP.md)
 
 ### Dépannage HSM
 
@@ -541,7 +567,7 @@ php artisan hsm:migrate --from=simulator --to=universign
 | "Key not found" | Exécuter `php artisan hsm:generate-key` |
 | "Invalid signature" | Vérifier que le même keyId est utilisé |
 | "AWS credentials invalid" | Vérifier IAM permissions pour KMS |
-| "Universign timeout" | Vérifier connexion réseau et API credentials |
+| "Certigna timeout" | Vérifier connexion réseau et API credentials |
 
 ## 🤝 Contribution
 
