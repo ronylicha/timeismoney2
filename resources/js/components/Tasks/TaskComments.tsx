@@ -12,6 +12,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface Comment {
     id: number;
@@ -32,6 +33,7 @@ interface TaskCommentsProps {
 
 const TaskComments: React.FC<TaskCommentsProps> = ({ taskId }) => {
     const queryClient = useQueryClient();
+    const { user } = useAuth();
     const [newComment, setNewComment] = useState('');
     const [editingComment, setEditingComment] = useState<number | null>(null);
     const [editContent, setEditContent] = useState('');
@@ -125,7 +127,7 @@ const TaskComments: React.FC<TaskCommentsProps> = ({ taskId }) => {
         setEditContent('');
     };
 
-    const currentUserId = 1; // TODO: Get from auth context
+    const currentUserId = user?.id ?? null;
 
     if (isLoading) {
         return (

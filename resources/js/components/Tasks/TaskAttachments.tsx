@@ -16,6 +16,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface Attachment {
     id: number;
@@ -37,6 +38,7 @@ interface TaskAttachmentsProps {
 
 const TaskAttachments: React.FC<TaskAttachmentsProps> = ({ taskId }) => {
     const queryClient = useQueryClient();
+    const { user } = useAuth();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isDragging, setIsDragging] = useState(false);
 
@@ -152,7 +154,7 @@ const TaskAttachments: React.FC<TaskAttachmentsProps> = ({ taskId }) => {
 
     const isImage = (mimeType: string) => mimeType.startsWith('image/');
 
-    const currentUserId = 1; // TODO: Get from auth context
+    const currentUserId = user?.id ?? null;
 
     if (isLoading) {
         return (

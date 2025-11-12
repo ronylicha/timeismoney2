@@ -3,16 +3,49 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\TimeEntry;
-use App\Models\Invoice;
+use App\Exports\ReportExport;
 use App\Models\Expense;
+use App\Models\Invoice;
 use App\Models\Project;
+use App\Models\TimeEntry;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Carbon\Carbon;
+use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Validation\Rule;
 
 class ReportController extends Controller
 {
+    private const REPORT_TYPES = [
+        'time_summary',
+        'invoice_summary',
+        'expense_summary',
+        'project_profitability',
+        'user_productivity',
+    ];
+
+    private const FEC_HEADERS = [
+        'JournalCode',
+        'JournalLib',
+        'EcritureNum',
+        'EcritureDate',
+        'CompteNum',
+        'CompteLib',
+        'CompAuxNum',
+        'CompAuxLib',
+        'PieceRef',
+        'PieceDate',
+        'EcritureLib',
+        'Debit',
+        'Credit',
+        'EcritureLet',
+        'DateLet',
+        'ValidDate',
+        'Montantdevise',
+        'Idevise',
+    ];
+
     /**
      * Get available reports list
      */
@@ -60,7 +93,7 @@ class ReportController extends Controller
     public function generate(Request $request)
     {
         $validated = $request->validate([
-            'report_type' => 'required|in:time_summary,invoice_summary,expense_summary,project_profitability,user_productivity',
+            'report_type' => ['required', Rule::in(self::REPORT_TYPES)],
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'project_id' => 'nullable|exists:projects,id',
@@ -70,25 +103,7 @@ class ReportController extends Controller
 
         $tenantId = auth()->user()->tenant_id;
 
-        switch ($validated['report_type']) {
-            case 'time_summary':
-                $data = $this->generateTimeSummary($validated, $tenantId);
-                break;
-            case 'invoice_summary':
-                $data = $this->generateInvoiceSummary($validated, $tenantId);
-                break;
-            case 'expense_summary':
-                $data = $this->generateExpenseSummary($validated, $tenantId);
-                break;
-            case 'project_profitability':
-                $data = $this->generateProjectProfitability($validated, $tenantId);
-                break;
-            case 'user_productivity':
-                $data = $this->generateUserProductivity($validated, $tenantId);
-                break;
-            default:
-                return response()->json(['message' => 'Invalid report type'], 400);
-        }
+        $data = $this->resolveReportData($validated['report_type'], $validated, $tenantId);
 
         return response()->json([
             'data' => $data,
@@ -104,13 +119,73 @@ class ReportController extends Controller
         ]);
     }
 
+    private function resolveReportData(string $reportType, array $filters, int $tenantId): array
+    {
+        return match ($reportType) {
+            'time_summary' => $this->generateTimeSummary($filters, $tenantId),
+            'invoice_summary' => $this->generateInvoiceSummary($filters, $tenantId),
+            'expense_summary' => $this->generateExpenseSummary($filters, $tenantId),
+            'project_profitability' => $this->generateProjectProfitability($filters, $tenantId),
+            'user_productivity' => $this->generateUserProductivity($filters, $tenantId),
+            default => throw new \InvalidArgumentException('Invalid report type provided'),
+        };
+    }
+
     /**
      * Download report as PDF or Excel
      */
     public function download(Request $request, $reportId)
     {
-        // TODO: Implement PDF/Excel generation
-        return response()->json(['message' => 'Report download will be available soon']);
+        if (!in_array($reportId, self::REPORT_TYPES, true)) {
+            return response()->json([
+                'message' => 'Unknown report type'
+            ], 404);
+        }
+
+        $validated = $request->validate([
+            'format' => ['required', Rule::in(['pdf', 'excel'])],
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'project_id' => 'nullable|exists:projects,id',
+            'user_id' => 'nullable|exists:users,id',
+            'client_id' => 'nullable|exists:clients,id',
+        ]);
+
+        $tenantId = auth()->user()->tenant_id;
+
+        $filters = array_merge($validated, [
+            'report_type' => $reportId,
+        ]);
+
+        $data = $this->resolveReportData($reportId, $filters, $tenantId);
+
+        $metadata = [
+            'report_type' => $reportId,
+            'period' => [
+                'start' => $validated['start_date'],
+                'end' => $validated['end_date'],
+            ],
+            'generated_at' => now()->toIso8601String(),
+            'generated_by' => auth()->user()->name,
+        ];
+
+        $rows = $this->formatReportForExport($reportId, $data, $metadata);
+
+        if ($validated['format'] === 'pdf') {
+            $pdf = Pdf::loadView('reports.export', [
+                'reportType' => Str::headline(str_replace('_', ' ', $reportId)),
+                'data' => $data,
+                'rows' => $rows,
+                'metadata' => $metadata,
+            ])->setPaper('a4');
+
+            return $pdf->download($this->buildReportFilename($reportId, 'pdf', $metadata));
+        }
+
+        return Excel::download(
+            new ReportExport($rows, Str::headline(str_replace('_', ' ', $reportId))),
+            $this->buildReportFilename($reportId, 'xlsx', $metadata)
+        );
     }
 
     /**
@@ -125,23 +200,68 @@ class ReportController extends Controller
         $tenantId = auth()->user()->tenant_id;
         $year = $validated['year'];
 
-        // Get all financial transactions for the year
-        $transactions = DB::table('invoices')
+        $invoices = Invoice::with('client')
             ->where('tenant_id', $tenantId)
-            ->whereYear('issue_date', $year)
-            ->select([
-                'invoice_number as JournalCode',
-                'issue_date as EcritureDate',
-                'invoice_number as EcritureNum',
-                DB::raw("'Client' as CompteNum"),
-                DB::raw("CONCAT('Facture ', invoice_number) as CompteLib"),
-                'total_amount as Debit',
-                DB::raw('0 as Credit'),
-            ])
+            ->whereYear('date', $year)
             ->get();
 
-        // Format as FEC file (pipe-separated)
-        $fecContent = $this->formatAsFEC($transactions);
+        $entries = [];
+
+        foreach ($invoices as $invoice) {
+            $amount = (float) ($invoice->total ?? $invoice->subtotal + $invoice->tax_amount);
+            $issueDate = $invoice->date ?? $invoice->created_at ?? Carbon::now();
+            $formattedDate = Carbon::parse($issueDate)->format('Ymd');
+            $reference = $invoice->invoice_number;
+            $client = $invoice->client;
+
+            $clientAccount = '411' . str_pad((string) $invoice->client_id, 4, '0', STR_PAD_LEFT);
+            $clientAux = $client?->siret ?? ('CLIENT-' . $invoice->client_id);
+            $clientName = $client?->name ?? 'Client ' . $invoice->client_id;
+
+            $entries[] = [
+                'JournalCode' => 'VT',
+                'JournalLib' => 'VENTES',
+                'EcritureNum' => $reference . '-D',
+                'EcritureDate' => $formattedDate,
+                'CompteNum' => $clientAccount,
+                'CompteLib' => $clientName,
+                'CompAuxNum' => $clientAux,
+                'CompAuxLib' => $clientName,
+                'PieceRef' => $reference,
+                'PieceDate' => $formattedDate,
+                'EcritureLib' => 'Facture ' . $reference,
+                'Debit' => number_format($amount, 2, '.', ''),
+                'Credit' => '0.00',
+                'EcritureLet' => '',
+                'DateLet' => '',
+                'ValidDate' => $formattedDate,
+                'Montantdevise' => number_format($amount, 2, '.', ''),
+                'Idevise' => $invoice->currency ?? 'EUR',
+            ];
+
+            $entries[] = [
+                'JournalCode' => 'VT',
+                'JournalLib' => 'VENTES',
+                'EcritureNum' => $reference . '-C',
+                'EcritureDate' => $formattedDate,
+                'CompteNum' => '706000',
+                'CompteLib' => 'VENTES DE SERVICES',
+                'CompAuxNum' => '',
+                'CompAuxLib' => '',
+                'PieceRef' => $reference,
+                'PieceDate' => $formattedDate,
+                'EcritureLib' => 'Facture ' . $reference,
+                'Debit' => '0.00',
+                'Credit' => number_format($amount, 2, '.', ''),
+                'EcritureLet' => '',
+                'DateLet' => '',
+                'ValidDate' => $formattedDate,
+                'Montantdevise' => number_format($amount, 2, '.', ''),
+                'Idevise' => $invoice->currency ?? 'EUR',
+            ];
+        }
+
+        $fecContent = $this->formatAsFEC($entries);
 
         return response()->streamDownload(function () use ($fecContent) {
             echo $fecContent;
@@ -353,22 +473,130 @@ class ReportController extends Controller
         ];
     }
 
+    private function formatReportForExport(string $reportType, array $data, array $metadata): array
+    {
+        $rows = [];
+
+        if (isset($metadata['period'])) {
+            $this->pushRow($rows, 'Period', 'Start', $metadata['period']['start'] ?? '');
+            $this->pushRow($rows, 'Period', 'End', $metadata['period']['end'] ?? '');
+        }
+
+        $this->pushRow($rows, 'Metadata', 'Generated By', $metadata['generated_by'] ?? 'system');
+        $this->pushRow($rows, 'Metadata', 'Generated At', $metadata['generated_at'] ?? now());
+
+        switch ($reportType) {
+            case 'time_summary':
+                foreach (($data['summary'] ?? []) as $key => $value) {
+                    $this->pushRow($rows, 'Summary', Str::headline($key), $value);
+                }
+
+                foreach (collect($data['by_user'] ?? [])->toArray() as $row) {
+                    $this->pushRow($rows, 'By User', $row['user'] ?? 'N/A', $row['total_hours'] ?? 0);
+                }
+
+                foreach (collect($data['by_project'] ?? [])->toArray() as $row) {
+                    $this->pushRow($rows, 'By Project', $row['project'] ?? 'N/A', $row['total_hours'] ?? 0);
+                }
+                break;
+
+            case 'invoice_summary':
+                foreach (($data['summary'] ?? []) as $key => $value) {
+                    $this->pushRow($rows, 'Summary', Str::headline($key), $value);
+                }
+
+                foreach (collect($data['by_status'] ?? [])->toArray() as $row) {
+                    $label = ($row['status'] ?? 'status') . ' (amount)';
+                    $this->pushRow($rows, 'By Status', $label, $row['total_amount'] ?? 0);
+                }
+                break;
+
+            case 'expense_summary':
+                foreach (($data['summary'] ?? []) as $key => $value) {
+                    $this->pushRow($rows, 'Summary', Str::headline($key), $value);
+                }
+
+                foreach (collect($data['by_category'] ?? [])->toArray() as $row) {
+                    $this->pushRow($rows, 'By Category', $row['category'] ?? 'N/A', $row['total_amount'] ?? 0);
+                }
+                break;
+
+            case 'project_profitability':
+                foreach (collect($data['projects'] ?? [])->toArray() as $row) {
+                    $project = $row['project_name'] ?? 'Projet';
+                    $this->pushRow($rows, 'Projects', $project . ' - Revenue', $row['revenue'] ?? 0);
+                    $this->pushRow($rows, 'Projects', $project . ' - Costs', $row['costs'] ?? 0);
+                    $this->pushRow($rows, 'Projects', $project . ' - Profit', $row['profit'] ?? 0);
+                    $this->pushRow($rows, 'Projects', $project . ' - Profit Margin %', $row['profit_margin'] ?? 0);
+                }
+                break;
+
+            case 'user_productivity':
+                foreach (collect($data['users'] ?? [])->toArray() as $row) {
+                    $this->pushRow($rows, 'Users', $row['user'] ?? 'N/A', $row['total_hours'] ?? 0);
+                    $this->pushRow($rows, 'Users', ($row['user'] ?? 'N/A') . ' - Billable %', $row['billable_percentage'] ?? 0);
+                }
+                break;
+        }
+
+        return $rows;
+    }
+
+    private function pushRow(array &$rows, string $section, string $label, $value): void
+    {
+        $rows[] = [
+            'Section' => $section,
+            'Label' => $label,
+            'Value' => $this->stringifyValue($value),
+        ];
+    }
+
+    private function stringifyValue($value): string
+    {
+        if ($value === null) {
+            return '';
+        }
+
+        if ($value instanceof Carbon) {
+            return $value->toDateTimeString();
+        }
+
+        if (is_numeric($value)) {
+            return number_format((float) $value, 2, '.', '');
+        }
+
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+
+        return (string) $value;
+    }
+
+    private function buildReportFilename(string $reportType, string $extension, array $metadata): string
+    {
+        $slug = Str::slug($reportType, '_');
+        $start = $metadata['period']['start'] ?? now()->format('Ymd');
+        $end = $metadata['period']['end'] ?? now()->format('Ymd');
+
+        return sprintf('%s_%s-%s.%s', $slug, $start, $end, $extension);
+    }
+
     /**
      * Format transactions as FEC file
      */
-    private function formatAsFEC($transactions)
+    private function formatAsFEC(array $entries)
     {
-        $lines = [];
+        $lines = [implode('|', self::FEC_HEADERS)];
 
-        // FEC Header
-        $lines[] = "JournalCode|JournalLib|EcritureNum|EcritureDate|CompteNum|CompteLib|CompAuxNum|CompAuxLib|PieceRef|PieceDate|EcritureLib|Debit|Credit|EcritureLet|DateLet|ValidDate|Montantdevise|Idevise";
+        foreach ($entries as $entry) {
+            $ordered = [];
+            foreach (self::FEC_HEADERS as $column) {
+                $ordered[] = $entry[$column] ?? '';
+            }
 
-        // FEC Data
-        foreach ($transactions as $transaction) {
-            $lines[] = implode('|', (array) $transaction);
+            $lines[] = implode('|', $ordered);
         }
 
         return implode("\n", $lines);
     }
 }
-

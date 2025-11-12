@@ -12,6 +12,9 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Http\Request;
+use Illuminate\Queue\Events\QueueBusy;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -40,6 +43,14 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('global', function (Request $request) {
             return Limit::perMinute(1000)->by($request->ip());
+        });
+
+        Event::listen(QueueBusy::class, function (QueueBusy $event) {
+            Log::warning('Queue backlog detected', [
+                'connection' => $event->connection,
+                'queue' => $event->queue,
+                'size' => $event->size,
+            ]);
         });
     }
 }

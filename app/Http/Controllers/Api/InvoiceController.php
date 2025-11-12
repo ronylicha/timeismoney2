@@ -9,7 +9,7 @@ use App\Models\TimeEntry;
 use App\Models\Expense;
 use App\Models\Payment;
 use App\Services\PdfGeneratorService;
-use App\Services\EmailService;
+use App\Jobs\SendTransactionalEmailJob;
 use App\Services\StripePaymentService;
 use App\Services\CreditNoteService;
 use App\Services\FacturXService;
@@ -379,7 +379,7 @@ class InvoiceController extends Controller
   +++++++ REPLACE
      * Send invoice to client
      */
-    public function send(Request $request, Invoice $invoice, EmailService $emailService, StripePaymentService $stripeService)
+    public function send(Request $request, Invoice $invoice, StripePaymentService $stripeService)
     {
         if ($invoice->status === 'paid' || $invoice->status === 'cancelled') {
             return response()->json([
@@ -430,21 +430,22 @@ class InvoiceController extends Controller
             }
         }
 
-        // Send email
-        $sent = $emailService->sendInvoice($invoice, $validated['recipient_email'] ?? null);
+        $targetEmail = $validated['recipient_email'] ?? $invoice->client?->email;
 
-        if (!$sent) {
+        if (!$targetEmail) {
             return response()->json([
-                'message' => 'Failed to send invoice. Please check the client email address.',
-                'error' => 'Email sending failed'
+                'message' => 'Failed to queue invoice email. Please check the client email address.',
+                'error' => 'email_missing'
             ], 422);
         }
+
+        SendTransactionalEmailJob::dispatch('invoice', $invoice->id, [], $validated['recipient_email'] ?? null);
 
         // Update status
         $invoice->markAsSent();
 
         return response()->json([
-            'message' => 'Invoice sent successfully',
+            'message' => 'Invoice email queued successfully',
             'invoice' => $invoice->fresh()
         ]);
     }
@@ -473,7 +474,7 @@ class InvoiceController extends Controller
     /**
      * Mark invoice as paid
      */
-    public function markAsPaid(Request $request, Invoice $invoice, EmailService $emailService)
+    public function markAsPaid(Request $request, Invoice $invoice)
     {
         if ($invoice->status === 'paid') {
             return response()->json([
@@ -485,7 +486,8 @@ class InvoiceController extends Controller
             'payment_method' => 'nullable|string|max:50',
             'payment_reference' => 'nullable|string|max:100',
             'paid_amount' => 'nullable|numeric|min:0',
-            'send_confirmation' => 'nullable|boolean'
+            'send_confirmation' => 'nullable|boolean',
+            'recipient_email' => 'nullable|email'
         ]);
 
         DB::beginTransaction();
@@ -508,7 +510,19 @@ class InvoiceController extends Controller
 
             // Send payment confirmation email if requested
             if ($validated['send_confirmation'] ?? true) {
-                $emailService->queuePaymentReceived($invoice, $paidAmount, $paymentMethod);
+                $targetEmail = $validated['recipient_email'] ?? $invoice->client?->email;
+
+                if ($targetEmail) {
+                    SendTransactionalEmailJob::dispatch(
+                        'payment_received',
+                        $invoice->id,
+                        [
+                            'amount' => $paidAmount,
+                            'payment_method' => $paymentMethod,
+                        ],
+                        $validated['recipient_email'] ?? null
+                    );
+                }
             }
 
             DB::commit();
@@ -530,7 +544,7 @@ class InvoiceController extends Controller
     /**
      * Send invoice reminder
      */
-    public function sendReminder(Request $request, Invoice $invoice, EmailService $emailService)
+    public function sendReminder(Request $request, Invoice $invoice)
     {
         if ($invoice->status === 'paid') {
             return response()->json([
@@ -542,17 +556,19 @@ class InvoiceController extends Controller
             'recipient_email' => 'nullable|email'
         ]);
 
-        $sent = $emailService->sendInvoiceReminder($invoice, $validated['recipient_email'] ?? null);
+        $targetEmail = $validated['recipient_email'] ?? $invoice->client?->email;
 
-        if (!$sent) {
+        if (!$targetEmail) {
             return response()->json([
-                'message' => 'Failed to send reminder. Please check the client email address.',
-                'error' => 'Email sending failed'
+                'message' => 'Failed to queue reminder. Please check the client email address.',
+                'error' => 'email_missing'
             ], 422);
         }
 
+        SendTransactionalEmailJob::dispatch('invoice_reminder', $invoice->id, [], $validated['recipient_email'] ?? null);
+
         return response()->json([
-            'message' => 'Reminder sent successfully'
+            'message' => 'Reminder queued successfully'
         ]);
     }
 

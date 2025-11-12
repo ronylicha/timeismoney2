@@ -108,7 +108,7 @@ class PaymentObserver
 
             foreach ($users as $user) {
                 try {
-                    $user->notify(new PaymentReceived($payment));
+                    $user->notify(new PaymentReceived($payment, $payment->invoice));
                     Log::info('Payment notification sent', [
                         'payment_id' => $payment->id,
                         'user_id' => $user->id,

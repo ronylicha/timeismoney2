@@ -176,7 +176,9 @@ DB_USERNAME=root
 DB_PASSWORD=
 
 # Queue (pour les jobs asynchrones)
-QUEUE_CONNECTION=database
+QUEUE_CONNECTION=redis
+QUEUE_MAIL_QUEUE=emails
+QUEUE_MAIL_CONNECTION=redis
 
 # Mail
 MAIL_MAILER=smtp
@@ -220,7 +222,7 @@ php artisan serve
 npm run dev
 
 # Terminal 3 - Queue Worker (optionnel)
-php artisan queue:work
+php artisan queue:work --queue=emails,default
 ```
 
 ### Structure du Projet
@@ -292,6 +294,8 @@ php artisan test --filter=InvoiceTest
 # Tests JavaScript
 npm run test
 ```
+
+> ℹ️ Les suites PHPUnit utilisent maintenant une base MySQL dédiée (`.env.testing`). Assurez-vous de fournir une base accessible (ex. `timeismoney_test` sur 127.0.0.1:3306) avant d’exécuter `php artisan test`.
 
 ## 📦 Déploiement
 

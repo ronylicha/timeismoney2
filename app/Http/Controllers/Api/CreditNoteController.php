@@ -7,7 +7,7 @@ use App\Models\CreditNote;
 use App\Models\CreditNoteItem;
 use App\Models\Invoice;
 use App\Services\PdfGeneratorService;
-use App\Services\EmailService;
+use App\Jobs\SendTransactionalEmailJob;
 use App\Services\FacturXService;
 use App\Services\CreditNoteService;
 use Illuminate\Http\Request;
@@ -306,7 +306,7 @@ class CreditNoteController extends Controller
     /**
      * Issue credit note
      */
-    public function issue(Request $request, $id, EmailService $emailService)
+    public function issue(Request $request, $id)
     {
         $creditNote = CreditNote::where('tenant_id', auth()->user()->tenant_id)
             ->findOrFail($id);
@@ -329,7 +329,11 @@ class CreditNoteController extends Controller
 
             // Send email if requested
             if ($validated['send_email'] ?? true) {
-                $emailService->queueCreditNote($creditNote, $validated['recipient_email'] ?? null);
+                $targetEmail = $validated['recipient_email'] ?? $creditNote->client?->email;
+
+                if ($targetEmail) {
+                    SendTransactionalEmailJob::dispatch('credit_note', $creditNote->id, [], $validated['recipient_email'] ?? null);
+                }
             }
 
             DB::commit();
@@ -351,7 +355,7 @@ class CreditNoteController extends Controller
     /**
      * Send credit note email
      */
-    public function send(Request $request, $id, EmailService $emailService)
+    public function send(Request $request, $id)
     {
         $creditNote = CreditNote::where('tenant_id', auth()->user()->tenant_id)
             ->findOrFail($id);
@@ -360,17 +364,19 @@ class CreditNoteController extends Controller
             'recipient_email' => 'nullable|email'
         ]);
 
-        $sent = $emailService->sendCreditNote($creditNote, $validated['recipient_email'] ?? null);
+        $targetEmail = $validated['recipient_email'] ?? $creditNote->client?->email;
 
-        if (!$sent) {
+        if (!$targetEmail) {
             return response()->json([
-                'message' => 'Failed to send credit note. Please check the client email address.',
-                'error' => 'Email sending failed'
+                'message' => 'Failed to queue credit note. Please check the client email address.',
+                'error' => 'email_missing'
             ], 422);
         }
 
+        SendTransactionalEmailJob::dispatch('credit_note', $creditNote->id, [], $validated['recipient_email'] ?? null);
+
         return response()->json([
-            'message' => 'Credit note sent successfully'
+            'message' => 'Credit note email queued successfully'
         ]);
     }
 

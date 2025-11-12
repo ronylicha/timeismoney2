@@ -214,11 +214,63 @@ export async function clearCacheSafely(preserveKeys: string[] = []): Promise<voi
 /**
  * Compress database data before storing (helps with iOS quota)
  */
-export function compressData(data: string): string {
-    // Simple compression using pako or similar library could be added here
-    // For now, just return original data
-    // TODO: Implement actual compression (gzip/deflate) if needed
-    return data;
+export async function compressData(data: string): Promise<string> {
+    if (!data || typeof CompressionStream === 'undefined') {
+        return data;
+    }
+
+    const stream = new CompressionStream('gzip');
+    const writer = stream.writable.getWriter();
+    await writer.write(new TextEncoder().encode(data));
+    await writer.close();
+
+    const compressed = await new Response(stream.readable).arrayBuffer();
+    return arrayBufferToBase64(compressed);
+}
+
+/**
+ * Decompress persisted data (gzip/base64)
+ */
+export async function decompressData(data: string): Promise<string> {
+    if (!data || typeof DecompressionStream === 'undefined') {
+        return data;
+    }
+
+    try {
+        const stream = new DecompressionStream('gzip');
+        const writer = stream.writable.getWriter();
+        await writer.write(base64ToUint8Array(data));
+        await writer.close();
+
+        const decompressed = await new Response(stream.readable).arrayBuffer();
+        return new TextDecoder().decode(decompressed);
+    } catch (error) {
+        console.error('Failed to decompress data', error);
+        return data;
+    }
+}
+
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    bytes.forEach((byte) => {
+        binary += String.fromCharCode(byte);
+    });
+    return btoa(binary);
+}
+
+function base64ToUint8Array(base64: string): Uint8Array {
+    try {
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i += 1) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        return bytes;
+    } catch (error) {
+        console.error('Unable to decode base64 payload', error);
+        return new Uint8Array();
+    }
 }
 
 /**

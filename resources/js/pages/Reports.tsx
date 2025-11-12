@@ -40,6 +40,7 @@ const Reports: React.FC = () => {
     });
     const [reportData, setReportData] = useState<any>(null);
     const [showFilters, setShowFilters] = useState(false);
+    const [downloadingFormat, setDownloadingFormat] = useState<'pdf' | 'excel' | null>(null);
 
     const reportTypes: ReportType[] = [
         {
@@ -160,6 +161,97 @@ const Reports: React.FC = () => {
     const handleSubmitFilters = () => {
         if (selectedReport) {
             generateReportMutation.mutate(selectedReport);
+        }
+    };
+
+    const downloadReport = async (format: 'pdf' | 'excel') => {
+        if (!selectedReport) {
+            toast.error(t('reports.selectReportFirst'));
+            return;
+        }
+
+        if (!reportData) {
+            toast.error(t('reports.reportGenerateError'));
+            return;
+        }
+
+        setDownloadingFormat(format);
+
+        try {
+            const params: Record<string, string> = {
+                format,
+                start_date: filters.start_date,
+                end_date: filters.end_date,
+            };
+
+            if (filters.project_id) params.project_id = filters.project_id;
+            if (filters.user_id) params.user_id = filters.user_id;
+            if (filters.client_id) params.client_id = filters.client_id;
+
+            const response = await axios.get(`/reports/${selectedReport}/download`, {
+                params,
+                responseType: 'blob',
+            });
+
+            const extension = format === 'pdf' ? 'pdf' : 'xlsx';
+            const fileName = `${selectedReport}-${filters.start_date}-${filters.end_date}.${extension}`;
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', fileName);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+
+            toast.success(t('reports.reportDownloaded'));
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || t('reports.reportDownloadError'));
+        } finally {
+            setDownloadingFormat(null);
+        }
+    };
+
+    const downloadReport = async (format: 'pdf' | 'excel') => {
+        if (!selectedReport) {
+            toast.error(t('reports.selectReportFirst'));
+            return;
+        }
+
+        setDownloadingFormat(format);
+
+        try {
+            const params: Record<string, string> = {
+                format,
+                start_date: filters.start_date,
+                end_date: filters.end_date,
+            };
+
+            if (filters.project_id) params.project_id = filters.project_id;
+            if (filters.user_id) params.user_id = filters.user_id;
+            if (filters.client_id) params.client_id = filters.client_id;
+
+            const response = await axios.get(`/reports/${selectedReport}/download`, {
+                params,
+                responseType: 'blob',
+            });
+
+            const extension = format === 'pdf' ? 'pdf' : 'xlsx';
+            const fileName = `${selectedReport}-${filters.start_date}-${filters.end_date}.${extension}`;
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', fileName);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+
+            toast.success(t('reports.reportDownloaded'));
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || t('reports.reportDownloadError'));
+        } finally {
+            setDownloadingFormat(null);
         }
     };
 
@@ -340,13 +432,32 @@ const Reports: React.FC = () => {
                         </div>
                     </div>
 
-                    <button
-                        onClick={handleSubmitFilters}
-                        disabled={generateReportMutation.isPending}
-                        className="w-full md:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
-                    >
-                        {generateReportMutation.isPending ? t('reports.generating') : t('reports.generateReport')}
-                    </button>
+                    <div className="flex flex-col md:flex-row md:items-center gap-3">
+                        <button
+                            onClick={handleSubmitFilters}
+                            disabled={generateReportMutation.isPending}
+                            className="w-full md:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
+                        >
+                            {generateReportMutation.isPending ? t('reports.generating') : t('reports.generateReport')}
+                        </button>
+
+                        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                            <button
+                                onClick={() => downloadReport('pdf')}
+                                disabled={!reportData || downloadingFormat === 'excel' || downloadingFormat === 'pdf'}
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                            >
+                                {downloadingFormat === 'pdf' ? t('reports.generating') : t('reports.downloadPdf')}
+                            </button>
+                            <button
+                                onClick={() => downloadReport('excel')}
+                                disabled={!reportData || downloadingFormat === 'pdf' || downloadingFormat === 'excel'}
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                            >
+                                {downloadingFormat === 'excel' ? t('reports.generating') : t('reports.downloadExcel')}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 

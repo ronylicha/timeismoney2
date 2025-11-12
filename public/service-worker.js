@@ -119,29 +119,15 @@ self.addEventListener('fetch', event => {
     // Handle API calls differently
     if (url.pathname.startsWith('/api')) {
         event.respondWith(
-            fetch(request)
-                .then(response => {
-                    // Clone the response before caching
-                    const responseToCache = response.clone();
-
-                    // Cache successful API responses (but be conservative on iOS)
-                    if (response.status === 200) {
-                        caches.open(DYNAMIC_CACHE).then(cache => {
-                            cache.put(request, responseToCache).then(() => {
-                                // iOS: Periodically clean up cache to stay within limits
-                                if (isIOS) {
-                                    limitCacheSize(DYNAMIC_CACHE, MAX_CACHE_SIZE);
-                                }
-                            });
-                        });
+            fetch(request).catch(() => {
+                return new Response(
+                    JSON.stringify({ message: 'offline', status: 503 }),
+                    {
+                        status: 503,
+                        headers: { 'Content-Type': 'application/json' },
                     }
-
-                    return response;
-                })
-                .catch(() => {
-                    // If offline, try to serve from cache
-                    return caches.match(request);
-                })
+                );
+            })
         );
         return;
     }

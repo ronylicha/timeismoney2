@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Quote;
 use App\Models\Client;
 use App\Services\PdfGeneratorService;
-use App\Services\EmailService;
+use App\Jobs\SendTransactionalEmailJob;
 use App\Mail\QuoteAccepted;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -307,7 +307,7 @@ class QuoteController extends Controller
     /**
      * Send quote to client
      */
-    public function send(Request $request, $id, EmailService $emailService)
+    public function send(Request $request, $id)
     {
         $quote = Quote::with(['client', 'tenant', 'items'])
             ->where('tenant_id', auth()->user()->tenant_id)
@@ -323,15 +323,16 @@ class QuoteController extends Controller
             'recipient_email' => 'nullable|email'
         ]);
 
-        // Send email to client with quote PDF
-        $sent = $emailService->sendQuote($quote, $validated['recipient_email'] ?? null);
+        $targetEmail = $validated['recipient_email'] ?? $quote->client?->email;
 
-        if (!$sent) {
+        if (!$targetEmail) {
             return response()->json([
-                'message' => 'Failed to send quote. Please check the client email address.',
-                'error' => 'Email sending failed'
+                'message' => 'Failed to queue quote. Please check the client email address.',
+                'error' => 'email_missing'
             ], 422);
         }
+
+        SendTransactionalEmailJob::dispatch('quote', $quote->id, [], $validated['recipient_email'] ?? null);
 
         $quote->update([
             'status' => 'sent',
@@ -339,7 +340,7 @@ class QuoteController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Quote sent successfully',
+            'message' => 'Quote email queued successfully',
             'data' => $quote->load(['client', 'items'])
         ]);
     }
