@@ -212,49 +212,6 @@ const Reports: React.FC = () => {
         }
     };
 
-    const downloadReport = async (format: 'pdf' | 'excel') => {
-        if (!selectedReport) {
-            toast.error(t('reports.selectReportFirst'));
-            return;
-        }
-
-        setDownloadingFormat(format);
-
-        try {
-            const params: Record<string, string> = {
-                format,
-                start_date: filters.start_date,
-                end_date: filters.end_date,
-            };
-
-            if (filters.project_id) params.project_id = filters.project_id;
-            if (filters.user_id) params.user_id = filters.user_id;
-            if (filters.client_id) params.client_id = filters.client_id;
-
-            const response = await axios.get(`/reports/${selectedReport}/download`, {
-                params,
-                responseType: 'blob',
-            });
-
-            const extension = format === 'pdf' ? 'pdf' : 'xlsx';
-            const fileName = `${selectedReport}-${filters.start_date}-${filters.end_date}.${extension}`;
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', fileName);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            window.URL.revokeObjectURL(url);
-
-            toast.success(t('reports.reportDownloaded'));
-        } catch (error: any) {
-            toast.error(error.response?.data?.message || t('reports.reportDownloadError'));
-        } finally {
-            setDownloadingFormat(null);
-        }
-    };
-
     const getColorClass = (color: string) => {
         const colors: Record<string, string> = {
             blue: 'bg-blue-100 text-blue-600',
