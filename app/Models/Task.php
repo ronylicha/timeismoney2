@@ -31,7 +31,9 @@ class Task extends Model
         'hourly_rate',
         'position',
         'column_id',
-        'labels'
+        'labels',
+        'checklist',
+        'created_by'
     ];
 
     protected $casts = [
@@ -43,8 +45,22 @@ class Task extends Model
         'actual_hours' => 'decimal:2',
         'hourly_rate' => 'decimal:2',
         'position' => 'integer',
-        'labels' => 'array'
+        'labels' => 'array',
+        'checklist' => 'array'
     ];
+
+    /**
+     * Boot the model
+     */
+    protected static function booted()
+    {
+        static::creating(function (Task $task) {
+            // Automatically set created_by to current authenticated user
+            if (!$task->created_by && auth()->check()) {
+                $task->created_by = auth()->id();
+            }
+        });
+    }
 
     /**
      * Get the project that owns the task
@@ -79,12 +95,38 @@ class Task extends Model
     }
 
     /**
+     * Get the user who created the task
+     */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
      * Get all users assigned to this task
      */
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'task_users')
             ->withPivot('assigned_at');
+    }
+
+    /**
+     * Get all comments for this task
+     */
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class, 'commentable_id')
+            ->where('commentable_type', Task::class);
+    }
+
+    /**
+     * Get all attachments for this task
+     */
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(Attachment::class, 'attachable_id')
+            ->where('attachable_type', Task::class);
     }
 
     /**

@@ -90,10 +90,29 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/projects/{project}/users', [ProjectController::class, 'assignUsers']);
 
     // Tasks
+    Route::get('/tasks/export', [TaskController::class, 'export']);
     Route::apiResource('tasks', TaskController::class);
     Route::post('/tasks/{task}/status', [TaskController::class, 'updateStatus']);
     Route::post('/tasks/{task}/assign', [TaskController::class, 'assignUsers']);
     Route::get('/tasks/kanban', [TaskController::class, 'kanban']);
+    
+    // Task Comments
+    Route::get('/tasks/{task}/comments', [TaskController::class, 'comments']);
+    Route::post('/tasks/{task}/comments', [TaskController::class, 'storeComment']);
+    Route::put('/tasks/{task}/comments/{comment}', [TaskController::class, 'updateComment']);
+    Route::delete('/tasks/{task}/comments/{comment}', [TaskController::class, 'deleteComment']);
+    
+    // Task Attachments
+    Route::get('/tasks/{task}/attachments', [TaskController::class, 'attachments']);
+    Route::post('/tasks/{task}/attachments', [TaskController::class, 'uploadAttachment']);
+    Route::get('/tasks/{task}/attachments/{attachment}', [TaskController::class, 'downloadAttachment'])->name('api.tasks.attachments.download');
+    Route::delete('/tasks/{task}/attachments/{attachment}', [TaskController::class, 'deleteAttachment']);
+    
+    // Task Checklist
+    Route::get('/tasks/{task}/checklist', [TaskController::class, 'checklist']);
+    Route::post('/tasks/{task}/checklist', [TaskController::class, 'addChecklistItem']);
+    Route::put('/tasks/{task}/checklist/{item}', [TaskController::class, 'updateChecklistItem']);
+    Route::delete('/tasks/{task}/checklist/{item}', [TaskController::class, 'deleteChecklistItem']);
 
     // Time Tracking - Specific routes MUST come before apiResource
     Route::post('/time-entries/start', [TimeEntryController::class, 'startTimer']);

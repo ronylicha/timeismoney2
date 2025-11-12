@@ -214,6 +214,31 @@
             <div class="totals-label">Total TTC</div>
             <div class="totals-value">{{ number_format($invoice->total, 2, ',', ' ') }} €</div>
         </div>
+
+        @if($invoice->type === 'final' && $invoice->advances && $invoice->advances->count() > 0)
+        {{-- Section des acomptes pour factures de solde --}}
+        <div style="border-top: 1px solid #e5e7eb; margin-top: 10px; padding-top: 10px;">
+            <div class="totals-row" style="font-size: 11px; color: #4F46E5; font-weight: bold;">
+                <div class="totals-label">ACOMPTES VERSÉS</div>
+                <div class="totals-value"></div>
+            </div>
+            @foreach($invoice->advances as $advance)
+            <div class="totals-row" style="font-size: 10px; color: #666;">
+                <div class="totals-label">{{ $advance->invoice_number }} du {{ $advance->date->format('d/m/Y') }}</div>
+                <div class="totals-value">-{{ number_format($advance->pivot->advance_amount, 2, ',', ' ') }} €</div>
+            </div>
+            @endforeach
+            <div class="totals-row" style="font-weight: bold; border-top: 1px solid #e5e7eb; margin-top: 5px; padding-top: 5px;">
+                <div class="totals-label">Total des acomptes</div>
+                <div class="totals-value">-{{ number_format($invoice->total_advances, 2, ',', ' ') }} €</div>
+            </div>
+        </div>
+
+        <div class="totals-row total" style="border-top: 2px solid #4F46E5; margin-top: 10px; padding-top: 10px; font-size: 14pt;">
+            <div class="totals-label">SOLDE À PAYER</div>
+            <div class="totals-value">{{ number_format($invoice->remaining_balance, 2, ',', ' ') }} €</div>
+        </div>
+        @endif
     </div>
 
     <!-- Notes -->

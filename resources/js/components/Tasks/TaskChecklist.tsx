@@ -133,8 +133,8 @@ const TaskChecklist: React.FC<TaskChecklistProps> = ({ taskId }) => {
         }
     };
 
-    const completedCount = items?.filter(item => item.completed).length || 0;
-    const totalCount = items?.length || 0;
+    const completedCount = (items && Array.isArray(items)) ? items.filter(item => item.completed).length : 0;
+    const totalCount = (items && Array.isArray(items)) ? items.length : 0;
     const completionPercentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
     if (isLoading) {
@@ -189,7 +189,7 @@ const TaskChecklist: React.FC<TaskChecklistProps> = ({ taskId }) => {
 
             {/* Checklist Items */}
             <div className="space-y-2">
-                {items && items.length > 0 ? (
+                {items && Array.isArray(items) && items.length > 0 ? (
                     items.map((item) => (
                         <div
                             key={item.id}

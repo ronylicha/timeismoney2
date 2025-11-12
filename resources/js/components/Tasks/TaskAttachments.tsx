@@ -21,13 +21,13 @@ import { useAuth } from '../../contexts/AuthContext';
 interface Attachment {
     id: number;
     filename: string;
-    original_name: string;
+    original_filename: string;
     mime_type: string;
     size: number;
     url: string;
     created_at: string;
     user: {
-        id: number;
+        id: string;
         name: string;
     };
 }
@@ -154,7 +154,7 @@ const TaskAttachments: React.FC<TaskAttachmentsProps> = ({ taskId }) => {
 
     const isImage = (mimeType: string) => mimeType.startsWith('image/');
 
-    const currentUserId = user?.id ?? null;
+    const currentUserId = user?.id;
 
     if (isLoading) {
         return (
@@ -204,7 +204,7 @@ const TaskAttachments: React.FC<TaskAttachmentsProps> = ({ taskId }) => {
 
             {/* Attachments List */}
             <div className="space-y-4">
-                {attachments && attachments.length > 0 ? (
+                {attachments && Array.isArray(attachments) && attachments.length > 0 ? (
                     attachments.map((attachment) => {
                         const Icon = getFileIcon(attachment.mime_type);
                         return (
@@ -216,7 +216,7 @@ const TaskAttachments: React.FC<TaskAttachmentsProps> = ({ taskId }) => {
                                     <Icon className="h-8 w-8 text-gray-400 flex-shrink-0" />
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-medium text-gray-900 truncate">
-                                            {attachment.original_name}
+                                            {attachment.original_filename}
                                         </p>
                                         <div className="flex items-center space-x-2 text-xs text-gray-500">
                                             <span>{formatFileSize(attachment.size)}</span>
@@ -245,7 +245,7 @@ const TaskAttachments: React.FC<TaskAttachmentsProps> = ({ taskId }) => {
                                     {/* Download button */}
                                     <a
                                         href={attachment.url}
-                                        download={attachment.original_name}
+                                        download={attachment.original_filename}
                                         className="p-2 text-gray-400 hover:text-gray-600 transition"
                                         title="Télécharger"
                                     >

@@ -4,8 +4,6 @@ import { toast } from 'react-toastify';
 import axios from 'axios';
 import {
     ChatBubbleLeftRightIcon,
-    UserIcon,
-    ClockIcon,
     TrashIcon,
     PencilIcon,
     PaperAirplaneIcon,
@@ -20,7 +18,7 @@ interface Comment {
     created_at: string;
     updated_at?: string;
     user: {
-        id: number;
+        id: string;
         name: string;
         email: string;
     };
@@ -169,7 +167,7 @@ const TaskComments: React.FC<TaskCommentsProps> = ({ taskId }) => {
 
             {/* Comments List */}
             <div className="space-y-4">
-                {comments && comments.length > 0 ? (
+                {comments && Array.isArray(comments) && comments.length > 0 ? (
                     comments.map((comment) => (
                         <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
                             <div className="flex items-start justify-between">

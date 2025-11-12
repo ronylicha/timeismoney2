@@ -22,8 +22,8 @@ class PdfGeneratorService
      */
     public function generateInvoicePdf(Invoice $invoice, bool $download = false)
     {
-        // Load only safe relations (avoid circular references with advances/finalInvoice)
-        $invoice->load(['client', 'items', 'tenant']);
+        // Load relations including advances for final invoices
+        $invoice->load(['client', 'items', 'tenant', 'advances']);
 
         // Calculate tax by rate
         $taxByRate = [];

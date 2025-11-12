@@ -511,7 +511,42 @@ class FacturXService
             null,  // directDebitMandateID
             null   // partialPaymentAmount
         );
-        
+
+        // Références aux factures d'acompte (pour factures de solde)
+        if ($invoice->type === 'final' && $invoice->advances && $invoice->advances->count() > 0) {
+            $advancesTotal = $invoice->total_advances;
+
+            Log::info('Adding advance payment references to FacturX', [
+                'invoice_id' => $invoice->id,
+                'advances_count' => $invoice->advances->count(),
+                'total_advances' => $advancesTotal,
+            ]);
+
+            // Ajouter une note générale sur les acomptes
+            $document->addDocumentNote(
+                "FACTURE DE SOLDE - Acomptes déduits : " . number_format($advancesTotal, 2, ',', ' ') . " EUR"
+            );
+
+            // Ajouter chaque facture d'acompte comme référence
+            foreach ($invoice->advances as $advance) {
+                $advanceDate = $advance->date instanceof \DateTime
+                    ? $advance->date
+                    : new \DateTime($advance->date);
+
+                // Référence à la facture d'acompte
+                $document->addDocumentNote(
+                    "Acompte : {$advance->invoice_number} du {$advanceDate->format('d/m/Y')} - " .
+                    number_format($advance->pivot->advance_amount, 2, ',', ' ') . " EUR"
+                );
+
+                Log::debug('Added advance reference to FacturX', [
+                    'advance_invoice_number' => $advance->invoice_number,
+                    'advance_amount' => $advance->pivot->advance_amount,
+                    'advance_date' => $advanceDate->format('Y-m-d'),
+                ]);
+            }
+        }
+
         // Moyen de paiement
         if ($tenant->iban && strtolower($invoice->payment_method ?? 'bank_transfer') === 'bank_transfer') {
             // Virement bancaire avec IBAN
@@ -586,10 +621,11 @@ class FacturXService
         // P2: Totaux avec support des remises
         $netAfterAllowances = $invoice->subtotal - $totalAllowances;
 
-        // BR-CO-16: Montant dû = Total TTC - Payé + Arrondi
+        // BR-CO-16: Montant dû = Total TTC - Payé - Acomptes + Arrondi
         $paidAmount = $invoice->paid_amount ?? 0;
+        $totalAdvances = $invoice->total_advances ?? 0; // Acomptes pour factures de solde
         $roundingAmount = 0;  // Pas d'arrondi par défaut
-        $duePayableAmount = $invoice->total - $paidAmount + $roundingAmount;
+        $duePayableAmount = $invoice->total - $paidAmount - $totalAdvances + $roundingAmount;
 
         $document->setDocumentSummation(
             $invoice->total,                    // Total TTC (Grand total)

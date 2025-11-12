@@ -5,8 +5,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Task;
 use App\Models\Project;
+use App\Exports\TaskExport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Maatwebsite\Excel\Facades\Excel;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class TaskController extends Controller
 {
@@ -359,6 +362,325 @@ class TaskController extends Controller
         return response()->json([
             'message' => 'Tâche supprimée avec succès'
         ]);
+    }
+
+    /**
+     * Get task comments
+     */
+    public function comments(Task $task)
+    {
+        $comments = $task->comments()
+            ->with('user:id,name,email')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json($comments);
+    }
+
+    /**
+     * Store a new comment
+     */
+    public function storeComment(Request $request, Task $task)
+    {
+        $request->validate([
+            'content' => 'required|string|max:2000'
+        ]);
+
+        $comment = $task->comments()->create([
+            'content' => $request->content,
+            'user_id' => auth()->id(),
+            'commentable_type' => Task::class,
+            'commentable_id' => $task->id,
+        ]);
+
+        $comment->load('user:id,name,email');
+
+        return response()->json($comment, 201);
+    }
+
+    /**
+     * Update a comment
+     */
+    public function updateComment(Request $request, Task $task, $commentId)
+    {
+        $comment = $task->comments()->findOrFail($commentId);
+
+        // Check if user owns the comment
+        if ($comment->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Non autorisé'], 403);
+        }
+
+        $request->validate([
+            'content' => 'required|string|max:2000'
+        ]);
+
+        $comment->update([
+            'content' => $request->content
+        ]);
+
+        $comment->load('user:id,name,email');
+
+        return response()->json($comment);
+    }
+
+    /**
+     * Delete a comment
+     */
+    public function deleteComment(Task $task, $commentId)
+    {
+        $comment = $task->comments()->findOrFail($commentId);
+
+        // Check if user owns the comment
+        if ($comment->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Non autorisé'], 403);
+        }
+
+        $comment->delete();
+
+        return response()->json(['message' => 'Commentaire supprimé']);
+    }
+
+    /**
+     * Get task attachments
+     */
+    public function attachments(Task $task)
+    {
+        $attachments = $task->attachments()
+            ->with('user:id,name,email')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json($attachments);
+    }
+
+    /**
+     * Upload attachment
+     */
+    public function uploadAttachment(Request $request, Task $task)
+    {
+        $request->validate([
+            'file' => 'required|file|max:10240' // 10MB max
+        ]);
+
+        $file = $request->file('file');
+        $filename = time() . '_' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
+        $path = $file->storeAs('attachments/tasks/' . $task->id, $filename, 'private');
+
+        $attachment = $task->attachments()->create([
+            'tenant_id' => auth()->user()->tenant_id,
+            'filename' => $filename,
+            'original_filename' => $file->getClientOriginalName(),
+            'mime_type' => $file->getMimeType(),
+            'size' => $file->getSize(),
+            'path' => $path,
+            'user_id' => auth()->id(),
+            'attachable_type' => Task::class,
+            'attachable_id' => $task->id,
+        ]);
+
+        $attachment->load('user:id,name,email');
+        $attachment->url = route('api.tasks.attachments.download', [$task->id, $attachment->id]);
+
+        return response()->json($attachment, 201);
+    }
+
+    /**
+     * Download attachment
+     */
+    public function downloadAttachment(Task $task, $attachmentId)
+    {
+        $attachment = $task->attachments()->findOrFail($attachmentId);
+
+        $filePath = \Storage::disk('private')->path($attachment->path);
+
+        if (!\Storage::disk('private')->exists($attachment->path)) {
+            return response()->json(['message' => 'Fichier introuvable'], 404);
+        }
+
+        return response()->download($filePath, $attachment->original_filename);
+    }
+
+    /**
+     * Delete attachment
+     */
+    public function deleteAttachment(Task $task, $attachmentId)
+    {
+        $attachment = $task->attachments()->findOrFail($attachmentId);
+
+        // Check if user owns the attachment
+        if ($attachment->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Non autorisé'], 403);
+        }
+
+        // Delete file from storage
+        \Storage::disk('private')->delete($attachment->path);
+
+        $attachment->delete();
+
+        return response()->json(['message' => 'Pièce jointe supprimée']);
+    }
+
+    /**
+     * Get task checklist
+     */
+    public function checklist(Task $task)
+    {
+        $checklist = $task->checklist ?? [];
+        
+        return response()->json($checklist);
+    }
+
+    /**
+     * Add checklist item
+     */
+    public function addChecklistItem(Request $request, Task $task)
+    {
+        $request->validate([
+            'text' => 'required|string|max:500'
+        ]);
+
+        $checklist = $task->checklist ?? [];
+        
+        $newItem = [
+            'id' => \Str::uuid()->toString(),
+            'text' => $request->text,
+            'completed' => false,
+            'position' => count($checklist),
+            'created_at' => now()->toISOString(),
+        ];
+
+        $checklist[] = $newItem;
+
+        $task->update(['checklist' => $checklist]);
+
+        return response()->json($newItem, 201);
+    }
+
+    /**
+     * Update checklist item
+     */
+    public function updateChecklistItem(Request $request, Task $task, $itemId)
+    {
+        $request->validate([
+            'text' => 'sometimes|string|max:500',
+            'completed' => 'sometimes|boolean',
+        ]);
+
+        $checklist = $task->checklist ?? [];
+        
+        $itemIndex = collect($checklist)->search(function ($item) use ($itemId) {
+            return $item['id'] === $itemId;
+        });
+
+        if ($itemIndex === false) {
+            return response()->json(['message' => 'Élément non trouvé'], 404);
+        }
+
+        if ($request->has('text')) {
+            $checklist[$itemIndex]['text'] = $request->text;
+        }
+
+        if ($request->has('completed')) {
+            $checklist[$itemIndex]['completed'] = $request->completed;
+        }
+
+        $checklist[$itemIndex]['updated_at'] = now()->toISOString();
+
+        $task->update(['checklist' => $checklist]);
+
+        return response()->json($checklist[$itemIndex]);
+    }
+
+    /**
+     * Delete checklist item
+     */
+    public function deleteChecklistItem(Task $task, $itemId)
+    {
+        $checklist = $task->checklist ?? [];
+        
+        $checklist = collect($checklist)->reject(function ($item) use ($itemId) {
+            return $item['id'] === $itemId;
+        })->values()->toArray();
+
+        $task->update(['checklist' => $checklist]);
+
+        return response()->json(['message' => 'Élément supprimé']);
+    }
+
+    /**
+     * Export tasks
+     */
+    public function export(Request $request)
+    {
+        $tenantId = auth()->user()->tenant_id;
+        $format = $request->get('format', 'excel');
+
+        // Build query with same filters as index
+        $query = Task::with(['project', 'users', 'parent'])
+            ->whereHas('project', function ($q) use ($tenantId) {
+                $q->where('tenant_id', $tenantId);
+            });
+
+        // Apply filters
+        if ($request->search) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->project_id) {
+            $query->where('project_id', $request->project_id);
+        }
+
+        if ($request->status) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->priority) {
+            $query->where('priority', $request->priority);
+        }
+
+        if ($request->assigned_to) {
+            $query->whereHas('users', function ($q) use ($request) {
+                $q->where('user_id', $request->assigned_to);
+            });
+        }
+
+        if ($request->start_date) {
+            $query->where('start_date', '>=', $request->start_date);
+        }
+
+        if ($request->end_date) {
+            $query->where('due_date', '<=', $request->end_date);
+        }
+
+        if ($request->labels) {
+            $labels = explode(',', $request->labels);
+            $query->where(function ($q) use ($labels) {
+                foreach ($labels as $label) {
+                    $q->orWhereJsonContains('labels', trim($label));
+                }
+            });
+        }
+
+        $tasks = $query->orderBy('created_at', 'desc')->get();
+
+        // Export based on format
+        switch ($format) {
+            case 'csv':
+                return Excel::download(new TaskExport($tasks), 'tasks.csv', \Maatwebsite\Excel\Excel::CSV);
+            
+            case 'pdf':
+                $pdf = Pdf::loadView('exports.tasks-pdf', ['tasks' => $tasks]);
+                return $pdf->download('tasks.pdf');
+            
+            case 'excel':
+            default:
+                return Excel::download(new TaskExport($tasks), 'tasks.xlsx');
+        }
     }
 
     /**

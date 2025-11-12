@@ -1226,7 +1226,7 @@
             "rejected": "Rejected",
             "expired": "Expired",
             "converted": "Converted",
-            "label": "[EN] Estado"
+            "label": "Status"
         },
         "date": "Date",
         "quotes": "Quotes",
@@ -1953,58 +1953,58 @@
             "monitoring": "Monitoring"
         },
         "notifications": {
-            "description": "[EN] Envoyez des notifications aux utilisateurs",
+            "description": "Send notifications to users",
             "form": {
-                "channelEmail": "[EN] Email",
-                "channelEmailDesc": "[EN] Notification par email",
-                "channelInApp": "[EN] Dans l'application",
-                "channelInAppDesc": "[EN] Notification dans l'interface",
-                "channelPush": "[EN] Push",
-                "channelPushDesc": "[EN] Notification push",
-                "channels": "[EN] Canaux",
-                "message": "[EN] Message",
-                "messagePlaceholder": "[EN] Contenu de la notification",
-                "notificationType": "[EN] Type de notification",
-                "recipients": "[EN] Destinataires",
-                "reset": "[EN] Réinitialiser",
-                "send": "[EN] Envoyer la notification",
-                "sending": "[EN] Envoi en cours...",
-                "targetActive": "[EN] Utilisateurs actifs seulement",
-                "targetAdmins": "[EN] Administrateurs seulement",
-                "targetAll": "[EN] Tous les utilisateurs",
-                "targetTenants": "[EN] Organisations spécifiques",
-                "title": "[EN] Titre",
-                "titlePlaceholder": "[EN] Titre de la notification",
-                "typeError": "[EN] Erreur",
-                "typeInfo": "[EN] Information",
-                "typeSuccess": "[EN] Succès",
-                "typeWarning": "[EN] Avertissement"
+                "channelEmail": "Email",
+                "channelEmailDesc": "Email notification",
+                "channelInApp": "In-app",
+                "channelInAppDesc": "In-app notification",
+                "channelPush": "Push",
+                "channelPushDesc": "Push notification",
+                "channels": "Channels",
+                "message": "Message",
+                "messagePlaceholder": "Notification content",
+                "notificationType": "Notification type",
+                "recipients": "Recipients",
+                "reset": "Reset",
+                "send": "Send notification",
+                "sending": "Sending...",
+                "targetActive": "Active users only",
+                "targetAdmins": "Administrators only",
+                "targetAll": "All users",
+                "targetTenants": "Specific organizations",
+                "title": "Title",
+                "titlePlaceholder": "Notification title",
+                "typeError": "Error",
+                "typeInfo": "Information",
+                "typeSuccess": "Success",
+                "typeWarning": "Warning"
             },
             "recent": {
-                "newFeatures": "[EN] Nouvelles fonctionnalités",
-                "newFeaturesMsg": "[EN] De nouvelles fonctionnalités ont été ajoutées",
-                "plannedMaintenance": "[EN] Maintenance programmée",
-                "plannedMaintenanceMsg": "[EN] Le système sera en maintenance",
-                "systemUpdate": "[EN] Mise à jour système",
-                "systemUpdateMsg": "[EN] Le système a été mis à jour vers la version 2.0"
+                "newFeatures": "New features",
+                "newFeaturesMsg": "New features have been added",
+                "plannedMaintenance": "Planned maintenance",
+                "plannedMaintenanceMsg": "The system will be under maintenance",
+                "systemUpdate": "System update",
+                "systemUpdateMsg": "The system has been updated to version 2.0"
             },
-            "recentNotifications": "[EN] Notifications récentes",
-            "recipients": "[EN] {{count}} destinataires",
-            "sendError": "[EN] Erreur lors de l'envoi de la notification",
-            "sendNotification": "[EN] Envoyer une notification",
-            "sendSuccess": "[EN] Notification envoyée avec succès",
-            "title": "[EN] Notifications",
+            "recentNotifications": "Recent notifications",
+            "recipients": "{{count}} recipients",
+            "sendError": "Error sending notification",
+            "sendNotification": "Send notification",
+            "sendSuccess": "Notification sent successfully",
+            "title": "Notifications",
             "types": {
-                "announcement": "[EN] Annonce",
-                "announcementDesc": "[EN] Annonces importantes",
-                "maintenance": "[EN] Maintenance",
-                "maintenanceDesc": "[EN] Alertes de maintenance programmée",
-                "security": "[EN] Sécurité",
-                "securityDesc": "[EN] Alertes et avertissements de sécurité",
-                "system": "[EN] Système",
-                "systemDesc": "[EN] Notifications et mises à jour système"
+                "announcement": "Announcement",
+                "announcementDesc": "Important announcements",
+                "maintenance": "Maintenance",
+                "maintenanceDesc": "Planned maintenance alerts",
+                "security": "Security",
+                "securityDesc": "Security alerts and warnings",
+                "system": "System",
+                "systemDesc": "System notifications and updates"
             },
-            "viewDetails": "[EN] Voir les détails"
+            "viewDetails": "View details"
         }
     },
     "notifications": {
@@ -2467,16 +2467,16 @@
         "recording": "Recording..."
     },
     "compliance": {
-        "compliant": "[EN] Conforme",
-        "date": "[EN] Date",
-        "due_date": "[EN] Date d'échéance",
+        "compliant": "Compliant",
+        "date": "Date",
+        "due_date": "Due date",
         "errors": {
-            "chorus_pro_siret_required": "[EN] Le SIRET est obligatoire pour Chorus Pro",
-            "client_missing": "[EN] Le client est manquant",
-            "date_missing": "[EN] La date de facture est manquante",
-            "due_date_missing": "[EN] La date d'échéance est manquante",
-            "invoice_number_missing": "[EN] Le numéro de facture est manquant",
-            "label": "[EN] Erreurs"
+            "chorus_pro_siret_required": "SIRET is required for Chorus Pro",
+            "client_missing": "Client is missing",
+            "date_missing": "Invoice date is missing",
+            "due_date_missing": "Due date is missing",
+            "invoice_number_missing": "Invoice number is missing",
+            "label": "Errors"
         },
         "fec": {
             "aboutTitle": "about Title",
@@ -2520,25 +2520,25 @@
             "whoNeedsDesc": "who Needs Desc",
             "whoNeedsTitle": "who Needs Title"
         },
-        "field": "[EN] Champ",
+        "field": "Field",
         "info": {
-            "electronic_invoice_recommended": "[EN] Facturation électronique recommandée pour les entités publiques",
-            "label": "[EN] Informations"
+            "electronic_invoice_recommended": "Electronic invoicing recommended for public entities",
+            "label": "Information"
         },
-        "invoice_number": "[EN] Numéro de facture",
-        "issues_found": "[EN] Problèmes détectés",
-        "legal_mentions_preview": "[EN] Aperçu des mentions légales",
-        "not_compliant": "[EN] Non conforme",
-        "refresh_check": "[EN] Actualiser la vérification",
-        "send_to_chorus_pro": "[EN] Envoyer à Chorus Pro",
-        "title": "[EN] Conformité Française",
+        "invoice_number": "Invoice number",
+        "issues_found": "Issues found",
+        "legal_mentions_preview": "Legal mentions preview",
+        "not_compliant": "Not compliant",
+        "refresh_check": "Refresh check",
+        "send_to_chorus_pro": "Send to Chorus Pro",
+        "title": "French Compliance",
         "warnings": {
-            "address_missing": "[EN] L'adresse légale n'est pas renseignée",
-            "ape_missing": "[EN] Le code APE n'est pas renseigné (recommandé)",
-            "capital_missing": "[EN] Le capital social n'est pas renseigné",
-            "label": "[EN] Avertissements",
-            "siret_missing": "[EN] Le SIRET n'est pas renseigné (recommandé)",
-            "tva_intracom_missing": "[EN] Le numéro TVA intracommunautaire n'est pas renseigné"
+            "address_missing": "Legal address is not provided",
+            "ape_missing": "APE code is not provided (recommended)",
+            "capital_missing": "Share capital is not provided",
+            "label": "Warnings",
+            "siret_missing": "SIRET is not provided (recommended)",
+            "tva_intracom_missing": "VAT intracommunity number is not provided"
         }
     }
 }
