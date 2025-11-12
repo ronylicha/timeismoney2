@@ -1145,7 +1145,7 @@
         "downloadError": "download Error",
         "downloadSuccess": "download Success",
         "facturx": {
-            "download": "download",
+            "download": "download Factur-X",
             "downloadError": "download Error",
             "downloadSuccess": "download Success",
             "downloadTooltip": "download Tooltip",

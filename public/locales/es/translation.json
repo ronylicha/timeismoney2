@@ -1152,7 +1152,7 @@
         "downloadError": "Error de descarga",
         "downloadSuccess": "Descarga exitosa",
         "facturx": {
-            "download": "Descargar",
+            "download": "Descargar Factur-X",
             "downloadError": "Error de descarga",
             "downloadSuccess": "Descarga exitosa",
             "downloadTooltip": "Descargar archivo",
