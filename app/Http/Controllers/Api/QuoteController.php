@@ -94,14 +94,6 @@ class QuoteController extends Controller
         try {
             $tenant = auth()->user()->tenant;
 
-            // Generate quote number
-            $lastQuote = Quote::where('tenant_id', $tenant->id)
-                ->orderBy('id', 'desc')
-                ->first();
-
-            $nextNumber = $lastQuote ? (int)substr($lastQuote->quote_number, -4) + 1 : 1;
-            $quoteNumber = sprintf('QT-%04d', $nextNumber);
-
             // Calculate totals
             $subtotal = 0;
             $totalTax = 0;
@@ -119,11 +111,10 @@ class QuoteController extends Controller
 
             $total = $subtotal + $totalTax;
 
-            // Create quote
+            // Create quote (quote_number et sequence_number seront générés automatiquement)
             $quote = Quote::create([
                 'tenant_id' => $tenant->id,
                 'client_id' => $request->client_id,
-                'quote_number' => $quoteNumber,
                 'description' => $request->description,
                 'quote_date' => $request->quote_date ?? now(),
                 'valid_until' => $request->valid_until,
@@ -134,7 +125,6 @@ class QuoteController extends Controller
                 'notes' => $request->notes,
                 'terms_conditions' => $request->terms_conditions,
                 'created_by' => auth()->id(),
-                'sequence_number' => $nextNumber,
             ]);
 
             // Create quote items

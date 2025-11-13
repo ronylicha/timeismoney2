@@ -7,13 +7,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class Quote extends Model
 {
-    use HasFactory, BelongsToTenant;
+    use HasFactory, BelongsToTenant, SoftDeletes;
 
     protected $fillable = [
         'tenant_id',
@@ -151,18 +152,23 @@ class Quote extends Model
             if (Auth::check() && !$quote->created_by) {
                 $quote->created_by = Auth::id();
             }
-            
+
+            // Generate quote number with year and reuse deleted numbers
+            if (!$quote->quote_number) {
+                $quote->quote_number = $quote->generateQuoteNumber();
+            }
+
             // Generate sequence number for NF525
             if (!$quote->sequence_number) {
                 $quote->sequence_number = $quote->getNextSequentialNumber();
             }
         });
-        
+
         // Generate hash after creation for NF525
         static::created(function ($quote) {
             $quote->generateHash();
         });
-        
+
         // Lock quote when accepted or sent
         static::updated(function ($quote) {
             if ($quote->isDirty('status')) {
@@ -175,15 +181,68 @@ class Quote extends Model
     }
 
     /**
-     * Get next sequential number for NF525
+     * Generate quote number with year - continuité chronologique
+     * Format: QT-YYYY-0001
+     *
+     * Règle : Ne jamais réutiliser un numéro si des devis postérieurs existent
+     * pour éviter les incohérences temporelles (red flag fiscal)
+     */
+    protected function generateQuoteNumber(): string
+    {
+        $prefix = 'QT';
+        // Utiliser l'année de la date du devis
+        $year = $this->quote_date ? $this->quote_date->year : now()->year;
+
+        // Vérifier s'il existe des devis actifs pour cette année
+        $hasActiveQuotes = static::where('tenant_id', $this->tenant_id)
+            ->where('quote_number', 'like', "{$prefix}-{$year}-%")
+            ->whereYear('quote_date', $year)
+            ->exists();
+
+        // S'il y a des devis actifs, continuer la séquence (pas de réutilisation)
+        // Sinon, on peut réutiliser depuis le début
+        if ($hasActiveQuotes) {
+            // Prendre le max de TOUS les numéros (actifs + supprimés) + 1
+            $maxNumber = static::withTrashed()
+                ->where('tenant_id', $this->tenant_id)
+                ->where('quote_number', 'like', "{$prefix}-{$year}-%")
+                ->whereYear('quote_date', $year)
+                ->get()
+                ->map(function ($quote) {
+                    return (int) substr($quote->quote_number, strrpos($quote->quote_number, '-') + 1);
+                })
+                ->max();
+
+            $nextNumber = $maxNumber ? $maxNumber + 1 : 1;
+        } else {
+            // Aucun devis actif, on peut réutiliser depuis 0001
+            $nextNumber = 1;
+        }
+
+        $sequenceStr = str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        return "{$prefix}-{$year}-{$sequenceStr}";
+    }
+
+    /**
+     * Get next sequential number - continuité chronologique
+     * Même règle : pas de réutilisation si des devis actifs existent
      */
     protected function getNextSequentialNumber(): int
     {
-        $lastQuote = static::where('tenant_id', $this->tenant_id)
-            ->orderBy('sequence_number', 'desc')
-            ->first();
+        // Vérifier s'il existe des devis actifs
+        $hasActiveQuotes = static::where('tenant_id', $this->tenant_id)->exists();
 
-        return $lastQuote ? ((int)$lastQuote->sequence_number + 1) : 1;
+        if ($hasActiveQuotes) {
+            // Continuer après le max (actifs + supprimés)
+            $maxSequence = static::withTrashed()
+                ->where('tenant_id', $this->tenant_id)
+                ->max('sequence_number');
+
+            return $maxSequence ? ((int)$maxSequence + 1) : 1;
+        } else {
+            // Aucun devis actif, recommencer à 1
+            return 1;
+        }
     }
 
     /**
@@ -270,7 +329,7 @@ class Quote extends Model
     /**
      * Cancel the quote
      */
-    public function cancel(string $reason = null): void
+    public function cancel(?string $reason = null): void
     {
         if (!$this->canBeCancelled()) {
             throw new \Exception('This quote cannot be cancelled.');

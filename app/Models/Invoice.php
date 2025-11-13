@@ -104,11 +104,18 @@ class Invoice extends Model
     {
         // Generate invoice number and hash for NF525 compliance
         static::creating(function (Invoice $invoice) {
+            // Pour les brouillons, attribuer un numéro temporaire
             if (!$invoice->invoice_number) {
-                $invoice->invoice_number = $invoice->generateInvoiceNumber();
+                if ($invoice->status === 'draft') {
+                    // Numéro temporaire pour brouillon (sera remplacé lors de la validation)
+                    $invoice->invoice_number = 'DRAFT-' . strtoupper(uniqid());
+                } else {
+                    $invoice->invoice_number = $invoice->generateInvoiceNumber();
+                }
             }
 
-            if (!$invoice->sequence_number) {
+            // Attribuer sequence_number uniquement si status != draft
+            if (!$invoice->sequence_number && $invoice->status !== 'draft') {
                 $invoice->sequence_number = $invoice->getNextSequentialNumber();
             }
 
@@ -118,14 +125,33 @@ class Invoice extends Model
             }
         });
 
-        // Generate hash after creation for NF525
+        // Generate hash after creation for NF525 (uniquement si pas draft)
         static::created(function (Invoice $invoice) {
-            $invoice->generateHash();
+            if ($invoice->status !== 'draft') {
+                $invoice->generateHash();
+            }
         });
 
         // Lock invoice and create audit log when paid or sent
         static::updated(function (Invoice $invoice) {
             if ($invoice->isDirty('status')) {
+                // Attribuer le vrai numéro quand on passe de draft à un autre statut
+                if ($invoice->getOriginal('status') === 'draft' && $invoice->status !== 'draft') {
+                    $invoice->invoice_number = $invoice->generateInvoiceNumber();
+                    $invoice->sequence_number = $invoice->getNextSequentialNumber();
+
+                    // Sauvegarder sans déclencher les événements
+                    DB::table('invoices')
+                        ->where('id', $invoice->id)
+                        ->update([
+                            'invoice_number' => $invoice->invoice_number,
+                            'sequence_number' => $invoice->sequence_number
+                        ]);
+
+                    // Générer le hash maintenant
+                    $invoice->generateHash();
+                }
+
                 if (in_array($invoice->status, ['sent', 'paid'])) {
                     $invoice->is_locked = true;
                     $invoice->updateQuietly(['is_locked' => true]);
@@ -312,31 +338,34 @@ class Invoice extends Model
 
     /**
      * Generate unique invoice number
+     * Format: INV-YYYY-0001 (avec l'année de la date de facture)
      */
     protected function generateInvoiceNumber(): string
     {
         $prefix = 'INV';
-        $year = now()->year;
-        $month = str_pad(now()->month, 2, '0', STR_PAD_LEFT);
+        // Utiliser l'année de la date de facture, pas la date actuelle
+        $year = $this->date ? $this->date->year : now()->year;
 
         $lastInvoice = static::where('tenant_id', $this->tenant_id)
+            ->where('invoice_number', 'like', "{$prefix}-{$year}-%")
             ->whereYear('date', $year)
-            ->whereMonth('date', now()->month)
             ->orderBy('sequence_number', 'desc')
             ->first();
 
         $sequence = $lastInvoice ? ((int)$lastInvoice->sequence_number + 1) : 1;
         $sequenceStr = str_pad($sequence, 4, '0', STR_PAD_LEFT);
 
-        return "{$prefix}-{$year}{$month}-{$sequenceStr}";
+        return "{$prefix}-{$year}-{$sequenceStr}";
     }
 
     /**
      * Get next sequential number for NF525
+     * Inclut les factures supprimées pour maintenir la séquence continue
      */
     protected function getNextSequentialNumber(): int
     {
-        $lastInvoice = static::where('tenant_id', $this->tenant_id)
+        $lastInvoice = static::withTrashed()
+            ->where('tenant_id', $this->tenant_id)
             ->orderBy('sequence_number', 'desc')
             ->first();
 
