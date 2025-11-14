@@ -4,9 +4,11 @@
 
 **Date**: 14 Novembre 2025
 **Environnement**: PHP 8.4.14, Laravel 11.x
-**Total tests**: 300
+**Total tests**: 310
+**Tests passants**: 57 (18%)
+**Tests nécessitant SQLite**: 253 (82%)
 
-## ✅ Tests Passants (Sans Base de Données)
+## ✅ Tests Passants Sans Base de Données (57 tests)
 
 ### EncryptionServiceTest: 15/15 ✓
 
@@ -36,7 +38,48 @@ php artisan test tests/Unit/EncryptionServiceTest.php
 **Durée**: 1.12s
 **Assertions**: 34
 
-## ⚠️ Tests Nécessitant SQLite (285 tests)
+### VatRulesServiceTest: 19/19 ✓
+
+Tests de la logique métier TVA (pas de base de données requise) :
+
+```bash
+php artisan test tests/Unit/VatRulesServiceTest.php
+```
+
+**Résultats**:
+- ✓ Règles pour toutes les activités (general, insurance, training, medical, banking, etc.)
+- ✓ Validation des exonérations de TVA
+- ✓ Activités mixtes et licences requises
+- ✓ Suggestions de régime TVA selon forme juridique
+- ✓ Explications contextuelles pour chaque régime
+
+**Durée**: 0.12s
+**Assertions**: 100
+
+### ElectronicSignatureServiceTest: 13/15 ✓
+
+Tests de signature électronique :
+
+**Tests passants**: 13
+**Tests échouant**: 2 (nécessitent configuration timestamp)
+
+### XsdValidationServiceTest: 6/6 ✓
+
+Tests de validation XSD pour Factur-X :
+
+**Assertions**: 28
+
+### PdpSubmissionTest: 3/3 ✓
+
+Tests de soumission PDP :
+
+**Assertions**: 114
+
+### ExampleTest: 1/1 ✓
+
+Test d'exemple de base.
+
+## ⚠️ Tests Nécessitant SQLite (253 tests)
 
 Les tests suivants nécessitent l'extension PHP SQLite pour s'exécuter :
 

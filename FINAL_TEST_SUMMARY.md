@@ -13,13 +13,15 @@
 
 | Métrique | Valeur |
 |----------|--------|
-| **Tests créés** | 300 |
+| **Tests créés** | 310 |
+| **Tests passants** | 57 (18%) |
+| **Tests nécessitant DB** | 253 (82%) |
 | **Fichiers de test** | 10 nouveaux + 9 existants |
-| **Lignes de code de test** | ~3,500+ |
-| **Services testés** | 4 services critiques |
+| **Lignes de code de test** | ~3,700+ |
+| **Services testés** | 6+ services critiques |
 | **Modèles testés** | 10+ modèles |
 | **Mail/Notifications testés** | 15 classes |
-| **Couverture estimée** | 70-75% |
+| **Couverture estimée** | 20-25% (sans DB), 70-75% (avec DB) |
 
 ---
 
@@ -118,18 +120,25 @@
 
 ## 🎯 État d'Exécution
 
-### ✅ Tests Passants (15 tests)
+### ✅ Tests Passants Sans Database (57 tests)
 
-**EncryptionServiceTest**: 15/15 ✓ (100%)
+**Suite de tests passants** :
+
+1. **EncryptionServiceTest**: 15/15 ✓
+2. **VatRulesServiceTest**: 19/19 ✓ (NOUVEAU)
+3. **ElectronicSignatureServiceTest**: 13/15 ✓ (86%)
+4. **XsdValidationServiceTest**: 6/6 ✓
+5. **PdpSubmissionTest**: 3/3 ✓
+6. **ExampleTest**: 1/1 ✓
 
 ```bash
-php artisan test tests/Unit/EncryptionServiceTest.php
+php artisan test --testsuite=Unit
 
-Tests:    15 passed (34 assertions)
-Duration: 1.12s
+Tests:    253 failed, 57 passed (347 assertions)
+Duration: 13.94s
 ```
 
-### ⏳ Tests Requérant SQLite (285 tests)
+### ⏳ Tests Requérant SQLite (253 tests)
 
 **Raison**: Extension PHP `pdo_sqlite` manquante dans l'environnement actuel
 
