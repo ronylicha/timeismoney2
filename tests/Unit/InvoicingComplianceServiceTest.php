@@ -182,7 +182,7 @@ class InvoicingComplianceServiceTest extends TestCase
         $result = $this->service->canTenantCreateInvoices($this->tenant);
 
         $this->assertFalse($result['can_invoice']);
-        $this->assertContains('capital', array_column($result['errors'], 'field']);
+        $this->assertContains('capital', array_column($result['errors'], 'field'));
         $this->assertStringContainsString('SARL', $result['errors'][0]['message']);
     }
 
@@ -288,7 +288,7 @@ class InvoicingComplianceServiceTest extends TestCase
         $result = $this->service->canTenantCreateInvoices($this->tenant);
 
         $this->assertFalse($result['can_invoice']);
-        $this->assertContains('iban', array_column($result['errors'], 'field']);
+        $this->assertContains('iban', array_column($result['errors'], 'field'));
         $this->assertEquals('payment', $result['errors'][0]['category']);
     }
 
@@ -332,7 +332,7 @@ class InvoicingComplianceServiceTest extends TestCase
         $result = $this->service->canClientReceiveInvoices($this->client);
 
         $this->assertFalse($result['can_receive_invoice']);
-        $this->assertContains('address', array_column($result['errors'], 'field']);
+        $this->assertContains('address', array_column($result['errors'], 'field'));
         $this->assertStringContainsString('EN 16931', $result['errors'][0]['message']);
     }
 
@@ -356,7 +356,7 @@ class InvoicingComplianceServiceTest extends TestCase
         $result = $this->service->canClientReceiveInvoices($this->client);
 
         $this->assertTrue($result['can_receive_invoice']); // Warning, not error
-        $this->assertContains('email', array_column($result['warnings'], 'field']);
+        $this->assertContains('email', array_column($result['warnings'], 'field'));
     }
 
     /** @test */
@@ -367,7 +367,7 @@ class InvoicingComplianceServiceTest extends TestCase
         $result = $this->service->canClientReceiveInvoices($this->client);
 
         $this->assertTrue($result['can_receive_invoice']); // Warning, not error
-        $this->assertContains('vat_number', array_column($result['warnings'], 'field']);
+        $this->assertContains('vat_number', array_column($result['warnings'], 'field'));
     }
 
     /** @test */
