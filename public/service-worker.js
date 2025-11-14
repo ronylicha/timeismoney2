@@ -95,14 +95,32 @@ const hasNavigatorStatus = typeof self.navigator !== 'undefined' && typeof self.
 let swIsOnline = hasNavigatorStatus ? self.navigator.onLine : true;
 let swAuthToken = null;
 
-const DEBUG_LOG_ENABLED = (() => {
+const DEBUG_HOST_ALLOWLIST = ['localhost', '127.0.0.1', '0.0.0.0'];
+const DEBUG_HOST_SUFFIX_ALLOWLIST = ['.test', '.local'];
+const DEFAULT_DEBUG_LOG_STATE = (() => {
     try {
-        const host = self.location?.hostname || '';
-        return host === 'localhost' || host === '127.0.0.1' || host.endsWith('.test') || host.endsWith('.local');
+        const query = self.location?.search || '';
+        return /(sw-debug|debug-sw)=(1|true)/i.test(query);
     } catch (error) {
         return false;
     }
 })();
+const DEBUG_HOSTNAME_ELIGIBLE = (() => {
+    try {
+        const host = self.location?.hostname || '';
+        if (!host) {
+            return false;
+        }
+        return DEBUG_HOST_ALLOWLIST.includes(host) || DEBUG_HOST_SUFFIX_ALLOWLIST.some(suffix => host.endsWith(suffix));
+    } catch (error) {
+        return false;
+    }
+})();
+let debugLoggingOverride = null;
+let dbDebugLoggingOverride = null;
+const DEV_SERVER_BYPASS_HOSTS = new Set(['localhost', '127.0.0.1', '0.0.0.0']);
+const DEV_SERVER_BYPASS_PORTS = new Set(['4173', '5173', '5174']);
+const DEV_SERVER_PATH_BYPASS = [/\/node_modules\/\.vite\/deps\//, /@vite\//, /@react-refresh/];
 
 const API_PREFETCH_ENDPOINTS = [
     '/projects',
@@ -122,22 +140,44 @@ const API_PREFETCH_HEADERS = {
     Accept: 'application/json',
     'X-Requested-With': 'XMLHttpRequest',
 };
-
-const DB_DEBUG_LOGS_ENABLED = DEBUG_LOG_ENABLED;
 const API_PREFETCH_TIMEOUT_MS = 15000;
 const API_PREFETCH_INTERVAL_MS = 1000 * 60 * 5; // 5 minutes
 
 let prefetchIntervalId = null;
 
+function isDebugLoggingEnabled() {
+    if (!DEBUG_HOSTNAME_ELIGIBLE) {
+        return false;
+    }
+
+    if (typeof debugLoggingOverride === 'boolean') {
+        return debugLoggingOverride;
+    }
+
+    return DEFAULT_DEBUG_LOG_STATE;
+}
+
+function isDbDebugLoggingEnabled() {
+    if (!DEBUG_HOSTNAME_ELIGIBLE) {
+        return false;
+    }
+
+    if (typeof dbDebugLoggingOverride === 'boolean') {
+        return dbDebugLoggingOverride;
+    }
+
+    return DEFAULT_DEBUG_LOG_STATE;
+}
+
 function debugLog(...args) {
-    if (!DEBUG_LOG_ENABLED) {
+    if (!isDebugLoggingEnabled()) {
         return;
     }
     console.log('[ServiceWorker][Debug]', ...args);
 }
 
 function debugDbInsert(storeName, value) {
-    if (!DB_DEBUG_LOGS_ENABLED) {
+    if (!isDbDebugLoggingEnabled()) {
         return;
     }
     try {
@@ -251,6 +291,18 @@ self.addEventListener('message', event => {
         }
         return;
     }
+
+    if (event.data.action === 'SET_DEBUG_LOGGING') {
+        if (typeof event.data.enabled === 'boolean') {
+            debugLoggingOverride = event.data.enabled;
+            dbDebugLoggingOverride = event.data.enabled;
+            debugLog('[ServiceWorker] Debug logging override set to', event.data.enabled);
+        } else {
+            debugLoggingOverride = null;
+            dbDebugLoggingOverride = null;
+        }
+        return;
+    }
 });
 
 // -----------------------------
@@ -316,6 +368,11 @@ self.addEventListener('fetch', event => {
     const url = new URL(request.url);
 
     if (!url.protocol.startsWith('http')) {
+        return;
+    }
+
+    if (shouldBypassRequest(url)) {
+        debugLog('[ServiceWorker] Bypassing request', url.href);
         return;
     }
 
@@ -439,6 +496,29 @@ function reply(event, payload) {
     }
 }
 
+function shouldBypassRequest(url) {
+    return isDevServerAsset(url);
+}
+
+function isDevServerAsset(url) {
+    if (!url) {
+        return false;
+    }
+
+    if (DEV_SERVER_PATH_BYPASS.some(pattern => pattern.test(url.pathname))) {
+        return true;
+    }
+
+    const hostMatches = DEV_SERVER_BYPASS_HOSTS.has(url.hostname);
+    const portMatches = url.port && DEV_SERVER_BYPASS_PORTS.has(url.port);
+    const isCrossOriginDevPort = portMatches && url.origin !== self.location.origin;
+    if ((hostMatches && portMatches) || isCrossOriginDevPort) {
+        return true;
+    }
+
+    return false;
+}
+
 // -----------------------------
 // Fetch Strategies
 // -----------------------------
@@ -464,7 +544,8 @@ async function networkFirstApi(request, entityInfo) {
         if (isJSONResponse(networkResponse)) {
             cacheApiResponse(request, networkResponse.clone());
         } else {
-            caches.open(API_CACHE).then(cache => cache.put(request, networkResponse.clone()));
+            const cacheableResponse = networkResponse.clone();
+            caches.open(API_CACHE).then(cache => cache.put(request, cacheableResponse));
         }
 
         return networkResponse;

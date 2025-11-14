@@ -8,6 +8,7 @@ use App\Models\Invoice;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\Payment;
+use App\Models\CreditNote;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -362,25 +363,78 @@ class DashboardController extends Controller
         })->toArray();
 
         // Monthly revenue (last 6 months)
+        // Récupérer la méthode comptable du tenant
+        $tenant = \App\Models\Tenant::find($tenantId);
+        $accountingMethod = $tenant->accounting_method ?? 'cash';
+
         $monthlyRevenue = [];
         for ($i = 5; $i >= 0; $i--) {
             $monthStart = $now->copy()->subMonths($i)->startOfMonth();
             $monthEnd = $now->copy()->subMonths($i)->endOfMonth();
 
-            $invoiced = Invoice::where('tenant_id', $tenantId)
-                ->whereBetween('date', [$monthStart, $monthEnd])
-                ->sum('total');
+            if ($accountingMethod === 'accrual') {
+                // Comptabilité d'engagement : factures émises (envoyées)
+                $invoiced = Invoice::where('tenant_id', $tenantId)
+                    ->whereIn('status', ['sent', 'viewed', 'overdue', 'paid'])
+                    ->whereBetween('date', [$monthStart, $monthEnd])
+                    ->sum('total');
 
-            $paid = Invoice::where('tenant_id', $tenantId)
-                ->where('status', 'paid')
-                ->whereBetween('payment_date', [$monthStart, $monthEnd])
-                ->sum('total');
+                // Soustraire tous les avoirs émis ou appliqués
+                $invoicedCreditNotes = CreditNote::where('tenant_id', $tenantId)
+                    ->whereIn('status', ['issued', 'applied'])
+                    ->whereBetween('credit_note_date', [$monthStart, $monthEnd])
+                    ->sum('total');
 
-            $monthlyRevenue[] = [
-                'month' => $monthStart->format('M Y'),
-                'invoiced' => round($invoiced, 2),
-                'paid' => round($paid, 2),
-            ];
+                $paid = Invoice::where('tenant_id', $tenantId)
+                    ->where('status', 'paid')
+                    ->whereBetween('payment_date', [$monthStart, $monthEnd])
+                    ->sum('total');
+
+                // Avoirs sur factures payées
+                $paidCreditNotes = CreditNote::where('tenant_id', $tenantId)
+                    ->whereIn('status', ['issued', 'applied'])
+                    ->whereBetween('credit_note_date', [$monthStart, $monthEnd])
+                    ->whereHas('invoice', function ($query) use ($tenantId) {
+                        $query->where('tenant_id', $tenantId)
+                            ->where('status', 'paid');
+                    })
+                    ->sum('total');
+
+                $monthlyRevenue[] = [
+                    'month' => $monthStart->format('M Y'),
+                    'invoiced' => round(max(0, $invoiced - $invoicedCreditNotes), 2),
+                    'paid' => round(max(0, $paid - $paidCreditNotes), 2),
+                ];
+            } else {
+                // Comptabilité de caisse : UNIQUEMENT les encaissements effectifs
+                // En mode caisse, on ne reconnaît le CA qu'à l'encaissement
+
+                // Factures effectivement payées dans le mois
+                $paid = Invoice::where('tenant_id', $tenantId)
+                    ->where('status', 'paid')
+                    ->whereBetween('payment_date', [$monthStart, $monthEnd])
+                    ->sum('total');
+
+                // Soustraire UNIQUEMENT les avoirs appliqués/remboursés dans le mois
+                // sur des factures effectivement payées
+                $paidCreditNotes = CreditNote::where('tenant_id', $tenantId)
+                    ->where('status', 'applied')
+                    ->whereNotNull('applied_date')
+                    ->whereBetween('applied_date', [$monthStart, $monthEnd])
+                    ->whereHas('invoice', function ($query) use ($tenantId) {
+                        $query->where('tenant_id', $tenantId)
+                            ->where('status', 'paid');
+                    })
+                    ->sum('total');
+
+                // En mode caisse : "invoiced" = encaissements bruts (avant avoirs)
+                // "paid" = encaissements nets (après avoirs)
+                $monthlyRevenue[] = [
+                    'month' => $monthStart->format('M Y'),
+                    'invoiced' => round($paid, 2), // Encaissements bruts
+                    'paid' => round(max(0, $paid - $paidCreditNotes), 2), // Encaissements nets
+                ];
+            }
         }
 
         return response()->json([

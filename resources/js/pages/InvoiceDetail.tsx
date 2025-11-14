@@ -44,6 +44,8 @@ interface Invoice {
     remaining_balance?: number;
     final_invoice?: Invoice[];
     is_linked_to_final?: boolean;
+    credit_notes_sum_total?: number;
+    credit_notes?: Array<{ id: number; total: number; status: string }>;
     client?: {
         id: number;
         name: string;
@@ -163,6 +165,42 @@ const InvoiceDetail: React.FC = () => {
         },
     });
 
+    const printInvoiceMutation = useMutation({
+        mutationFn: async () => {
+            const response = await axios.get(`/invoices/${id}/pdf`, {
+                responseType: 'blob',
+            });
+            return response.data;
+        },
+        onSuccess: (data) => {
+            const pdfBlob = new Blob([data], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(pdfBlob);
+            const iframe = document.createElement('iframe');
+            iframe.style.position = 'fixed';
+            iframe.style.right = '0';
+            iframe.style.bottom = '0';
+            iframe.style.width = '0';
+            iframe.style.height = '0';
+            iframe.style.border = '0';
+            iframe.src = url;
+
+            iframe.onload = () => {
+                iframe.contentWindow?.focus();
+                iframe.contentWindow?.print();
+                setTimeout(() => {
+                    iframe.parentNode?.removeChild(iframe);
+                    window.URL.revokeObjectURL(url);
+                }, 1000);
+            };
+
+            document.body.appendChild(iframe);
+            toast.success(t('invoices.printReady'));
+        },
+        onError: () => {
+            toast.error(t('invoices.printError'));
+        },
+    });
+
     // Send invoice mutation
     const sendInvoiceMutation = useMutation({
         mutationFn: async (recipientEmail?: string) => {
@@ -231,6 +269,8 @@ const InvoiceDetail: React.FC = () => {
         );
     }
 
+    const canSendInvoiceByEmail = invoice.status !== 'paid' && invoice.status !== 'cancelled';
+
     return (
         <div className="p-6 max-w-5xl mx-auto">
             {/* Header */}
@@ -249,6 +289,15 @@ const InvoiceDetail: React.FC = () => {
                     <div className="flex items-center space-x-4 mb-4 md:mb-0">
                         <h1 className="text-3xl font-bold text-gray-900">{invoice.invoice_number}</h1>
                         {getStatusBadge(invoice.status)}
+                        {invoice.credit_notes_sum_total && invoice.credit_notes_sum_total > 0 && (
+                            <span className="px-3 py-1 text-sm font-medium rounded-full bg-red-100 text-red-800 flex items-center">
+                                <span className="mr-1">📝</span>
+                                Avoir: -{new Intl.NumberFormat('fr-FR', {
+                                    style: 'currency',
+                                    currency: 'EUR',
+                                }).format(invoice.credit_notes_sum_total)}
+                            </span>
+                        )}
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3">
@@ -293,6 +342,7 @@ const InvoiceDetail: React.FC = () => {
                                     invoiceId={invoice.id}
                                     invoiceNumber={invoice.invoice_number}
                                     invoiceTotal={invoice.total_amount || invoice.total || 0}
+                                    existingCreditNotes={invoice.credit_notes}
                                 />
                             </>
                         )}
@@ -302,6 +352,7 @@ const InvoiceDetail: React.FC = () => {
                                 invoiceId={invoice.id}
                                 invoiceNumber={invoice.invoice_number}
                                 invoiceTotal={invoice.total_amount || invoice.total || 0}
+                                existingCreditNotes={invoice.credit_notes}
                             />
                         )}
 
@@ -323,9 +374,21 @@ const InvoiceDetail: React.FC = () => {
                             />
                         )}
 
+                        {invoice.status !== 'draft' && canSendInvoiceByEmail && (
+                            <button
+                                onClick={() => setShowSendModal(true)}
+                                disabled={sendInvoiceMutation.isPending}
+                                className="flex items-center space-x-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition text-sm disabled:opacity-50"
+                            >
+                                <PaperAirplaneIcon className="h-4 w-4" />
+                                <span>{t('invoices.sendEmail', 'Envoyer par email')}</span>
+                            </button>
+                        )}
+
                         <button
-                            onClick={() => window.print()}
-                            className="flex items-center space-x-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition text-sm"
+                            onClick={() => printInvoiceMutation.mutate()}
+                            disabled={printInvoiceMutation.isPending}
+                            className="flex items-center space-x-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition text-sm disabled:opacity-50"
                         >
                             <PrinterIcon className="h-4 w-4" />
                             <span>{t('common.print')}</span>

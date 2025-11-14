@@ -27,6 +27,7 @@ interface BillingSettings {
     vat_number: string;
     vat_subject: boolean;
     vat_regime: 'franchise_base' | 'normal' | 'intracommunity' | 'export' | 'exempt_article_261' | 'other';
+    accounting_method: 'cash' | 'accrual';
     main_activity: 'general' | 'insurance' | 'training' | 'medical' | 'banking' | 'real_estate_rental' | 'education' | 'sports' | 'other_exempt';
     vat_deduction_coefficient: number;
     activity_license_number: string | null;
@@ -101,6 +102,7 @@ const TenantBillingSettings: React.FC = () => {
         vat_number: '',
         vat_subject: true,
         vat_regime: 'normal',
+        accounting_method: 'cash',
         main_activity: 'general',
         vat_deduction_coefficient: 100,
         activity_license_number: null,
@@ -154,6 +156,7 @@ const TenantBillingSettings: React.FC = () => {
                 vat_number: billingSettings.vat_number || '',
                 vat_subject: billingSettings.vat_subject ?? true,
                 vat_regime: billingSettings.vat_regime || 'normal',
+                accounting_method: billingSettings.accounting_method || 'cash',
                 main_activity: billingSettings.main_activity || 'general',
                 vat_deduction_coefficient: billingSettings.vat_deduction_coefficient ?? 100,
                 activity_license_number: billingSettings.activity_license_number || null,
@@ -560,6 +563,45 @@ const TenantBillingSettings: React.FC = () => {
                                 {formData.vat_regime === 'franchise_base' && '✅ Les seuils de TVA s\'appliquent'}
                                 {formData.vat_regime !== 'franchise_base' && '⚠️ Les seuils de TVA ne s\'appliquent pas'}
                             </p>
+                        </div>
+
+                        {/* Méthode comptable */}
+                        <div className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+                            <label className="block text-sm font-semibold text-blue-900 mb-2">
+                                Méthode comptable <span className="text-red-600">*</span>
+                            </label>
+                            <select
+                                value={formData.accounting_method}
+                                onChange={(e) => handleInputChange('accounting_method', e.target.value)}
+                                required
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                            >
+                                <option value="cash">Comptabilité d'encaissement (TVA sur encaissement)</option>
+                                <option value="accrual">Comptabilité d'engagement (TVA sur débit)</option>
+                            </select>
+                            <div className="mt-3 text-xs text-blue-900 space-y-2">
+                                <p className="font-medium">
+                                    {formData.accounting_method === 'cash' ? '💰 Comptabilité d\'encaissement :' : '📊 Comptabilité d\'engagement :'}
+                                </p>
+                                {formData.accounting_method === 'cash' ? (
+                                    <>
+                                        <p>• Le chiffre d'affaires est comptabilisé au moment du paiement effectif</p>
+                                        <p>• Les avoirs ne réduisent le CA que s'ils concernent une facture payée</p>
+                                        <p>• Par défaut pour les prestations de services (Article 269-2-c du CGI)</p>
+                                        <p>• Option disponible pour les autres activités si autorisée</p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <p>• Le chiffre d'affaires est comptabilisé dès l'émission de la facture</p>
+                                        <p>• Les avoirs réduisent le CA même si la facture n'est pas payée</p>
+                                        <p>• Obligatoire pour les ventes de marchandises (Article 269-2-a du CGI)</p>
+                                        <p>• Permet une meilleure anticipation de la trésorerie</p>
+                                    </>
+                                )}
+                            </div>
+                            <div className="mt-3 p-2 bg-yellow-100 border border-yellow-300 rounded text-xs text-yellow-900">
+                                <strong>⚠️ Important :</strong> Ce paramètre impacte le calcul de votre chiffre d'affaires dans tous les rapports et graphiques.
+                            </div>
                         </div>
 
                         {!formData.vat_subject && (

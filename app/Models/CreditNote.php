@@ -19,6 +19,7 @@ class CreditNote extends Model
         'invoice_id',
         'credit_note_number',
         'credit_note_date',
+        'applied_date',
         'reason',
         'description',
         'status',
@@ -38,6 +39,7 @@ class CreditNote extends Model
 
     protected $casts = [
         'credit_note_date' => 'date',
+        'applied_date' => 'date',
         'compliance_date' => 'datetime',
         'facturx_generated_at' => 'datetime',
         'subtotal' => 'decimal:2',
@@ -51,6 +53,55 @@ class CreditNote extends Model
         static::creating(function (CreditNote $creditNote) {
             if (!$creditNote->created_by && auth()->check()) {
                 $creditNote->created_by = auth()->id();
+            }
+
+            // Pour les brouillons, attribuer un numéro temporaire
+            if (!$creditNote->credit_note_number) {
+                if ($creditNote->status === 'draft') {
+                    // Numéro temporaire pour brouillon (sera remplacé lors de la validation)
+                    $creditNote->credit_note_number = 'DRAFT-CN-' . strtoupper(uniqid());
+                } else {
+                    $creditNote->credit_note_number = self::generateNumber($creditNote->tenant_id);
+                }
+            }
+        });
+
+        // Générer le vrai numéro quand on passe de draft à un autre statut
+        static::updated(function (CreditNote $creditNote) {
+            if ($creditNote->isDirty('status')) {
+                // Attribuer le vrai numéro quand on passe de draft à un autre statut
+                if ($creditNote->getOriginal('status') === 'draft' && $creditNote->status !== 'draft') {
+                    $creditNote->credit_note_number = self::generateNumber($creditNote->tenant_id);
+
+                    // Sauvegarder sans déclencher les événements
+                    \DB::table('credit_notes')
+                        ->where('id', $creditNote->id)
+                        ->update([
+                            'credit_note_number' => $creditNote->credit_note_number
+                        ]);
+
+                    // Générer le hash maintenant si c'est le statut 'issued'
+                    if ($creditNote->status === 'issued' && !$creditNote->compliance_hash) {
+                        $creditNote->compliance_date = now();
+                        $creditNote->compliance_hash = $creditNote->generateComplianceHash();
+
+                        \DB::table('credit_notes')
+                            ->where('id', $creditNote->id)
+                            ->update([
+                                'compliance_date' => $creditNote->compliance_date,
+                                'compliance_hash' => $creditNote->compliance_hash
+                            ]);
+                    }
+                }
+
+                // Définir applied_date quand le statut passe à 'applied'
+                if ($creditNote->status === 'applied' && !$creditNote->applied_date) {
+                    \DB::table('credit_notes')
+                        ->where('id', $creditNote->id)
+                        ->update([
+                            'applied_date' => now()
+                        ]);
+                }
             }
         });
     }
@@ -96,16 +147,27 @@ class CreditNote extends Model
     }
 
     /**
-     * Generate credit note number
+     * Generate credit note number (format: CN-YYYY-0001)
      */
     public static function generateNumber($tenantId)
     {
+        $currentYear = now()->year;
+        $yearPrefix = "CN-{$currentYear}-";
+
         $lastCreditNote = self::where('tenant_id', $tenantId)
+            ->where('credit_note_number', 'like', "{$yearPrefix}%")
             ->orderBy('id', 'desc')
             ->first();
 
-        $nextNumber = $lastCreditNote ? (int)substr($lastCreditNote->credit_note_number, -4) + 1 : 1;
-        return sprintf('CN-%04d', $nextNumber);
+        if ($lastCreditNote) {
+            // Extract the number part after CN-YYYY-
+            $lastNumber = (int)substr($lastCreditNote->credit_note_number, -4);
+            $nextNumber = $lastNumber + 1;
+        } else {
+            $nextNumber = 1;
+        }
+
+        return sprintf('CN-%04d-%04d', $currentYear, $nextNumber);
     }
 
     /**
@@ -130,16 +192,16 @@ class CreditNote extends Model
      */
     public function markAsIssued()
     {
+        // Changer le statut - l'événement updated gérera le reste
+        // (numéro définitif, hash, date de conformité)
         $this->status = 'issued';
-        $this->compliance_date = now();
-        $this->compliance_hash = $this->generateComplianceHash();
         $this->save();
     }
 
     /**
      * Generate NF525 compliance hash
      */
-    private function generateComplianceHash()
+    protected function generateComplianceHash()
     {
         $data = [
             'credit_note_number' => $this->credit_note_number,

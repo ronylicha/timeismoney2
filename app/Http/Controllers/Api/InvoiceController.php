@@ -26,6 +26,7 @@ class InvoiceController extends Controller
     public function index(Request $request)
     {
         $query = Invoice::with(['client', 'project', 'quote', 'items'])
+            ->withSum('creditNotes', 'total')
             ->where('tenant_id', auth()->user()->tenant_id);
 
         // Search
@@ -312,8 +313,10 @@ class InvoiceController extends Controller
             'quote',
             'items',
             'payments',
-            'auditLogs'
+            'auditLogs',
+            'creditNotes'
         ])
+        ->withSum('creditNotes', 'total')
         ->where('tenant_id', auth()->user()->tenant_id)
         ->find($id);
 

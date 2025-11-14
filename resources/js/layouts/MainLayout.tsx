@@ -18,7 +18,8 @@ import {
     ClipboardDocumentListIcon,
     UsersIcon,
     DocumentCheckIcon,
-    InboxIcon
+    InboxIcon,
+    DocumentMinusIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
 import UserAvatar from '@/components/UserAvatar';
@@ -60,6 +61,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
         { name: t('nav.projects'), href: '/projects', icon: FolderIcon },
         { name: t('nav.quotes'), href: '/quotes', icon: DocumentTextIcon },
         { name: t('nav.invoices'), href: '/invoices', icon: DocumentTextIcon },
+        { name: t('nav.creditNotes'), href: '/credit-notes', icon: DocumentMinusIcon },
         { name: t('nav.supplierInvoices'), href: '/supplier-invoices', icon: InboxIcon },
         { name: t('nav.expenses'), href: '/expenses', icon: BanknotesIcon },
         { name: t('nav.reports'), href: '/reports', icon: ChartBarIcon },

@@ -4,12 +4,15 @@ namespace App\Mail;
 
 use App\Models\CreditNote;
 use App\Services\PdfGeneratorService;
+use App\Services\FacturXService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class CreditNoteSent extends Mailable
 {
@@ -58,10 +61,33 @@ class CreditNoteSent extends Mailable
      */
     public function attachments(): array
     {
+        try {
+            $facturXService = app(FacturXService::class);
+            $facturXPath = $facturXService->generateFacturXForCreditNote($this->creditNote);
+
+            if ($facturXPath && Storage::exists($facturXPath)) {
+                Log::info('Sending credit note with FacturX attachment', [
+                    'credit_note_id' => $this->creditNote->id,
+                    'path' => $facturXPath,
+                ]);
+
+                return [
+                    Attachment::fromStorage($facturXPath)
+                        ->as("avoir-{$this->creditNote->credit_note_number}.pdf")
+                        ->withMime('application/pdf'),
+                ];
+            }
+        } catch (\Throwable $throwable) {
+            Log::warning('Failed to generate FacturX for credit note email, falling back to standard PDF', [
+                'credit_note_id' => $this->creditNote->id,
+                'message' => $throwable->getMessage(),
+            ]);
+        }
+
         $pdf = $this->pdfService->generateCreditNotePdf($this->creditNote);
 
         return [
-            Attachment::fromData(fn () => $pdf->output(), "credit-note-{$this->creditNote->credit_note_number}.pdf")
+            Attachment::fromData(fn () => $pdf->output(), "avoir-{$this->creditNote->credit_note_number}.pdf")
                 ->withMime('application/pdf'),
         ];
     }

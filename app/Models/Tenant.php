@@ -30,6 +30,7 @@ class Tenant extends Model
         'vat_number',
         'vat_subject',
         'vat_regime',
+        'accounting_method',
         'vat_deduction_coefficient',
         'main_activity',
         'activity_license_number',
@@ -356,11 +357,41 @@ class Tenant extends Model
     public function calculateYearlyRevenue(): float
     {
         $currentYear = now()->year;
-        
-        return \App\Models\Invoice::where('tenant_id', $this->id)
-            ->whereIn('status', ['paid', 'sent'])
-            ->whereYear('date', $currentYear)
-            ->sum('subtotal'); // Montant HT
+
+        // Déterminer la méthode comptable (par défaut : cash/encaissement)
+        $accountingMethod = $this->accounting_method ?? 'cash';
+
+        if ($accountingMethod === 'accrual') {
+            // Comptabilité d'engagement : CA dès l'émission de la facture
+            $invoiceRevenue = \App\Models\Invoice::where('tenant_id', $this->id)
+                ->whereIn('status', ['sent', 'viewed', 'overdue', 'paid'])
+                ->whereYear('date', $currentYear)
+                ->sum('subtotal'); // Montant HT
+
+            // Soustraire tous les avoirs émis ou appliqués (peu importe si facture payée)
+            $creditNoteTotal = \App\Models\CreditNote::where('tenant_id', $this->id)
+                ->whereIn('status', ['issued', 'applied'])
+                ->whereYear('credit_note_date', $currentYear)
+                ->sum('subtotal'); // Montant HT
+        } else {
+            // Comptabilité de caisse (encaissement) : CA uniquement sur factures payées
+            $invoiceRevenue = \App\Models\Invoice::where('tenant_id', $this->id)
+                ->where('status', 'paid')
+                ->whereYear('date', $currentYear)
+                ->sum('subtotal'); // Montant HT
+
+            // Soustraire UNIQUEMENT les avoirs liés à des factures payées
+            $creditNoteTotal = \App\Models\CreditNote::where('tenant_id', $this->id)
+                ->whereIn('status', ['issued', 'applied'])
+                ->whereYear('credit_note_date', $currentYear)
+                ->whereHas('invoice', function ($query) {
+                    $query->where('status', 'paid');
+                })
+                ->sum('subtotal'); // Montant HT
+        }
+
+        // Le CA net pour la franchise TVA
+        return max(0, $invoiceRevenue - $creditNoteTotal);
     }
 
     /**

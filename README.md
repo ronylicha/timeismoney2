@@ -4,12 +4,12 @@
   <img src="https://img.shields.io/badge/Laravel-12-red?style=for-the-badge&logo=laravel" alt="Laravel 12">
   <img src="https://img.shields.io/badge/React-18-blue?style=for-the-badge&logo=react" alt="React 18">
   <img src="https://img.shields.io/badge/TypeScript-5.9-blue?style=for-the-badge&logo=typescript" alt="TypeScript">
-  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="MIT License">
+  <img src="https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge" alt="Proprietary License">
 </p>
 
 ## 📋 À Propos
 
-**Time Is Money** est une solution open source complète de gestion du temps et de facturation, conçue pour les freelances, PME et grandes entreprises. L'application offre une conformité totale avec les réglementations françaises (NF525, Chorus Pro, FacturX) tout en proposant une expérience utilisateur moderne avec support offline et PWA.
+**Time Is Money** est une solution professionnelle propriétaire de gestion du temps et de facturation, conçue pour les freelances, PME et grandes entreprises. L'application offre une conformité totale avec les réglementations françaises (NF525, Chorus Pro, FacturX) tout en proposant une expérience utilisateur moderne avec support offline et PWA.
 
 ## ✨ Fonctionnalités Principales
 
@@ -41,8 +41,7 @@
 ### 🚀 Installation Automatique (Recommandée pour Production)
 
 ```bash
-# 1. Cloner le repository
-git clone https://github.com/votre-username/timeismoney2.git
+# 1. Accéder au répertoire de l'application
 cd timeismoney2
 
 # 2. Installer les dépendances
@@ -91,8 +90,7 @@ php artisan app:install-production --force
 ### 📝 Installation Manuelle (Développement ou Personnalisée)
 
 ```bash
-# 1. Cloner le repository
-git clone https://github.com/votre-username/timeismoney2.git
+# 1. Accéder au répertoire de l'application
 cd timeismoney2
 
 # 2. Installer les dépendances PHP
@@ -573,25 +571,6 @@ php artisan hsm:migrate --from=simulator --to=aws
 | "AWS credentials invalid" | Vérifier IAM permissions pour KMS |
 | "Certigna timeout" | Vérifier connexion réseau et API credentials |
 
-## 🤝 Contribution
-
-Les contributions sont les bienvenues ! Veuillez lire notre [Guide de Contribution](CONTRIBUTING.md) avant de soumettre des Pull Requests.
-
-### Processus de Contribution
-
-1. Fork le projet
-2. Créer une branche feature (`git checkout -b feature/AmazingFeature`)
-3. Commit vos changements (`git commit -m 'Add: Amazing feature'`)
-4. Push sur la branche (`git push origin feature/AmazingFeature`)
-5. Ouvrir une Pull Request
-
-### Standards de Code
-
-- **PHP** : PSR-12
-- **JavaScript/TypeScript** : ESLint + Prettier
-- **Commits** : Conventional Commits
-- **Tests** : Coverage minimum 80%
-
 ## 📝 Documentation
 
 - [Documentation Technique](docs/ARCHITECTURE.md)
@@ -641,22 +620,21 @@ Les contributions sont les bienvenues ! Veuillez lire notre [Guide de Contributi
 
 ## 📄 License
 
-Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
+Ce logiciel est propriétaire et protégé par le droit d'auteur. Tous droits réservés.
+
+L'utilisation, la copie, la modification ou la distribution de ce logiciel sans autorisation écrite préalable est strictement interdite.
 
 ## 🙏 Remerciements
 
 - Laravel Team pour le framework extraordinaire
 - React Team pour la bibliothèque UI
-- Tous les contributeurs open source
-- La communauté française de développeurs
+- Nos clients et partenaires pour leur confiance
 
 ## 📧 Support & Contact
 
 - **Email**: support@timeismoney.com
-- **Issues**: [GitHub Issues](https://github.com/votre-username/timeismoney2/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/votre-username/timeismoney2/discussions)
-- **Twitter**: [@timeismoney](https://twitter.com/timeismoney)
-- **Discord**: [Rejoindre notre serveur](https://discord.gg/timeismoney)
+- **Site Web**: https://timeismoney.com
+- **Téléphone**: +33 (0)1 XX XX XX XX
 
 ---
 

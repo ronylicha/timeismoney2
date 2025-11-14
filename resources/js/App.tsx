@@ -65,6 +65,7 @@ const AdminReports = lazy(() => import('./pages/Admin/Reports'));
 const Compliance = lazy(() => import('./pages/Compliance'));
 const FecExport = lazy(() => import('./pages/FecExport'));
 const CreditNotes = lazy(() => import('./pages/CreditNotes'));
+const CreditNoteDetail = lazy(() => import('./pages/CreditNoteDetail'));
 const SupplierInvoices = lazy(() => import('./pages/SupplierInvoices'));
 
 // Contexts
@@ -524,6 +525,7 @@ function App() {
                                         <Route path="/invoices/:id/edit" element={<CreateInvoice />} />
                                         <Route path="/invoices/:id" element={<InvoiceDetail />} />
                                         <Route path="/credit-notes" element={<CreditNotes />} />
+                                        <Route path="/credit-notes/:id" element={<CreditNoteDetail />} />
                                         <Route path="/quotes" element={<Quotes />} />
                                         <Route path="/quotes/new" element={<CreateQuote />} />
                                         <Route path="/quotes/:id/edit" element={<CreateQuote />} />

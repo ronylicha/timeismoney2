@@ -26,6 +26,7 @@ interface Invoice {
     due_date: string;
     total: number;
     advance_percentage?: number;
+    credit_notes_sum_total?: number;
     client?: {
         name: string;
     };
@@ -68,16 +69,16 @@ const Invoices: React.FC = () => {
     });
 
     const getStatusBadge = (status: string) => {
-        const colors = {
-            draft: 'bg-gray-100 text-gray-800',
-            sent: 'bg-blue-100 text-blue-800',
-            paid: 'bg-green-100 text-green-800',
-            overdue: 'bg-red-100 text-red-800',
-            cancelled: 'bg-red-100 text-red-800',
+        const statusClassMap: Record<string, string> = {
+            draft: 'invoice-status-draft',
+            sent: 'invoice-status-sent',
+            paid: 'invoice-status-paid',
+            overdue: 'invoice-status-overdue',
+            cancelled: 'invoice-status-cancelled',
         };
 
         return (
-            <span className={`px-2 py-1 text-xs font-medium rounded-full ${colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800'}`}>
+            <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusClassMap[status] || 'invoice-status-draft'}`}>
                 {t(`invoices.statuses.${status}`, status)}
             </span>
         );
@@ -87,32 +88,32 @@ const Invoices: React.FC = () => {
         const typeConfig = {
             invoice: {
                 label: 'Facture',
-                color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+                className: 'invoice-type-invoice',
                 icon: DocumentTextIcon,
             },
             advance: {
                 label: 'Acompte',
-                color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+                className: 'invoice-type-advance',
                 icon: ReceiptPercentIcon,
             },
             final: {
                 label: 'Solde',
-                color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+                className: 'invoice-type-final',
                 icon: ClipboardDocumentCheckIcon,
             },
             credit_note: {
                 label: 'Avoir',
-                color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+                className: 'invoice-type-credit',
                 icon: DocumentMinusIcon,
             },
             quote: {
                 label: 'Devis',
-                color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+                className: 'invoice-type-quote',
                 icon: DocumentTextIcon,
             },
             recurring: {
                 label: 'Récurrent',
-                color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300',
+                className: 'invoice-type-recurring',
                 icon: DocumentTextIcon,
             },
         };
@@ -121,7 +122,7 @@ const Invoices: React.FC = () => {
         const Icon = config.icon;
 
         return (
-            <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${config.color}`}>
+            <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${config.className}`}>
                 <Icon className="w-3 h-3 mr-1" />
                 {config.label}
                 {type === 'advance' && advancePercentage && (
@@ -132,8 +133,60 @@ const Invoices: React.FC = () => {
     };
 
     return (
-        <div className="p-6">
-            {/* PDP Configuration Alert */}
+        <>
+            <style>
+                {`
+                    /* Status badges */
+                    .invoice-status-draft {
+                        background-color: #4b5563 !important;
+                        color: #ffffff !important;
+                    }
+                    .invoice-status-sent {
+                        background-color: #2563eb !important;
+                        color: #ffffff !important;
+                    }
+                    .invoice-status-paid {
+                        background-color: #16a34a !important;
+                        color: #ffffff !important;
+                    }
+                    .invoice-status-overdue {
+                        background-color: #dc2626 !important;
+                        color: #ffffff !important;
+                    }
+                    .invoice-status-cancelled {
+                        background-color: #374151 !important;
+                        color: #ffffff !important;
+                    }
+
+                    /* Type badges */
+                    .invoice-type-invoice {
+                        background-color: #2563eb !important;
+                        color: #ffffff !important;
+                    }
+                    .invoice-type-advance {
+                        background-color: #16a34a !important;
+                        color: #ffffff !important;
+                    }
+                    .invoice-type-final {
+                        background-color: #9333ea !important;
+                        color: #ffffff !important;
+                    }
+                    .invoice-type-credit {
+                        background-color: #dc2626 !important;
+                        color: #ffffff !important;
+                    }
+                    .invoice-type-quote {
+                        background-color: #ca8a04 !important;
+                        color: #ffffff !important;
+                    }
+                    .invoice-type-recurring {
+                        background-color: #4f46e5 !important;
+                        color: #ffffff !important;
+                    }
+                `}
+            </style>
+            <div className="p-6">
+                {/* PDP Configuration Alert */}
             {pdpConfig && !pdpConfig.configured && (
                 <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
                     <div className="flex">
@@ -287,6 +340,9 @@ const Invoices: React.FC = () => {
                                     {t('invoices.amount')}
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Avoir
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     {t('invoices.statusLabel')}
                                 </th>
                             </tr>
@@ -319,6 +375,19 @@ const Invoices: React.FC = () => {
                                             currency: 'EUR',
                                         }).format(invoice.total || 0)}
                                     </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-medium">
+                                        {invoice.credit_notes_sum_total && invoice.credit_notes_sum_total > 0 ? (
+                                            <span className="flex items-center">
+                                                <DocumentMinusIcon className="h-4 w-4 mr-1" />
+                                                -{new Intl.NumberFormat('fr-FR', {
+                                                    style: 'currency',
+                                                    currency: 'EUR',
+                                                }).format(invoice.credit_notes_sum_total)}
+                                            </span>
+                                        ) : (
+                                            <span className="text-gray-400">-</span>
+                                        )}
+                                    </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         {getStatusBadge(invoice.status)}
                                     </td>
@@ -328,7 +397,8 @@ const Invoices: React.FC = () => {
                     </table>
                 </div>
             )}
-        </div>
+            </div>
+        </>
     );
 };
 

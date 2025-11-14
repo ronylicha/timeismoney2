@@ -11,6 +11,7 @@ interface DownloadFacturXButtonProps {
     invoiceNumber: string;
     className?: string;
     variant?: 'primary' | 'secondary';
+    isCreditNote?: boolean;
 }
 
 interface MissingField {
@@ -31,10 +32,12 @@ const DownloadFacturXButton: React.FC<DownloadFacturXButtonProps> = ({
     invoiceNumber,
     className = '',
     variant = 'secondary',
+    isCreditNote = false,
 }) => {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const [isGenerating, setIsGenerating] = useState(false);
+    const entityType = isCreditNote ? 'credit-notes' : 'invoices';
 
     const handleValidationError = (error: any) => {
         const missingFields: MissingFields = error.response?.data?.missing_fields || {};
@@ -102,7 +105,7 @@ const DownloadFacturXButton: React.FC<DownloadFacturXButtonProps> = ({
     // Download existing FacturX
     const downloadMutation = useMutation({
         mutationFn: async () => {
-            const response = await axios.get(`/invoices/${invoiceId}/facturx`, {
+            const response = await axios.get(`/${entityType}/${invoiceId}/facturx`, {
                 responseType: 'blob',
             });
             return response.data;
@@ -138,7 +141,7 @@ const DownloadFacturXButton: React.FC<DownloadFacturXButtonProps> = ({
     // Generate then download FacturX
     const generateMutation = useMutation({
         mutationFn: async () => {
-            const response = await axios.post(`/invoices/${invoiceId}/generate-facturx`, {}, {
+            const response = await axios.post(`/${entityType}/${invoiceId}/generate-facturx`, {}, {
                 responseType: 'blob',
             });
             return response.data;

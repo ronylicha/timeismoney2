@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Exports\ReportExport;
 use App\Models\Expense;
 use App\Models\Invoice;
+use App\Models\CreditNote;
 use App\Models\Project;
 use App\Models\TimeEntry;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -261,6 +262,68 @@ class ReportController extends Controller
             ];
         }
 
+        // Ajouter les avoirs (credit notes) au FEC
+        $creditNotes = CreditNote::with(['client', 'invoice'])
+            ->where('tenant_id', $tenantId)
+            ->whereYear('credit_note_date', $year)
+            ->whereIn('status', ['issued', 'applied'])
+            ->get();
+
+        foreach ($creditNotes as $creditNote) {
+            $amount = (float) ($creditNote->total ?? 0);
+            $issueDate = $creditNote->credit_note_date ?? $creditNote->created_at ?? Carbon::now();
+            $formattedDate = Carbon::parse($issueDate)->format('Ymd');
+            $reference = $creditNote->credit_note_number;
+            $client = $creditNote->client;
+
+            $clientAccount = '411' . str_pad((string) $creditNote->client_id, 4, '0', STR_PAD_LEFT);
+            $clientAux = $client?->siret ?? ('CLIENT-' . $creditNote->client_id);
+            $clientName = $client?->name ?? 'Client ' . $creditNote->client_id;
+
+            // Pour un avoir, on inverse Débit/Crédit par rapport à une facture
+            $entries[] = [
+                'JournalCode' => 'VT',
+                'JournalLib' => 'VENTES',
+                'EcritureNum' => $reference . '-D',
+                'EcritureDate' => $formattedDate,
+                'CompteNum' => $clientAccount,
+                'CompteLib' => $clientName,
+                'CompAuxNum' => $clientAux,
+                'CompAuxLib' => $clientName,
+                'PieceRef' => $reference,
+                'PieceDate' => $formattedDate,
+                'EcritureLib' => 'Avoir ' . $reference,
+                'Debit' => '0.00',
+                'Credit' => number_format($amount, 2, '.', ''),
+                'EcritureLet' => '',
+                'DateLet' => '',
+                'ValidDate' => $formattedDate,
+                'Montantdevise' => number_format($amount, 2, '.', ''),
+                'Idevise' => $creditNote->currency ?? 'EUR',
+            ];
+
+            $entries[] = [
+                'JournalCode' => 'VT',
+                'JournalLib' => 'VENTES',
+                'EcritureNum' => $reference . '-C',
+                'EcritureDate' => $formattedDate,
+                'CompteNum' => '706000',
+                'CompteLib' => 'VENTES DE SERVICES',
+                'CompAuxNum' => '',
+                'CompAuxLib' => '',
+                'PieceRef' => $reference,
+                'PieceDate' => $formattedDate,
+                'EcritureLib' => 'Avoir ' . $reference,
+                'Debit' => number_format($amount, 2, '.', ''),
+                'Credit' => '0.00',
+                'EcritureLet' => '',
+                'DateLet' => '',
+                'ValidDate' => $formattedDate,
+                'Montantdevise' => number_format($amount, 2, '.', ''),
+                'Idevise' => $creditNote->currency ?? 'EUR',
+            ];
+        }
+
         $fecContent = $this->formatAsFEC($entries);
 
         return response()->streamDownload(function () use ($fecContent) {
@@ -339,6 +402,29 @@ class ReportController extends Controller
 
         $invoices = $query->get();
 
+        // Récupérer la méthode comptable du tenant
+        $tenant = \App\Models\Tenant::find($tenantId);
+        $accountingMethod = $tenant->accounting_method ?? 'cash';
+
+        // Calculer le total des avoirs selon la méthode comptable
+        $creditNotesQuery = CreditNote::where('tenant_id', $tenantId)
+            ->whereIn('status', ['issued', 'applied'])
+            ->whereBetween('credit_note_date', [$filters['start_date'], $filters['end_date']]);
+
+        if ($accountingMethod === 'cash') {
+            // Encaissement : avoirs uniquement sur factures payées
+            $creditNotesQuery->whereHas('invoice', function ($q) {
+                $q->where('status', 'paid');
+            });
+        }
+        // En engagement : tous les avoirs (pas de filtre supplémentaire)
+
+        if (isset($filters['client_id'])) {
+            $creditNotesQuery->where('client_id', $filters['client_id']);
+        }
+
+        $totalCreditNotes = $creditNotesQuery->sum('total');
+
         // Calculate totals by status
         $byStatus = $invoices->groupBy('status')->map(function ($statusInvoices, $status) {
             return [
@@ -354,6 +440,8 @@ class ReportController extends Controller
                 'total_amount' => $invoices->sum('total_amount'),
                 'paid_amount' => $invoices->where('status', 'paid')->sum('total_amount'),
                 'pending_amount' => $invoices->whereIn('status', ['sent', 'overdue'])->sum('total_amount'),
+                'credit_notes_amount' => $totalCreditNotes,
+                'net_revenue' => max(0, $invoices->where('status', 'paid')->sum('total_amount') - $totalCreditNotes),
             ],
             'by_status' => $byStatus,
         ];
@@ -398,6 +486,10 @@ class ReportController extends Controller
      */
     private function generateProjectProfitability($filters, $tenantId)
     {
+        // Récupérer la méthode comptable du tenant
+        $tenant = \App\Models\Tenant::find($tenantId);
+        $accountingMethod = $tenant->accounting_method ?? 'cash';
+
         $query = Project::with(['timeEntries', 'expenses', 'invoices'])
             ->where('tenant_id', $tenantId);
 
@@ -405,7 +497,7 @@ class ReportController extends Controller
             $query->where('id', $filters['project_id']);
         }
 
-        $projects = $query->get()->map(function ($project) use ($filters) {
+        $projects = $query->get()->map(function ($project) use ($filters, $tenantId, $accountingMethod) {
             $timeEntries = $project->timeEntries()
                 ->whereBetween('start_time', [$filters['start_date'], $filters['end_date']])
                 ->get();
@@ -414,12 +506,38 @@ class ReportController extends Controller
                 ->whereBetween('expense_date', [$filters['start_date'], $filters['end_date']])
                 ->get();
 
-            $invoices = $project->invoices()
-                ->whereBetween('issue_date', [$filters['start_date'], $filters['end_date']])
-                ->where('status', 'paid')
-                ->get();
+            // Récupérer les factures selon la méthode comptable
+            $invoicesQuery = $project->invoices()
+                ->whereBetween('issue_date', [$filters['start_date'], $filters['end_date']]);
 
-            $revenue = $invoices->sum('total_amount');
+            if ($accountingMethod === 'accrual') {
+                // Comptabilité d'engagement : factures émises
+                $invoicesQuery->whereIn('status', ['sent', 'viewed', 'overdue', 'paid']);
+            } else {
+                // Comptabilité de caisse : factures payées uniquement
+                $invoicesQuery->where('status', 'paid');
+            }
+
+            $invoices = $invoicesQuery->get();
+
+            // Calculer les avoirs liés aux factures de ce projet
+            $invoiceIds = $invoices->pluck('id')->toArray();
+            $creditNotesQuery = CreditNote::where('tenant_id', $tenantId)
+                ->whereIn('status', ['issued', 'applied'])
+                ->whereIn('invoice_id', $invoiceIds)
+                ->whereBetween('credit_note_date', [$filters['start_date'], $filters['end_date']]);
+
+            if ($accountingMethod === 'cash') {
+                // Encaissement : avoirs uniquement sur factures payées
+                $creditNotesQuery->whereHas('invoice', function ($q) {
+                    $q->where('status', 'paid');
+                });
+            }
+            // En engagement : tous les avoirs (pas de filtre supplémentaire)
+
+            $creditNotes = $creditNotesQuery->sum('total');
+
+            $revenue = max(0, $invoices->sum('total_amount') - $creditNotes);
             $costs = $expenses->sum('amount');
             $profit = $revenue - $costs;
 
@@ -427,6 +545,7 @@ class ReportController extends Controller
                 'project_name' => $project->name,
                 'revenue' => $revenue,
                 'costs' => $costs,
+                'credit_notes' => $creditNotes,
                 'profit' => $profit,
                 'profit_margin' => $revenue > 0 ? round(($profit / $revenue) * 100, 2) : 0,
                 'hours_tracked' => $timeEntries->sum('duration') / 3600,

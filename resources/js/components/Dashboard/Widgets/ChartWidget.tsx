@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useEffect, useRef, useState } from 'react';
 import WidgetContainer from './WidgetContainer';
 import { LucideIcon } from 'lucide-react';
 
@@ -23,6 +23,42 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
     height = 300,
     isLoading = false,
 }) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [isClient, setIsClient] = useState(false);
+    const [hasDimensions, setHasDimensions] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    useEffect(() => {
+        if (!isClient || isLoading) {
+            return;
+        }
+
+        const element = containerRef.current;
+        if (!element) {
+            setHasDimensions(false);
+            return;
+        }
+
+        if (typeof ResizeObserver === 'undefined') {
+            setHasDimensions(true);
+            return;
+        }
+
+        const observer = new ResizeObserver(entries => {
+            const entry = entries[0];
+            const { width, height: measuredHeight } = entry.contentRect;
+            setHasDimensions(width > 0 && measuredHeight > 0);
+        });
+
+        observer.observe(element);
+        return () => observer.disconnect();
+    }, [isClient, isLoading, height]);
+
+    const shouldRenderChart = !isLoading && isClient && hasDimensions;
+
     return (
         <WidgetContainer
             title={title}
@@ -32,7 +68,18 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
             actions={actions}
             isLoading={isLoading}
         >
-            <div style={{ height: `${height}px` }}>{children}</div>
+            <div
+                ref={containerRef}
+                className="w-full"
+                style={{
+                    height: `${height}px`,
+                    minHeight: `${height}px`,
+                    width: '100%',
+                    minWidth: 0,
+                }}
+            >
+                {shouldRenderChart ? children : null}
+            </div>
         </WidgetContainer>
     );
 };

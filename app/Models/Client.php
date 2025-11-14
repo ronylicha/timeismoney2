@@ -103,9 +103,37 @@ class Client extends Model
      */
     public function getTotalRevenueAttribute(): float
     {
-        return $this->invoices()
-            ->where('status', 'paid')
-            ->sum('total');
+        // Charger le tenant pour connaître sa méthode comptable
+        $tenant = $this->tenant;
+        $accountingMethod = $tenant->accounting_method ?? 'cash';
+
+        if ($accountingMethod === 'accrual') {
+            // Comptabilité d'engagement : toutes les factures émises
+            $invoiceTotal = $this->invoices()
+                ->whereIn('status', ['sent', 'viewed', 'overdue', 'paid'])
+                ->sum('total');
+
+            // Soustraire tous les avoirs émis ou appliqués
+            $creditNoteTotal = CreditNote::where('client_id', $this->id)
+                ->whereIn('status', ['issued', 'applied'])
+                ->sum('total');
+        } else {
+            // Comptabilité de caisse : uniquement les factures payées
+            $invoiceTotal = $this->invoices()
+                ->where('status', 'paid')
+                ->sum('total');
+
+            // Soustraire UNIQUEMENT les avoirs liés à des factures payées
+            $creditNoteTotal = CreditNote::where('client_id', $this->id)
+                ->whereIn('status', ['issued', 'applied'])
+                ->whereHas('invoice', function ($query) {
+                    $query->where('status', 'paid');
+                })
+                ->sum('total');
+        }
+
+        // Le revenu net du client
+        return max(0, $invoiceTotal - $creditNoteTotal);
     }
 
     /**

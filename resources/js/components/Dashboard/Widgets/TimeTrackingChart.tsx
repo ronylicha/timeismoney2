@@ -34,7 +34,7 @@ const TimeTrackingChart: React.FC<TimeTrackingChartProps> = ({ data, isLoading =
             height={250}
             isLoading={isLoading}
         >
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
                 <LineChart data={data}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                     <XAxis

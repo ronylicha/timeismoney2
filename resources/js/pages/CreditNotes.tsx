@@ -14,11 +14,15 @@ interface CreditNote {
     id: number;
     credit_note_number: string;
     invoice_id: number;
-    invoice_number: string;
-    type: 'total' | 'partial';
-    amount: number;
+    invoice?: {
+        invoice_number: string;
+    };
+    status: string;
+    credit_note_date: string;
+    applied_date?: string;
     reason: string;
-    date: string;
+    total: number;
+    currency: string;
     client?: {
         name: string;
     };
@@ -40,17 +44,22 @@ const CreditNotes: React.FC = () => {
         },
     });
 
-    const getTypeBadge = (type: 'total' | 'partial') => {
-        if (type === 'total') {
-            return (
-                <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
-                    {t('creditNotes.totalCredit', 'Avoir total')}
-                </span>
-            );
-        }
+    const getStatusBadge = (status: string) => {
+        const colors = {
+            draft: 'bg-gray-100 text-gray-800',
+            issued: 'bg-blue-100 text-blue-800',
+            applied: 'bg-green-100 text-green-800',
+        };
+
+        const labels = {
+            draft: t('creditNotes.status.draft', 'Brouillon'),
+            issued: t('creditNotes.status.issued', 'Émis'),
+            applied: t('creditNotes.status.applied', 'Appliqué'),
+        };
+
         return (
-            <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">
-                {t('creditNotes.partialCredit', 'Avoir partiel')}
+            <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800'}`}>
+                {labels[status as keyof typeof labels] || status}
             </span>
         );
     };
@@ -113,10 +122,13 @@ const CreditNotes: React.FC = () => {
                                     {t('creditNotes.client', 'Client')}
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    {t('creditNotes.type', 'Type')}
+                                    {t('common.status', 'Statut')}
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     {t('creditNotes.date', 'Date')}
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    {t('creditNotes.appliedDate', 'Date application')}
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     {t('creditNotes.amount', 'Montant')}
@@ -137,28 +149,39 @@ const CreditNotes: React.FC = () => {
                                         {creditNote.credit_note_number}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                        <Link
-                                            to={`/invoices/${creditNote.invoice_id}`}
-                                            className="text-blue-600 hover:text-blue-800"
-                                            onClick={(e) => e.stopPropagation()}
-                                        >
-                                            {creditNote.invoice_number}
-                                        </Link>
+                                        {creditNote.invoice ? (
+                                            <Link
+                                                to={`/invoices/${creditNote.invoice_id}`}
+                                                className="text-blue-600 hover:text-blue-800"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                {creditNote.invoice.invoice_number}
+                                            </Link>
+                                        ) : '-'}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                         {creditNote.client?.name || '-'}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        {getTypeBadge(creditNote.type)}
+                                        {getStatusBadge(creditNote.status)}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                        {creditNote.date ? format(new Date(creditNote.date), 'dd MMM yyyy', { locale: fr }) : '-'}
+                                        {creditNote.credit_note_date ? format(new Date(creditNote.credit_note_date), 'dd MMM yyyy', { locale: fr }) : '-'}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                        {creditNote.applied_date ? (
+                                            <span className="text-green-600 font-medium">
+                                                {format(new Date(creditNote.applied_date), 'dd MMM yyyy', { locale: fr })}
+                                            </span>
+                                        ) : (
+                                            <span className="text-gray-400">-</span>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-red-600">
                                         - {new Intl.NumberFormat('fr-FR', {
                                             style: 'currency',
-                                            currency: 'EUR',
-                                        }).format(creditNote.amount || 0)}
+                                            currency: creditNote.currency || 'EUR',
+                                        }).format(creditNote.total || 0)}
                                     </td>
                                     <td className="px-6 py-4 text-sm text-gray-700 max-w-xs truncate">
                                         {creditNote.reason}

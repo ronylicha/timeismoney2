@@ -8,6 +8,8 @@ use horstoeko\zugferd\ZugferdDocumentBuilder;
 use horstoeko\zugferd\ZugferdProfiles;
 use horstoeko\zugferd\codelists\ZugferdInvoiceType;
 use horstoeko\zugferd\codelists\ZugferdPaymentMeans;
+use horstoeko\zugferd\codelists\ZugferdReferenceCodeQualifiers;
+use horstoeko\zugferd\codelists\ZugferdVatCategoryCodes;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -668,7 +670,7 @@ class FacturXService
                 $totalAllowances,     // Montant de la remise
                 'VAT',
                 20.0,                 // Taux TVA par défaut
-                'S',                  // Catégorie TVA
+                ZugferdVatCategoryCodes::STAN_RATE, // Catégorie TVA (S)
                 "Remise {$invoice->discount_percentage}%"
             );
         }
@@ -716,27 +718,29 @@ class FacturXService
         // Vérifier les cas spéciaux AVANT le taux
         // Cas autoliquidation (reverse charge)
         if ($taxExemptionReason === 'reverse_charge') {
-            return 'AE'; // Reverse charge
+            return ZugferdVatCategoryCodes::VAT_REVE_CHAR; // Reverse charge (AE)
         }
 
         // Cas hors champ TVA
         if ($taxExemptionReason === 'out_of_scope') {
-            return 'O'; // Not subject to VAT
+            return ZugferdVatCategoryCodes::SERV_OUTS_SCOP_OF_TAX; // Not subject to VAT (O)
         }
 
         // Cas TVA à 0%
         if ($taxRate === 0.0) {
             // Différencier Zero-rated (Z) et Exempt (E)
-            return $taxExemptionReason ? 'E' : 'Z';
+            return $taxExemptionReason
+                ? ZugferdVatCategoryCodes::EXEM_FROM_TAX  // Exempt (E)
+                : ZugferdVatCategoryCodes::ZERO_RATE_GOOD; // Zero rated (Z)
         }
 
         // Taux standard français (20%, 10%, 5.5%, 2.1%)
         if (in_array($taxRate, [20.0, 10.0, 5.5, 2.1])) {
-            return 'S'; // Standard rated
+            return ZugferdVatCategoryCodes::STAN_RATE; // Standard rated (S)
         }
 
         // Par défaut, taux standard
-        return 'S';
+        return ZugferdVatCategoryCodes::STAN_RATE;
     }
 
     /**
@@ -887,12 +891,37 @@ class FacturXService
         
         // Référence à la facture d'origine
         if ($invoice) {
-            $document->addDocumentNote($invoice->invoice_number);
+            // Référence formelle selon EN 16931 pour les avoirs
+            $invoiceDate = $invoice->date instanceof \DateTime
+                ? $invoice->date
+                : new \DateTime($invoice->date);
+
+            // addDocumentReference(id, typeCode, issueDate, referenceType)
+            // '380' = UN/CEFACT code for Invoice
+            $document->addDocumentReference(
+                $invoice->invoice_number,
+                '380',
+                $invoiceDate,
+                ZugferdReferenceCodeQualifiers::PRECEDING_INVOICE
+            );
+
+            // Note descriptive supplémentaire
             $document->addDocumentNote("Avoir sur facture {$invoice->invoice_number}");
         }
-        
-        if ($creditNote->reason) {
-            $document->addDocumentNote("Motif: {$creditNote->reason}");
+
+        // Motif de l'avoir (raison + description)
+        if ($creditNote->reason || $creditNote->description) {
+            $motif = "Motif de l'avoir: ";
+            if ($creditNote->reason) {
+                $motif .= $creditNote->reason;
+            }
+            if ($creditNote->description) {
+                if ($creditNote->reason) {
+                    $motif .= " - ";
+                }
+                $motif .= $creditNote->description;
+            }
+            $document->addDocumentNote($motif);
         }
         
         // Informations vendeur
@@ -968,21 +997,24 @@ class FacturXService
             $document->setDocumentPositionLineSummation($lineTotalNet);
             
             // TVA
-            $taxCategory = $item->tax_rate > 0 ? 'S' : 'Z';
+            $taxCategory = $item->tax_rate > 0
+                ? ZugferdVatCategoryCodes::STAN_RATE       // Standard rate (S)
+                : ZugferdVatCategoryCodes::ZERO_RATE_GOOD; // Zero rated (Z)
             $document->addDocumentPositionTax($taxCategory, 'VAT', $item->tax_rate);
         }
         
         // Totaux
+        // setDocumentSummation($grandTotalAmount, $duePayableAmount, $lineTotalAmount, $chargeTotalAmount, $allowanceTotalAmount, $taxBasisTotalAmount, $taxTotalAmount, $roundingAmount, $totalPrepaidAmount)
         $document->setDocumentSummation(
-            $creditNote->total,
-            $creditNote->total,
-            $creditNote->subtotal,
-            0,
-            0,
-            $creditNote->subtotal,
-            $creditNote->tax,
-            0,
-            $creditNote->total
+            $creditNote->total,      // Grand total (total TTC de l'avoir)
+            $creditNote->total,      // Due payable amount (montant dû - même valeur pour avoir)
+            $creditNote->subtotal,   // Line total (total HT)
+            0,                       // Charges
+            0,                       // Allowances (remises)
+            $creditNote->subtotal,   // Tax basis (base imposable)
+            $creditNote->tax,        // Tax amount (montant TVA)
+            0,                       // Rounding
+            0                        // Total prepaid (0 pour un avoir)
         );
         
         // Détail TVA - Support multi-taux

@@ -58,7 +58,7 @@ export default defineConfig({
     },
     assetsInclude: ['**/*.wasm'],
     optimizeDeps: {
-        exclude: ['sql.js'], // Exclude sql.js from optimization to prevent WASM issues
+        include: ['sql.js'], // Pre-bundle sql.js to ensure Vite exposes the CJS default export
     },
     build: {
         rollupOptions: {

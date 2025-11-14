@@ -22,13 +22,13 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-export const useAuth = () => {
+export function useAuth(): AuthContextValue {
     const context = useContext(AuthContext);
     if (!context) {
         throw new Error('useAuth must be used within an AuthProvider');
     }
     return context;
-};
+}
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
@@ -41,28 +41,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const token = localStorage.getItem('auth_token');
 
             if (!token) {
-                if (import.meta.env.DEV) {
-                    console.log('No auth token found');
-                }
                 setUser(null);
                 setIsLoading(false);
                 return;
             }
 
-            if (import.meta.env.DEV) {
-                console.log('Checking auth with token:', token.substring(0, 20) + '...');
-            }
             const response = await axios.get('/user');
-            if (import.meta.env.DEV) {
-                console.log('Auth check successful, user:', response.data);
-            }
             setUser(response.data);
         } catch (error: any) {
-            if (import.meta.env.DEV) {
-                console.error('Auth check failed:', error);
-                console.error('Error response:', error.response?.data);
-                console.error('Error status:', error.response?.status);
-            }
             localStorage.removeItem('auth_token');
             syncServiceWorkerAuthToken(null);
             setUser(null);
@@ -82,9 +68,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             // No need for CSRF token since we're using Bearer tokens
             const response = await axios.post('/login', credentials);
-            if (import.meta.env.DEV) {
-                console.log('Login response:', response.data);
-            }
             const { user, token, requires_2fa } = response.data;
 
             if (requires_2fa) {
@@ -94,9 +77,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 return;
             }
 
-            if (import.meta.env.DEV) {
-                console.log('Storing auth token:', token.substring(0, 20) + '...');
-            }
             localStorage.setItem('auth_token', token);
             syncServiceWorkerAuthToken(token);
             setUser(user);

@@ -15,6 +15,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="TIM2">
 
+    <!-- Chrome/Android PWA Meta Tag -->
+    <meta name="mobile-web-app-capable" content="yes">
+
     <!-- Disable automatic detection of possible phone numbers -->
     <meta name="format-detection" content="telephone=no">
 
@@ -35,7 +38,6 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/images/icons/icon-192x192.png">
 
     <!-- Apple Splash Screens - For better PWA experience on iOS -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
 
     <!-- iOS Safari status bar appearance -->
     <meta name="theme-color" content="#3B82F6" media="(prefers-color-scheme: light)">

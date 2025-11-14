@@ -34,7 +34,7 @@ const MonthlyRevenueChart: React.FC<MonthlyRevenueChartProps> = ({ data, isLoadi
             height={300}
             isLoading={isLoading}
         >
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={240}>
                 <BarChart data={data}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                     <XAxis dataKey="month" stroke="#6b7280" tick={{ fontSize: 12 }} />

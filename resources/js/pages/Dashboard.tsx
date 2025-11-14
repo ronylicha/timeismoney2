@@ -210,20 +210,24 @@ const Dashboard: React.FC = () => {
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                 {/* Time Tracking Chart */}
-                <TimeTrackingChart
-                    data={chartData?.daily_hours || []}
-                    isLoading={chartsLoading}
-                />
+                <div className="min-w-0">
+                    <TimeTrackingChart
+                        data={chartData?.daily_hours || []}
+                        isLoading={chartsLoading}
+                    />
+                </div>
 
                 {/* Project Distribution Chart */}
-                <ProjectDistributionChart
-                    data={chartData?.project_distribution || []}
-                    isLoading={chartsLoading}
-                />
+                <div className="min-w-0">
+                    <ProjectDistributionChart
+                        data={chartData?.project_distribution || []}
+                        isLoading={chartsLoading}
+                    />
+                </div>
             </div>
 
             {/* Monthly Revenue Chart */}
-            <div className="mb-8">
+            <div className="mb-8 min-w-0">
                 <MonthlyRevenueChart
                     data={chartData?.monthly_revenue || []}
                     isLoading={chartsLoading}

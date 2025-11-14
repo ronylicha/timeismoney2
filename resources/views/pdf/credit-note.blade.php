@@ -115,21 +115,18 @@
                 {{ \Carbon\Carbon::parse($creditNote->credit_note_date)->format('d/m/Y') }}
             </div>
         </div>
-        <div class="meta-right">
-            @if($creditNote->reason)
-            <div class="meta-item">
-                <span class="meta-label">Raison:</span>
-                {{ $creditNote->reason }}
-            </div>
-            @endif
-        </div>
     </div>
 
     <!-- Reason/Description -->
-    @if($creditNote->description)
+    @if($creditNote->reason || $creditNote->description)
     <div style="margin: 20px 0; padding: 15px; background-color: #fef3c7; border-left: 4px solid #f59e0b;">
         <div style="font-weight: bold; margin-bottom: 5px;">Motif de l'avoir:</div>
-        <div>{{ $creditNote->description }}</div>
+        @if($creditNote->reason)
+        <div style="margin-bottom: 5px;"><strong>{{ $creditNote->reason }}</strong></div>
+        @endif
+        @if($creditNote->description)
+        <div style="font-size: 9pt; color: #666;">{{ $creditNote->description }}</div>
+        @endif
     </div>
     @endif
 

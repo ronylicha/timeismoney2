@@ -139,6 +139,13 @@ const SendInvoiceModal: React.FC<SendInvoiceModalProps> = ({
                                 <li>• Coordonnées bancaires pour virement</li>
                                 <li>• Détails de la facture (montant, échéance, etc.)</li>
                             </ul>
+                            <div className="mt-4 bg-white/70 border border-indigo-100 rounded-lg p-3">
+                                <p className="text-xs font-semibold text-indigo-900 mb-1">Modèle d'email utilisé</p>
+                                <p className="text-[11px] font-mono text-indigo-800">emails.invoice-sent</p>
+                                <p className="text-[11px] text-indigo-700 mt-1">
+                                    Pièces jointes : Facture PDF + FacturX (XML EN 16931)
+                                </p>
+                            </div>
                         </div>
 
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">

@@ -10,6 +10,7 @@ interface CreateCreditNoteButtonProps {
     invoiceId: number;
     invoiceNumber: string;
     invoiceTotal: number;
+    existingCreditNotes?: Array<{ id: number; total: number; status: string }>;
     className?: string;
 }
 
@@ -19,6 +20,7 @@ interface CreditNoteModalProps {
     onConfirm: (data: CreditNoteData) => void;
     invoiceTotal: number;
     isLoading: boolean;
+    forcePartial?: boolean;
 }
 
 interface CreditNoteData {
@@ -37,11 +39,15 @@ const CreditNoteModal: React.FC<CreditNoteModalProps> = ({
     onConfirm,
     invoiceTotal,
     isLoading,
+    forcePartial = false,
 }) => {
     const { t } = useTranslation();
-    const [type, setType] = useState<'total' | 'partial'>('total');
+    const [type, setType] = useState<'total' | 'partial'>(forcePartial ? 'partial' : 'total');
     const [amount, setAmount] = useState<string>('');
     const [reason, setReason] = useState<string>('');
+
+    // Ensure invoiceTotal is a number
+    const invoiceTotalNum = Number(invoiceTotal) || 0;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -57,7 +63,7 @@ const CreditNoteModal: React.FC<CreditNoteModalProps> = ({
                 toast.error(t('creditNotes.amountRequired', 'Montant invalide'));
                 return;
             }
-            if (amountNum > invoiceTotal) {
+            if (amountNum > invoiceTotalNum) {
                 toast.error(t('creditNotes.amountTooHigh', 'Le montant ne peut pas dépasser le total de la facture'));
                 return;
             }
@@ -86,48 +92,58 @@ const CreditNoteModal: React.FC<CreditNoteModalProps> = ({
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {/* Type selection */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            {t('creditNotes.type', 'Type d\'avoir')}
-                        </label>
-                        <div className="space-y-2">
-                            <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
-                                <input
-                                    type="radio"
-                                    value="total"
-                                    checked={type === 'total'}
-                                    onChange={(e) => setType(e.target.value as 'total')}
-                                    className="mr-3"
-                                />
-                                <div>
-                                    <div className="font-medium text-gray-900">
-                                        {t('creditNotes.totalCredit', 'Avoir total')}
-                                    </div>
-                                    <div className="text-sm text-gray-500">
-                                        {t('creditNotes.totalCreditDesc', 'Annuler la totalité de la facture')}
-                                    </div>
-                                </div>
+                    {!forcePartial && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                {t('creditNotes.type', 'Type d\'avoir')}
                             </label>
+                            <div className="space-y-2">
+                                <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                                    <input
+                                        type="radio"
+                                        value="total"
+                                        checked={type === 'total'}
+                                        onChange={(e) => setType(e.target.value as 'total')}
+                                        className="mr-3"
+                                    />
+                                    <div>
+                                        <div className="font-medium text-gray-900">
+                                            {t('creditNotes.totalCredit', 'Avoir total')}
+                                        </div>
+                                        <div className="text-sm text-gray-500">
+                                            {t('creditNotes.totalCreditDesc', 'Annuler la totalité de la facture')}
+                                        </div>
+                                    </div>
+                                </label>
 
-                            <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
-                                <input
-                                    type="radio"
-                                    value="partial"
-                                    checked={type === 'partial'}
-                                    onChange={(e) => setType(e.target.value as 'partial')}
-                                    className="mr-3"
-                                />
-                                <div>
-                                    <div className="font-medium text-gray-900">
-                                        {t('creditNotes.partialCredit', 'Avoir partiel')}
+                                <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                                    <input
+                                        type="radio"
+                                        value="partial"
+                                        checked={type === 'partial'}
+                                        onChange={(e) => setType(e.target.value as 'partial')}
+                                        className="mr-3"
+                                    />
+                                    <div>
+                                        <div className="font-medium text-gray-900">
+                                            {t('creditNotes.partialCredit', 'Avoir partiel')}
+                                        </div>
+                                        <div className="text-sm text-gray-500">
+                                            {t('creditNotes.partialCreditDesc', 'Rembourser un montant spécifique')}
+                                        </div>
                                     </div>
-                                    <div className="text-sm text-gray-500">
-                                        {t('creditNotes.partialCreditDesc', 'Rembourser un montant spécifique')}
-                                    </div>
-                                </div>
-                            </label>
+                                </label>
+                            </div>
                         </div>
-                    </div>
+                    )}
+
+                    {forcePartial && (
+                        <div className="p-4 bg-amber-50 border-l-4 border-amber-500 rounded">
+                            <p className="text-sm text-amber-900">
+                                <strong>Note :</strong> Cette facture a déjà un avoir partiel. Vous ne pouvez créer qu'un avoir partiel supplémentaire.
+                            </p>
+                        </div>
+                    )}
 
                     {/* Amount input for partial credit */}
                     {type === 'partial' && (
@@ -142,13 +158,13 @@ const CreditNoteModal: React.FC<CreditNoteModalProps> = ({
                                 onChange={(e) => setAmount(e.target.value)}
                                 step="0.01"
                                 min="0.01"
-                                max={invoiceTotal}
+                                max={invoiceTotalNum}
                                 required
                                 placeholder="0.00"
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
                             <p className="mt-1 text-xs text-gray-500">
-                                {t('creditNotes.maxAmount', 'Maximum')} : {invoiceTotal.toFixed(2)} €
+                                {t('creditNotes.maxAmount', 'Maximum')} : {invoiceTotalNum.toFixed(2)} €
                             </p>
                         </div>
                     )}
@@ -199,6 +215,7 @@ const CreditNoteModal: React.FC<CreditNoteModalProps> = ({
 const CreateCreditNoteButton: React.FC<CreateCreditNoteButtonProps> = ({
     invoiceId,
     invoiceTotal,
+    existingCreditNotes = [],
     className = '',
 }) => {
     const { t } = useTranslation();
@@ -206,11 +223,32 @@ const CreateCreditNoteButton: React.FC<CreateCreditNoteButtonProps> = ({
     const queryClient = useQueryClient();
     const [showModal, setShowModal] = useState(false);
 
+    // Ensure invoiceTotal is a number
+    const invoiceTotalNum = Number(invoiceTotal) || 0;
+
+    // Check if there's a full credit note (total amount equals invoice total)
+    const hasFullCreditNote = existingCreditNotes.some(
+        cn => cn.status !== 'cancelled' && Math.abs(cn.total - invoiceTotalNum) < 0.01
+    );
+
+    // Check if there's a partial credit note
+    const hasPartialCreditNote = existingCreditNotes.some(
+        cn => cn.status !== 'cancelled' && cn.total < invoiceTotalNum
+    );
+
+    // Don't show button if there's already a full credit note
+    if (hasFullCreditNote) {
+        return null;
+    }
+
     const createCreditNoteMutation = useMutation({
         mutationFn: async (data: CreditNoteData) => {
-            const response = await axios.post(`/credit-notes`, {
-                invoice_id: invoiceId,
-                ...data,
+            const response = await axios.post(`/invoices/${invoiceId}/create-credit-note`, {
+                reason: data.reason,
+                full_credit: data.type === 'total',
+                items: data.type === 'partial' && data.amount ? [{
+                    amount: data.amount
+                }] : [],
             });
             return response.data;
         },
@@ -251,8 +289,9 @@ const CreateCreditNoteButton: React.FC<CreateCreditNoteButtonProps> = ({
                 isOpen={showModal}
                 onClose={() => setShowModal(false)}
                 onConfirm={handleConfirm}
-                invoiceTotal={invoiceTotal}
+                invoiceTotal={invoiceTotalNum}
                 isLoading={createCreditNoteMutation.isPending}
+                forcePartial={hasPartialCreditNote}
             />
         </>
     );

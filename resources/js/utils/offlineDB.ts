@@ -42,7 +42,26 @@ const OFFLINE_TENANT_KEY = 'offlineDbTenant';
 const IDB_SNAPSHOT_DB = 'tim2-offline-cache';
 const IDB_SNAPSHOT_STORE = 'snapshots';
 const IDB_SNAPSHOT_KEY = 'offlineDb';
+const OFFLINE_DB_DEBUG_FLAG = 'tim2_offline_db_debug';
 let cachedWasmBinary: ArrayBuffer | null = null;
+
+function isOfflineDbDebugEnabled(): boolean {
+    if (typeof window === 'undefined') {
+        return false;
+    }
+    try {
+        return localStorage.getItem(OFFLINE_DB_DEBUG_FLAG) === '1';
+    } catch {
+        return false;
+    }
+}
+
+function offlineDbDebug(...args: any[]): void {
+    if (!isOfflineDbDebugEnabled()) {
+        return;
+    }
+    console.debug('[OfflineDB]', ...args);
+}
 
 function safeGetLocalStorage(key: string): string | null {
     if (typeof window === 'undefined') {
@@ -356,6 +375,10 @@ function createTables(db: Database): void {
 /**
  * Save data to the database
  */
+function sanitizeDbParams(values: any[]): any[] {
+    return values.map(value => (value === undefined ? null : value));
+}
+
 async function saveData(db: Database, type: string, data: any): Promise<void> {
     const timestamp = new Date().toISOString();
     if (!data.created_at) {
@@ -381,7 +404,7 @@ async function saveData(db: Database, type: string, data: any): Promise<void> {
                 (local_id, id, user_id, project_id, task_id, started_at, ended_at,
                  duration_seconds, description, is_billable, hourly_rate, data, synced)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `, [
+            `, sanitizeDbParams([
                 localId,
                 recordId,
                 data.user_id,
@@ -395,7 +418,7 @@ async function saveData(db: Database, type: string, data: any): Promise<void> {
                 data.hourly_rate || 0,
                 jsonData,
                 isServerOwned ? 1 : 0,
-            ]);
+            ]));
 
             maybeQueueSync(db, type, localId, jsonData, recordId);
             break;
@@ -412,7 +435,7 @@ async function saveData(db: Database, type: string, data: any): Promise<void> {
                 (local_id, id, client_id, project_id, invoice_number, invoice_date,
                  due_date, status, total, data, synced)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `, [
+            `, sanitizeDbParams([
                 localId,
                 recordId,
                 data.client_id,
@@ -424,7 +447,7 @@ async function saveData(db: Database, type: string, data: any): Promise<void> {
                 data.total || 0,
                 jsonData,
                 isServerOwned ? 1 : 0,
-            ]);
+            ]));
 
             maybeQueueSync(db, type, localId, jsonData, recordId);
             break;
@@ -441,7 +464,7 @@ async function saveData(db: Database, type: string, data: any): Promise<void> {
                 (local_id, id, user_id, project_id, category_id, description,
                  amount, expense_date, is_billable, is_reimbursable, data, synced)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `, [
+            `, sanitizeDbParams([
                 localId,
                 recordId,
                 data.user_id,
@@ -454,7 +477,7 @@ async function saveData(db: Database, type: string, data: any): Promise<void> {
                 data.is_reimbursable ? 1 : 0,
                 jsonData,
                 isServerOwned ? 1 : 0,
-            ]);
+            ]));
 
             maybeQueueSync(db, type, recordId, jsonData, recordId);
             break;
@@ -468,7 +491,7 @@ async function saveData(db: Database, type: string, data: any): Promise<void> {
                 INSERT OR REPLACE INTO projects
                 (id, client_id, name, code, status, billable_type, hourly_rate, data)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            `, [
+            `, sanitizeDbParams([
                 recordId,
                 data.client_id,
                 data.name,
@@ -477,7 +500,7 @@ async function saveData(db: Database, type: string, data: any): Promise<void> {
                 data.billable_type,
                 data.hourly_rate || null,
                 jsonData
-            ]);
+            ]));
 
             maybeQueueSync(db, type, recordId, jsonData, data.id);
             break;
@@ -491,14 +514,14 @@ async function saveData(db: Database, type: string, data: any): Promise<void> {
                 INSERT OR REPLACE INTO clients
                 (id, name, email, phone, client_type, data)
                 VALUES (?, ?, ?, ?, ?, ?)
-            `, [
+            `, sanitizeDbParams([
                 recordId,
                 data.name,
                 data.email || null,
                 data.phone || null,
                 data.client_type || 'standard',
                 jsonData
-            ]);
+            ]));
 
             maybeQueueSync(db, type, recordId, jsonData, data.id);
             break;
@@ -512,7 +535,7 @@ async function saveData(db: Database, type: string, data: any): Promise<void> {
                 INSERT OR REPLACE INTO tasks
                 (id, project_id, title, status, priority, assignee_id, data)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
-            `, [
+            `, sanitizeDbParams([
                 recordId,
                 data.project_id,
                 data.title,
@@ -520,7 +543,7 @@ async function saveData(db: Database, type: string, data: any): Promise<void> {
                 data.priority,
                 data.assignee_id || null,
                 jsonData
-            ]);
+            ]));
             break;
         }
 
@@ -532,13 +555,13 @@ async function saveData(db: Database, type: string, data: any): Promise<void> {
                 INSERT OR REPLACE INTO expense_categories
                 (id, name, description, color, data)
                 VALUES (?, ?, ?, ?, ?)
-            `, [
+            `, sanitizeDbParams([
                 recordId,
                 data.name,
                 data.description || null,
                 data.color || null,
                 jsonData,
-            ]);
+            ]));
             break;
         }
 
@@ -550,12 +573,12 @@ async function saveData(db: Database, type: string, data: any): Promise<void> {
                 INSERT OR REPLACE INTO users
                 (id, name, email, data)
                 VALUES (?, ?, ?, ?)
-            `, [
+            `, sanitizeDbParams([
                 recordId,
                 data.name,
                 data.email || null,
                 jsonData,
-            ]);
+            ]));
             break;
         }
 
@@ -591,13 +614,13 @@ function maybeQueueSync(db: Database, type: string, entityId: string, payload: s
             UPDATE sync_queue
             SET action = ?, data = ?, created_at = CURRENT_TIMESTAMP
             WHERE entity_type = ? AND entity_id = ?
-        `, [action, payload, type, entityId]);
+        `, sanitizeDbParams([action, payload, type, entityId]));
     } else {
         // Insert new queue entry
         db.run(`
             INSERT INTO sync_queue (entity_type, entity_id, action, data)
             VALUES (?, ?, ?, ?)
-        `, [type, entityId, action, payload]);
+        `, sanitizeDbParams([type, entityId, action, payload]));
     }
 }
 
@@ -759,8 +782,8 @@ async function markAsSynced(db: Database, type: string, localId: string): Promis
         return;
     }
 
-    db.run(`UPDATE ${map.table} SET synced = 1 WHERE local_id = ?`, [localId]);
-    db.run('DELETE FROM sync_queue WHERE entity_type = ? AND entity_id = ?', [map.queueType, localId]);
+    db.run(`UPDATE ${map.table} SET synced = 1 WHERE local_id = ?`, sanitizeDbParams([localId]));
+    db.run('DELETE FROM sync_queue WHERE entity_type = ? AND entity_id = ?', sanitizeDbParams([map.queueType, localId]));
 
     saveToLocalStorage(db);
 }
@@ -800,7 +823,7 @@ function parseJSON(value: string | null): any {
 }
 
 async function deleteQueueEntry(db: Database, id: number): Promise<void> {
-    db.run('DELETE FROM sync_queue WHERE id = ?', [id]);
+    db.run('DELETE FROM sync_queue WHERE id = ?', sanitizeDbParams([id]));
     saveToLocalStorage(db);
 }
 
@@ -821,13 +844,13 @@ async function queueDelete(db: Database, type: string, entityId: string): Promis
             UPDATE sync_queue
             SET action = 'delete', data = NULL, created_at = CURRENT_TIMESTAMP
             WHERE entity_type = ? AND entity_id = ?
-        `, [type, entityId]);
+        `, sanitizeDbParams([type, entityId]));
     } else {
         // Insert new delete queue entry
         db.run(`
             INSERT INTO sync_queue (entity_type, entity_id, action, data)
             VALUES (?, ?, 'delete', NULL)
-        `, [type, entityId]);
+        `, sanitizeDbParams([type, entityId]));
     }
 
     saveToLocalStorage(db);
@@ -921,7 +944,7 @@ async function saveToLocalStorage(db: Database): Promise<void> {
 
         safeSetLocalStorage(OFFLINE_DB_STORAGE_KEY, base64String);
         await saveSnapshotToIndexedDB(base64String);
-        console.debug(`Database saved: ${dataSizeMB} MB`);
+        offlineDbDebug(`Database saved: ${dataSizeMB} MB`);
 
     } catch (error) {
         console.error('Failed to save database to localStorage:', error);
@@ -995,9 +1018,9 @@ export async function deleteOfflineRecord(type: string, id: string): Promise<voi
     const db = dbInstance?.db || (await initOfflineDB()).db;
     const hasLocalColumn = ['time_entries', 'invoices', 'expenses'].includes(table);
     if (hasLocalColumn) {
-        db.run(`DELETE FROM ${table} WHERE id = ? OR local_id = ?`, [id, id]);
+        db.run(`DELETE FROM ${table} WHERE id = ? OR local_id = ?`, sanitizeDbParams([id, id]));
     } else {
-        db.run(`DELETE FROM ${table} WHERE id = ?`, [id]);
+        db.run(`DELETE FROM ${table} WHERE id = ?`, sanitizeDbParams([id]));
     }
     await saveToLocalStorage(db);
 }
