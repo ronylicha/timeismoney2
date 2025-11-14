@@ -3,10 +3,39 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PublicQuoteController;
 
-// Landing page - serve static HTML
+// Landing page - serve welcome view
 Route::get('/', function () {
-    return response()->file(public_path('index.html'));
-});
+    return view('welcome');
+})->name('home');
+
+// Marketing pages
+Route::get('/pricing', function () {
+    return view('pricing');
+})->name('pricing');
+
+Route::get('/contact', function () {
+    return view('contact');
+})->name('contact');
+
+Route::get('/support', function () {
+    return view('support');
+})->name('support');
+
+Route::get('/about', function () {
+    return view('about');
+})->name('about');
+
+Route::get('/documentation', function () {
+    return view('documentation');
+})->name('documentation');
+
+Route::get('/terms', function () {
+    return view('terms');
+})->name('terms');
+
+Route::get('/privacy', function () {
+    return view('privacy');
+})->name('privacy');
 
 // Serve PWA manifest with no-cache headers
 Route::get('/app-manifest-v3.json', function () {
