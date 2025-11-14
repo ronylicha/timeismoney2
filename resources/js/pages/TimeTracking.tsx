@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -14,6 +14,8 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { formatDuration } from '../utils/time';
+import { useOffline } from '@/contexts/OfflineContext';
+import { OFFLINE_ENTITY_EVENT } from '@/utils/offlineDB';
 
 interface Timer {
     id: number;
@@ -49,10 +51,13 @@ const TimeTracking: React.FC = () => {
     const queryClient = useQueryClient();
     const [elapsedTime, setElapsedTime] = useState(0);
     const [description, setDescription] = useState('');
-    const [selectedProject, setSelectedProject] = useState<number | null>(null);
+    const [selectedProject, setSelectedProject] = useState<string>('');
+    const { isOnline: isAppOnline, getOfflineData, saveOffline, offlineDB } = useOffline();
+    const [offlineProjects, setOfflineProjects] = useState<any[]>([]);
+    const [offlineEntries, setOfflineEntries] = useState<TimeEntry[]>([]);
 
     // Fetch current timer
-    const { data: currentTimer, isLoading: loadingTimer } = useQuery({
+    const { data: currentTimerOnline, isLoading: loadingTimer } = useQuery({
         queryKey: ['current-timer'],
         queryFn: async () => {
             const response = await axios.get('/time-entries/current');
@@ -61,19 +66,107 @@ const TimeTracking: React.FC = () => {
         // Only refetch every 30 seconds if timer is running, not every second
         // The UI timer ticks are handled locally in the component
         refetchInterval: (data) => data ? 30000 : false,
+        enabled: isAppOnline,
     });
+    const cachedTimer = queryClient.getQueryData(['current-timer']) as Timer | null;
+    const currentTimer = isAppOnline ? currentTimerOnline : cachedTimer;
 
-    // Fetch projects
+    const [cachedProjects, setCachedProjects] = useState<any[]>([]);
+
+    // Fetch projects when online
     const { data: projects } = useQuery({
         queryKey: ['projects'],
         queryFn: async () => {
             const response = await axios.get('/projects');
             return response.data.data;
         },
+        enabled: isAppOnline,
     });
 
+    useEffect(() => {
+        if (projects?.length) {
+            setCachedProjects(projects);
+        }
+    }, [projects]);
+
+    useEffect(() => {
+        if (!projects?.length || !offlineDB) {
+            return;
+        }
+        projects.forEach((project: any) => {
+            if (!project) return;
+            offlineDB.save(project, project).catch(() => undefined);
+        });
+    }, [projects, offlineDB]);
+
+    const loadOfflineProjects = useCallback(() => {
+        getOfflineData('projects')
+            .then((data) => {
+                if (Array.isArray(data)) {
+                    setOfflineProjects(data);
+                } else if (data) {
+                    setOfflineProjects([data]);
+                } else {
+                    setOfflineProjects([]);
+                }
+            })
+            .catch(() => setOfflineProjects([]));
+    }, [getOfflineData]);
+
+    useEffect(() => {
+        loadOfflineProjects();
+    }, [loadOfflineProjects]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return undefined;
+        const handler = (event: Event) => {
+            const detail = (event as CustomEvent).detail;
+            if (!isAppOnline && detail?.type === 'project') {
+                loadOfflineProjects();
+            }
+        };
+        window.addEventListener(OFFLINE_ENTITY_EVENT, handler as EventListener);
+        return () => window.removeEventListener(OFFLINE_ENTITY_EVENT, handler as EventListener);
+    }, [loadOfflineProjects, isAppOnline]);
+
+    const loadOfflineEntries = useCallback(() => {
+        getOfflineData('timeEntries')
+            .then((data) => {
+                const normalized: TimeEntry[] = Array.isArray(data) ? data : data ? [data] : [];
+                const todayKey = format(new Date(), 'yyyy-MM-dd');
+                const filtered = normalized.filter((entry) => {
+                    const startedAt = (entry as any).started_at || (entry as any).start_time;
+                    if (!startedAt) return false;
+                    return startedAt.slice(0, 10) === todayKey;
+                });
+                setOfflineEntries(filtered);
+            })
+            .catch(() => setOfflineEntries([]));
+    }, [getOfflineData]);
+
+    useEffect(() => {
+        if (!isAppOnline) {
+            loadOfflineEntries();
+        }
+    }, [isAppOnline, loadOfflineEntries]);
+
+    const projectOptions = useMemo(() => {
+        const map = new Map<string, any>();
+        (projects ?? cachedProjects).forEach((project: any) => {
+            if (project) {
+                map.set(String(project.id), project);
+            }
+        });
+        offlineProjects.forEach((project: any) => {
+            if (project) {
+                map.set(String(project.id), project);
+            }
+        });
+        return Array.from(map.values());
+    }, [projects, cachedProjects, offlineProjects]);
+
     // Fetch today's entries
-    const { data: todayEntries } = useQuery({
+    const { data: todayEntriesOnline } = useQuery({
         queryKey: ['today-entries'],
         queryFn: async () => {
             const response = await axios.get('/time-entries', {
@@ -83,25 +176,32 @@ const TimeTracking: React.FC = () => {
             });
             return response.data.data;
         },
-        // Refresh more frequently when timer is active
         refetchInterval: (data) => {
-            // If there's a current timer running, refresh every 10 seconds
-            // Otherwise, refresh every 30 seconds
             return currentTimer && !currentTimer.ended_at ? 10000 : 30000;
         },
+        enabled: isAppOnline,
     });
+    const todayEntries = isAppOnline ? todayEntriesOnline : offlineEntries;
 
     // Start timer mutation
     const startTimerMutation = useMutation({
-        mutationFn: async (data: { project_id: number; description: string }) => {
+        mutationFn: async (data: { project_id: number | string; description: string }) => {
             const response = await axios.post('/time-entries/start', data);
             return response.data;
         },
-        onSuccess: () => {
+        onSuccess: (payload) => {
             queryClient.invalidateQueries({ queryKey: ['current-timer'] });
             queryClient.invalidateQueries({ queryKey: ['today-entries'] });
             toast.success(t('time.timerStarted'));
             setDescription('');
+            setSelectedProject('');
+            if (!isAppOnline || payload?.offline) {
+                const entry = payload?.timer || payload?.time_entry || payload;
+                if (entry) {
+                    saveOffline('timeEntry', entry).catch(() => undefined);
+                    loadOfflineEntries();
+                }
+            }
         },
         onError: () => {
             toast.error(t('time.timerError'));
@@ -114,10 +214,17 @@ const TimeTracking: React.FC = () => {
             const response = await axios.post('/time-entries/stop');
             return response.data;
         },
-        onSuccess: () => {
+        onSuccess: (payload) => {
             queryClient.invalidateQueries({ queryKey: ['current-timer'] });
             queryClient.invalidateQueries({ queryKey: ['today-entries'] });
             toast.success(t('time.timerStopped'));
+            if (!isAppOnline || payload?.offline) {
+                const entry = payload?.time_entry || payload?.timer || payload;
+                if (entry) {
+                    saveOffline('timeEntry', entry).catch(() => undefined);
+                    loadOfflineEntries();
+                }
+            }
         },
         onError: () => {
             toast.error(t('time.stopError'));
@@ -152,8 +259,10 @@ const TimeTracking: React.FC = () => {
             return;
         }
 
+        const projectIdValue = /^\d+$/.test(selectedProject) ? Number(selectedProject) : selectedProject;
+
         startTimerMutation.mutate({
-            project_id: selectedProject,
+            project_id: projectIdValue,
             description: description || t('time.noDescription'),
         });
     };
@@ -201,13 +310,13 @@ const TimeTracking: React.FC = () => {
                                 {t('time.project')} *
                             </label>
                             <select
-                                value={selectedProject || ''}
-                                onChange={(e) => setSelectedProject(Number(e.target.value))}
+                                value={selectedProject}
+                                onChange={(e) => setSelectedProject(e.target.value)}
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             >
                                 <option value="">{t('time.selectProject')}</option>
-                                {projects?.map((project: any) => (
-                                    <option key={project.id} value={project.id}>
+                                {projectOptions?.map((project: any) => (
+                                    <option key={project.id} value={String(project.id)}>
                                         {project.name}
                                     </option>
                                 ))}

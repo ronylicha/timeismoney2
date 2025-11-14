@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { MagnifyingGlassIcon, ChevronUpDownIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { Project, PaginatedResponse } from '../types';
+import { useOffline } from '@/contexts/OfflineContext';
 
 interface ProjectSearchSelectSimpleProps {
     value: string;
@@ -24,6 +25,9 @@ const ProjectSearchSelectSimple: React.FC<ProjectSearchSelectSimpleProps> = ({
     const [isOpen, setIsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const { isOnline, getOfflineData, offlineDB } = useOffline();
+    const [offlineProjects, setOfflineProjects] = useState<Project[]>([]);
+    const [cachedProjects, setCachedProjects] = useState<Project[]>([]);
 
     // Fetch projects with search
     const { data: projectsData, isLoading } = useQuery<PaginatedResponse<Project>>({
@@ -32,8 +36,15 @@ const ProjectSearchSelectSimple: React.FC<ProjectSearchSelectSimpleProps> = ({
             const params: any = { search: searchQuery };
             const response = await axios.get('/projects', { params });
             return response.data;
-        }
+        },
+        enabled: isOnline
     });
+
+    useEffect(() => {
+        if (projectsData?.data) {
+            setCachedProjects(projectsData.data);
+        }
+    }, [projectsData]);
 
     // Fetch selected project details
     const { data: selectedProject } = useQuery<Project>({
@@ -42,8 +53,24 @@ const ProjectSearchSelectSimple: React.FC<ProjectSearchSelectSimpleProps> = ({
             const response = await axios.get(`/projects/${value}`);
             return response.data;
         },
-        enabled: !!value && value !== ''
+        enabled: !!value && value !== '' && isOnline
     });
+
+    // Persist online data into offline storage
+    useEffect(() => {
+        if (isOnline && projectsData?.data?.length && offlineDB) {
+            projectsData.data.forEach(project => {
+                offlineDB.save('project', project).catch(() => {});
+            });
+        }
+    }, [isOnline, projectsData, offlineDB]);
+
+    // Load cached projects when offline
+    useEffect(() => {
+        getOfflineData('projects').then((data) => {
+            setOfflineProjects(Array.isArray(data) ? data : data ? [data] : []);
+        }).catch(() => setOfflineProjects([]));
+    }, [getOfflineData]);
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -57,7 +84,28 @@ const ProjectSearchSelectSimple: React.FC<ProjectSearchSelectSimpleProps> = ({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const projects = projectsData?.data || [];
+    const projects = useMemo(() => {
+        const map = new Map<string, Project>();
+        (projectsData?.data ?? cachedProjects).forEach((project) => {
+            if (project) {
+                map.set(String(project.id), project);
+            }
+        });
+        offlineProjects.forEach((project) => {
+            if (project) {
+                map.set(String(project.id), project);
+            }
+        });
+        let list = Array.from(map.values());
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            list = list.filter(project =>
+                project.name?.toLowerCase().includes(query) ||
+                project.code?.toLowerCase().includes(query)
+            );
+        }
+        return list;
+    }, [projectsData, cachedProjects, offlineProjects, searchQuery]);
 
     const handleSelect = (projectId: string) => {
         onChange(projectId);
@@ -73,7 +121,13 @@ const ProjectSearchSelectSimple: React.FC<ProjectSearchSelectSimpleProps> = ({
         }).format(budget);
     };
 
-    const displayValue = selectedProject ? selectedProject.name : '';
+    const offlineSelected = !isOnline && value
+        ? offlineProjects.find(project => project.id?.toString() === value)
+        : null;
+
+    const displayValue = selectedProject
+        ? selectedProject.name
+        : offlineSelected?.name || '';
 
     const buttonClassName = error
         ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
@@ -127,7 +181,7 @@ const ProjectSearchSelectSimple: React.FC<ProjectSearchSelectSimpleProps> = ({
                     </div>
 
                     <div className="max-h-80 overflow-y-auto">
-                        {isLoading ? (
+                        {(isOnline && isLoading) ? (
                             <div className="p-4 text-center text-gray-500">
                                 Chargement...
                             </div>

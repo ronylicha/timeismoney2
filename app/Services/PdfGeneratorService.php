@@ -23,7 +23,7 @@ class PdfGeneratorService
     public function generateInvoicePdf(Invoice $invoice, bool $download = false)
     {
         // Load relations including advances for final invoices
-        $invoice->load(['client', 'items', 'tenant', 'advances']);
+        $invoice->load(['client', 'items', 'tenant', 'advances', 'quote']);
 
         // Calculate tax by rate
         $taxByRate = [];

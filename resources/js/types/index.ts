@@ -150,7 +150,7 @@ export interface Task {
     parent_id?: string;
     title: string;
     description?: string;
-    status: 'todo' | 'in_progress' | 'review' | 'done' | 'cancelled';
+    status: 'todo' | 'in_progress' | 'in_review' | 'done' | 'cancelled';
     priority: 'low' | 'normal' | 'high' | 'urgent';
     assignee_id?: string;
     estimated_hours?: number;

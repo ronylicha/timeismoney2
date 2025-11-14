@@ -120,6 +120,42 @@ export function sendMessageToSW(message: any): Promise<any> {
     });
 }
 
+export function syncServiceWorkerAuthToken(token: string | null): void {
+    if (!('serviceWorker' in navigator)) {
+        return;
+    }
+
+    const payload = token
+        ? { action: 'SET_AUTH_TOKEN', token }
+        : { action: 'CLEAR_AUTH_TOKEN' };
+
+    const postMessage = (registration?: ServiceWorkerRegistration) => {
+        const target = navigator.serviceWorker.controller || registration?.active;
+        if (target) {
+            target.postMessage(payload);
+        }
+    };
+
+    if (navigator.serviceWorker.controller) {
+        postMessage();
+        return;
+    }
+
+    navigator.serviceWorker.ready
+        .then(postMessage)
+        .catch(() => {});
+
+    if (typeof window !== 'undefined') {
+        try {
+            window.dispatchEvent(new CustomEvent('tim2-auth-token-changed', {
+                detail: token || null,
+            }));
+        } catch (error) {
+            // ignore dispatch failures
+        }
+    }
+}
+
 /**
  * Request persistent storage
  */
@@ -215,22 +251,43 @@ export function isOnline(): boolean {
 /**
  * Add online/offline event listeners
  */
+function notifySWAboutStatus(isOnlineStatus: boolean) {
+    if (navigator.serviceWorker?.controller) {
+        navigator.serviceWorker.controller.postMessage({
+            action: 'SET_ONLINE_STATUS',
+            online: isOnlineStatus,
+        });
+    }
+}
+
 export function setupNetworkListeners(
     onOnline?: () => void,
     onOffline?: () => void
 ): () => void {
     const handleOnline = () => {
         console.log('App is online');
+        notifySWAboutStatus(true);
         if (onOnline) onOnline();
     };
 
     const handleOffline = () => {
         console.log('App is offline');
+        notifySWAboutStatus(false);
         if (onOffline) onOffline();
     };
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+
+    if (navigator.serviceWorker) {
+        navigator.serviceWorker.ready
+            .then(() => notifySWAboutStatus(navigator.onLine))
+            .catch(() => {});
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            notifySWAboutStatus(navigator.onLine);
+        });
+    }
+    notifySWAboutStatus(navigator.onLine);
 
     // Return cleanup function
     return () => {
@@ -268,7 +325,7 @@ export async function cacheTimeEntryOffline(entry: any): Promise<void> {
 /**
  * Request background sync
  */
-export async function requestBackgroundSync(tag: string = 'sync-time-entries'): Promise<void> {
+export async function requestBackgroundSync(tag: string = 'sync-offline-queue'): Promise<void> {
     if (!('serviceWorker' in navigator) || !('SyncManager' in window)) {
         console.warn('Background Sync not supported');
         return;
@@ -277,6 +334,18 @@ export async function requestBackgroundSync(tag: string = 'sync-time-entries'): 
     try {
         const registration = await navigator.serviceWorker.ready;
         await (registration as any).sync.register(tag);
+
+        // Register legacy tag for compatibility with older SWs
+        if (tag !== 'sync-time-entries') {
+            try {
+                await (registration as any).sync.register('sync-time-entries');
+            } catch (legacyError) {
+                if (import.meta.env.DEV) {
+                    console.warn('Legacy sync registration failed', legacyError);
+                }
+            }
+        }
+
         console.log(`Background sync registered: ${tag}`);
     } catch (error) {
         console.error('Failed to register background sync:', error);

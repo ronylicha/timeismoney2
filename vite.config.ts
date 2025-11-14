@@ -8,7 +8,7 @@ export default defineConfig({
         laravel({
             input: [
                 'resources/css/app.css',
-                'resources/js/app.tsx'
+                'resources/js/index.tsx'
             ],
             refresh: true,
         }),
@@ -19,6 +19,7 @@ export default defineConfig({
             manifest: false, // Using custom manifest.json
             workbox: {
                 globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+                globIgnores: ['**/*.wasm', '**/sql-wasm.*'], // Ignore WASM files
                 maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
                 cleanupOutdatedCaches: true,
                 clientsClaim: true,
@@ -38,7 +39,11 @@ export default defineConfig({
                             }
                         }
                     }
-                ]
+                ],
+                // Exclude WASM files from build processing
+                modifyURLPrefix: {
+                    '': '/'
+                }
             },
             devOptions: {
                 enabled: false // Enable in development if needed
@@ -50,6 +55,10 @@ export default defineConfig({
             '@': new URL('./resources/js', import.meta.url).pathname,
         },
         extensions: ['.tsx', '.ts', '.jsx', '.js', '.json'],
+    },
+    assetsInclude: ['**/*.wasm'],
+    optimizeDeps: {
+        exclude: ['sql.js'], // Exclude sql.js from optimization to prevent WASM issues
     },
     build: {
         rollupOptions: {

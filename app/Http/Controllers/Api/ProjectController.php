@@ -16,6 +16,8 @@ class ProjectController extends Controller
     public function index(Request $request)
     {
         $query = Project::with(['client', 'users'])
+            ->withCount('tasks')
+            ->withSum('timeEntries as time_entries_sum_duration', 'duration_seconds')
             ->where('tenant_id', auth()->user()->tenant_id);
 
         // Filter by user's projects if not admin
@@ -244,7 +246,7 @@ class ProjectController extends Controller
             'columns' => $kanbanData,
             'stats' => [
                 'total' => $project->tasks()->count(),
-                'completed' => $project->tasks()->where('status', 'completed')->count(),
+                'completed' => $project->tasks()->where('status', 'done')->count(),
                 'in_progress' => $project->tasks()->where('status', 'in_progress')->count()
             ]
         ]);

@@ -40,7 +40,7 @@ const TasksSummaryWidget: React.FC<TasksSummaryWidgetProps> = ({ tasks, isLoadin
             count: tasks.completed,
             icon: <CheckCircle size={14} className="text-green-500" />,
             color: 'text-green-600',
-            to: '/tasks?status=completed',
+            to: '/tasks?status=done',
         },
     ];
 

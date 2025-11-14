@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
@@ -19,6 +19,9 @@ import {
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useOffline } from '@/contexts/OfflineContext';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { deleteOfflineRecord } from '@/utils/offlineDB';
 
 interface Client {
     id: number;
@@ -70,16 +73,38 @@ const ClientDetail: React.FC = () => {
     const queryClient = useQueryClient();
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const isNewClient = !id || id === 'new';
+    const isOnline = useOnlineStatus();
+    const { getOfflineData } = useOffline();
+    const [offlineClient, setOfflineClient] = useState<Client | null>(null);
+    const [offlineLoading, setOfflineLoading] = useState(false);
+    const isLocalClient = id?.startsWith('local_');
+    const shouldFetchOnline = !isNewClient && !!id && isOnline && !isLocalClient;
 
-    // Fetch client details (skip if creating new client)
-    const { data: client, isLoading } = useQuery({
+    // Fetch client details when online
+    const { data: onlineClient, isLoading: loadingClient } = useQuery({
         queryKey: ['client', id],
         queryFn: async () => {
             const response = await axios.get(`/clients/${id}`);
             return response.data.data;
         },
-        enabled: !isNewClient, // Only fetch if we have a valid ID
+        enabled: shouldFetchOnline,
     });
+
+    // Load cached client when offline or dealing with a local draft
+    useEffect(() => {
+        if (!shouldFetchOnline && !isNewClient && id) {
+            setOfflineLoading(true);
+            getOfflineData('clients', id)
+                .then((data) => setOfflineClient(data || null))
+                .catch(() => setOfflineClient(null))
+                .finally(() => setOfflineLoading(false));
+        } else if (shouldFetchOnline) {
+            setOfflineClient(null);
+        }
+    }, [shouldFetchOnline, isNewClient, id, getOfflineData]);
+
+    const client = onlineClient ?? offlineClient;
+    const isLoading = shouldFetchOnline ? loadingClient : offlineLoading;
 
     // Delete client mutation
     const deleteClientMutation = useMutation({
@@ -88,6 +113,9 @@ const ClientDetail: React.FC = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['clients'] });
+            if (id) {
+                deleteOfflineRecord('client', id).catch(() => {});
+            }
             toast.success(t('clients.clientDeletedSuccess'));
             navigate('/clients');
         },
@@ -166,7 +194,7 @@ const ClientDetail: React.FC = () => {
         );
     }
 
-    if (!client) {
+    if (!client && !isLoading) {
         return (
             <div className="p-6">
                 <div className="bg-white rounded-lg shadow p-12 text-center">

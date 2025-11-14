@@ -9,6 +9,7 @@ import {
     CheckCircleIcon
 } from '@heroicons/react/24/outline';
 import { Project, Client, PaginatedResponse } from '../types';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 
 interface ProjectFormData {
     name: string;
@@ -33,6 +34,7 @@ interface ProjectFormData {
 const EditProject: React.FC = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const isOnline = useOnlineStatus();
     const { id } = useParams<{ id: string }>();
     const queryClient = useQueryClient();
 
@@ -153,6 +155,13 @@ const EditProject: React.FC = () => {
             return;
         }
 
+        if (!isOnline) {
+            toast.info(
+                t('projects.offlineQueued') ||
+                'Mise à jour enregistrée hors ligne. Elle sera synchronisée automatiquement lorsque la connexion reviendra.'
+            );
+        }
+
         updateProjectMutation.mutate(formData);
     };
 
@@ -181,6 +190,13 @@ const EditProject: React.FC = () => {
                     </h1>
                 </div>
             </div>
+
+            {!isOnline && (
+                <div className="mb-6 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800 border border-amber-200">
+                    {t('projects.offlineFormInfo') ||
+                        'Vous êtes hors ligne. Les modifications apportées au projet seront synchronisées automatiquement dès que la connexion sera rétablie.'}
+                </div>
+            )}
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-6">

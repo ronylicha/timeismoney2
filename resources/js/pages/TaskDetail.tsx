@@ -30,7 +30,7 @@ interface Task {
     id: number;
     title: string;
     description?: string;
-    status: 'todo' | 'in_progress' | 'review' | 'done' | 'cancelled';
+    status: 'todo' | 'in_progress' | 'in_review' | 'done' | 'cancelled';
     priority: 'low' | 'normal' | 'high' | 'urgent';
     type?: 'task' | 'bug' | 'feature' | 'improvement';
     project_id: number;
@@ -65,6 +65,9 @@ interface Task {
     parent?: {
         id: number;
         title: string;
+        status: string;
+        progress?: number;
+        code?: string;
     };
     children?: Array<{
         id: number;
@@ -155,15 +158,15 @@ const TaskDetail: React.FC = () => {
         const colors = {
             todo: 'bg-gray-100 text-gray-800',
             in_progress: 'bg-blue-100 text-blue-800',
-            review: 'bg-purple-100 text-purple-800',
-            completed: 'bg-green-100 text-green-800',
+            in_review: 'bg-purple-100 text-purple-800',
+            done: 'bg-green-100 text-green-800',
         };
 
         const labels = {
             todo: t('tasks.status.todo'),
             in_progress: t('tasks.status.inProgress'),
-            review: t('tasks.status.inReview'),
-            completed: t('tasks.status.completed'),
+            in_review: t('tasks.status.inReview'),
+            done: t('tasks.status.done'),
         };
 
         return (
@@ -227,7 +230,7 @@ const TaskDetail: React.FC = () => {
 
     const isOverdue = (dueDate?: string) => {
         if (!dueDate) return false;
-        return new Date(dueDate) < new Date() && task?.status !== 'completed';
+        return new Date(dueDate) < new Date() && task?.status !== 'done';
     };
 
     if (isLoading) {
@@ -314,10 +317,11 @@ const TaskDetail: React.FC = () => {
                                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 disabled={updateStatusMutation.isPending}
                             >
-                                <option value="todo">À faire</option>
-                                <option value="in_progress">En cours</option>
-                                <option value="review">En révision</option>
-                                <option value="completed">Terminé</option>
+                                <option value="todo">{t('tasks.status.todo')}</option>
+                                <option value="in_progress">{t('tasks.status.in_progress')}</option>
+                                <option value="in_review">{t('tasks.status.in_review')}</option>
+                                <option value="done">{t('tasks.status.done')}</option>
+                                <option value="cancelled">{t('tasks.status.cancelled')}</option>
                             </select>
                         </div>
                     </div>
@@ -375,6 +379,43 @@ const TaskDetail: React.FC = () => {
                                     <div className="prose max-w-none">
                                         <p className="text-gray-700 whitespace-pre-wrap">{task.description}</p>
                                     </div>
+                                </div>
+                            )}
+
+                            {/* Parent Task */}
+                            {task.parent && (
+                                <div className="bg-white rounded-lg shadow p-6">
+                                    <h3 className="text-lg font-medium text-gray-900 mb-4">
+                                        <LinkIcon className="inline h-5 w-5 mr-1" />
+                                        {t('tasks.detail.parentTask')}
+                                    </h3>
+                                    <Link
+                                        to={`/tasks/${task.parent.id}`}
+                                        className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                                    >
+                                        <div className="flex-1">
+                                            <div className="flex items-center space-x-2 mb-2">
+                                                <span className="font-medium text-gray-900">{task.parent.title}</span>
+                                                {task.parent.code && (
+                                                    <span className="text-sm text-gray-500">#{task.parent.code}</span>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center space-x-3">
+                                                {getStatusBadge(task.parent.status)}
+                                                {task.parent.progress !== undefined && (
+                                                    <div className="flex items-center space-x-2">
+                                                        <div className="w-32 bg-gray-200 rounded-full h-2">
+                                                            <div
+                                                                className="bg-blue-600 h-2 rounded-full transition-all"
+                                                                style={{ width: `${task.parent.progress}%` }}
+                                                            ></div>
+                                                        </div>
+                                                        <span className="text-sm text-gray-600">{task.parent.progress}%</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </Link>
                                 </div>
                             )}
 

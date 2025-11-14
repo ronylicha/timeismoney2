@@ -19,7 +19,27 @@ class TaskController extends Controller
     public function index(Request $request)
     {
         $tenantId = auth()->user()->tenant_id;
-        $query = Task::with(['project', 'users', 'parent'])
+
+        // Determine which relations to load
+        $relations = ['project', 'users', 'parent'];
+
+        // If include_full parameter is set, load all relations for offline use
+        if ($request->boolean('include_full')) {
+            $relations = [
+                'project',
+                'users',
+                'parent',
+                'children',
+                'dependencies',
+                'comments.user:id,name,email',
+                'attachments.user:id,name,email',
+                'timeEntries' => function ($q) {
+                    $q->latest()->limit(10);
+                }
+            ];
+        }
+
+        $query = Task::with($relations)
             ->whereHas('project', function ($q) use ($tenantId) {
                 $q->where('tenant_id', $tenantId);
             });
@@ -48,7 +68,13 @@ class TaskController extends Controller
 
         // Filter by status
         if ($request->status) {
-            $query->where('status', $request->status);
+            // Support multiple statuses separated by commas
+            if (str_contains($request->status, ',')) {
+                $statuses = explode(',', $request->status);
+                $query->whereIn('status', $statuses);
+            } else {
+                $query->where('status', $request->status);
+            }
         }
 
         // Filter by priority
@@ -154,8 +180,8 @@ class TaskController extends Controller
             'parent_id' => 'nullable|exists:tasks,id',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'required|in:todo,in_progress,review,done,cancelled',
-            'priority' => 'required|in:low,normal,high,urgent',
+            'status' => 'required|in:todo,in_progress,in_review,done,cancelled',
+            'priority' => 'required|in:low,normal,medium,high,urgent',
             'type' => 'nullable|in:task,bug,feature,improvement',
             'estimated_hours' => 'nullable|numeric|min:0',
             'start_date' => 'nullable|date',
@@ -167,6 +193,12 @@ class TaskController extends Controller
             'assigned_users.*' => 'exists:users,id'
         ]);
 
+        // Map parent_id to parent_task_id (frontend uses parent_id, but DB uses parent_task_id)
+        if (isset($validated['parent_id'])) {
+            $validated['parent_task_id'] = $validated['parent_id'];
+            unset($validated['parent_id']);
+        }
+
         // Generate task code
         $project = Project::find($validated['project_id']);
         $validated['code'] = $this->generateTaskCode($project);
@@ -177,12 +209,16 @@ class TaskController extends Controller
             ->max('position') ?? 0;
         $validated['position'] = $maxPosition + 1;
 
+        // Extract assigned_users before creating task
+        $assignedUsers = $validated['assigned_users'] ?? [];
+        unset($validated['assigned_users']);
+
         // Create task
         $task = Task::create($validated);
 
         // Assign users
-        if (!empty($validated['assigned_users'])) {
-            foreach ($validated['assigned_users'] as $userId) {
+        if (!empty($assignedUsers)) {
+            foreach ($assignedUsers as $userId) {
                 $task->users()->attach($userId, [
                     'role' => 'assignee',
                     'assigned_hours' => null
@@ -240,23 +276,50 @@ class TaskController extends Controller
         $validated = $request->validate([
             'title' => 'string|max:255',
             'description' => 'nullable|string',
-            'status' => 'in:todo,in_progress,review,done,cancelled',
-            'priority' => 'in:low,normal,high,urgent',
+            'status' => 'in:todo,in_progress,in_review,done,cancelled',
+            'priority' => 'in:low,normal,high,urgent,medium',
             'type' => 'nullable|in:task,bug,feature,improvement',
+            'parent_id' => 'nullable|exists:tasks,id',
             'estimated_hours' => 'nullable|numeric|min:0',
             'start_date' => 'nullable|date',
             'due_date' => 'nullable|date|after_or_equal:start_date',
             'is_billable' => 'boolean',
-            'labels' => 'nullable|array'
+            'hourly_rate' => 'nullable|numeric|min:0',
+            'labels' => 'nullable|array',
+            'assigned_users' => 'nullable|array',
+            'assigned_users.*' => 'exists:users,id'
         ]);
 
-        // If status changed and it's done, set completed_at
+        // Map parent_id to parent_task_id (frontend uses parent_id, but DB uses parent_task_id)
+        if (isset($validated['parent_id'])) {
+            $validated['parent_task_id'] = $validated['parent_id'];
+            unset($validated['parent_id']);
+        }
+
+        // If status changed to done, set completed_at
         if (isset($validated['status']) && $validated['status'] === 'done' && $task->status !== 'done') {
             $validated['completed_at'] = now();
             $validated['actual_hours'] = $task->tracked_hours;
         }
 
+        // Extract assigned_users before update
+        $assignedUsers = $validated['assigned_users'] ?? null;
+        unset($validated['assigned_users']);
+
         $task->update($validated);
+
+        // Update assigned users if provided
+        if ($assignedUsers !== null) {
+            // Sync users with their role
+            $syncData = [];
+            foreach ($assignedUsers as $userId) {
+                $syncData[$userId] = [
+                    'role' => 'assignee',
+                    'assigned_hours' => null
+                ];
+            }
+            $task->users()->sync($syncData);
+        }
 
         return response()->json([
             'message' => 'Tâche mise à jour avec succès',
@@ -270,7 +333,7 @@ class TaskController extends Controller
     public function updateStatus(Request $request, Task $task)
     {
         $validated = $request->validate([
-            'status' => 'required|in:todo,in_progress,review,done,cancelled',
+            'status' => 'required|in:todo,in_progress,in_review,done,cancelled',
             'position' => 'nullable|integer|min:0',
             'column_id' => 'nullable|string' // For custom columns
         ]);
@@ -636,7 +699,13 @@ class TaskController extends Controller
         }
 
         if ($request->status) {
-            $query->where('status', $request->status);
+            // Support multiple statuses separated by commas
+            if (str_contains($request->status, ',')) {
+                $statuses = explode(',', $request->status);
+                $query->whereIn('status', $statuses);
+            } else {
+                $query->where('status', $request->status);
+            }
         }
 
         if ($request->priority) {

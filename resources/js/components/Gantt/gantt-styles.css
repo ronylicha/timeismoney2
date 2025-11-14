@@ -1,0 +1,209 @@
+/* Import frappe-gantt base styles */
+/* @import 'frappe-gantt/dist/frappe-gantt.css'; */
+
+/* Gantt Container */
+.gantt-container {
+    min-height: 400px;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+}
+
+/* Custom Gantt Bar Colors based on Status */
+.gantt .bar.bar-todo {
+    fill: #9ca3af !important; /* gray-400 */
+}
+
+.gantt .bar.bar-progress {
+    fill: #3b82f6 !important; /* blue-500 */
+}
+
+.gantt .bar.bar-review {
+    fill: #a855f7 !important; /* purple-500 */
+}
+
+.gantt .bar.bar-completed {
+    fill: #10b981 !important; /* green-500 */
+}
+
+.gantt .bar.bar-cancelled {
+    fill: #ef4444 !important; /* red-500 */
+}
+
+/* Priority-based opacity variations */
+.gantt .bar.bar-low {
+    opacity: 0.6;
+}
+
+.gantt .bar.bar-normal {
+    opacity: 0.8;
+}
+
+.gantt .bar.bar-high {
+    opacity: 0.9;
+}
+
+.gantt .bar.bar-urgent {
+    opacity: 1;
+    stroke: #dc2626 !important; /* red-600 border */
+    stroke-width: 2px;
+}
+
+/* Critical path styling */
+.gantt .bar.bar-critical {
+    fill: #dc2626 !important; /* red-600 */
+    opacity: 1;
+    stroke: #991b1b !important; /* red-800 */
+    stroke-width: 2px;
+}
+
+/* Custom Popup Styles */
+.gantt-popup {
+    background: white;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    min-width: 250px;
+    max-width: 350px;
+}
+
+.gantt-popup-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 0.5rem;
+}
+
+.gantt-popup-desc {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 0.75rem;
+    line-height: 1.5;
+}
+
+.gantt-popup-dates,
+.gantt-popup-progress,
+.gantt-popup-assigned {
+    font-size: 0.875rem;
+    color: #374151;
+    margin-top: 0.5rem;
+}
+
+.gantt-popup strong {
+    color: #111827;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .gantt-popup {
+        background: #1f2937;
+        border: 1px solid #374151;
+    }
+
+    .gantt-popup-title {
+        color: #f9fafb;
+    }
+
+    .gantt-popup-desc {
+        color: #9ca3af;
+    }
+
+    .gantt-popup-dates,
+    .gantt-popup-progress,
+    .gantt-popup-assigned {
+        color: #d1d5db;
+    }
+
+    .gantt-popup strong {
+        color: #f3f4f6;
+    }
+}
+
+/* Dependency arrow styling */
+.gantt .arrow {
+    stroke: #6b7280;
+    stroke-width: 1.5px;
+}
+
+.gantt .arrow.critical {
+    stroke: #dc2626;
+    stroke-width: 2px;
+}
+
+/* Grid styling */
+.gantt .grid-background {
+    fill: #ffffff;
+}
+
+.gantt .grid-row {
+    fill: #f9fafb;
+}
+
+.gantt .grid-row:nth-child(even) {
+    fill: #ffffff;
+}
+
+.gantt .grid-header {
+    fill: #f3f4f6;
+    font-weight: 600;
+}
+
+/* Dark mode grid */
+@media (prefers-color-scheme: dark) {
+    .gantt .grid-background {
+        fill: #111827;
+    }
+
+    .gantt .grid-row {
+        fill: #1f2937;
+    }
+
+    .gantt .grid-row:nth-child(even) {
+        fill: #111827;
+    }
+
+    .gantt .grid-header {
+        fill: #374151;
+    }
+
+    .gantt .tick text,
+    .gantt .lower-text,
+    .gantt .upper-text {
+        fill: #d1d5db !important;
+    }
+}
+
+/* Bar progress fill */
+.gantt .bar-progress {
+    fill: rgba(59, 130, 246, 0.4) !important; /* blue with transparency */
+}
+
+/* Hover effects */
+.gantt .bar:hover {
+    filter: brightness(0.9);
+    cursor: move;
+}
+
+/* Handle styling for resizing */
+.gantt .handle {
+    fill: #3b82f6;
+    opacity: 0;
+    cursor: ew-resize;
+}
+
+.gantt .bar-wrapper:hover .handle {
+    opacity: 1;
+}
+
+/* Today marker */
+.gantt .today-highlight {
+    fill: #fef3c7; /* yellow-100 */
+    opacity: 0.3;
+}
+
+@media (prefers-color-scheme: dark) {
+    .gantt .today-highlight {
+        fill: #713f12; /* yellow-900 */
+        opacity: 0.2;
+    }
+}

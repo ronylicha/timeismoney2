@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>Time Is Money - Mode Hors Ligne</title>
     <style>
         * {
@@ -84,6 +85,15 @@
             color: #6b7280;
             font-size: 16px;
             line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        .hint {
+            color: #4b5563;
+            font-size: 14px;
+            line-height: 1.5;
+            background: #f3f4f6;
+            border-radius: 12px;
+            padding: 12px 16px;
             margin-bottom: 20px;
         }
 
@@ -232,11 +242,16 @@
         </div>
 
         <h1>Mode Hors Ligne</h1>
-        <p>Vous êtes actuellement hors ligne. L'application continue de fonctionner en mode local.</p>
+        <p>Vous travaillez sans connexion : l’application a basculé sur la base locale sécurisée et conserve toutes vos actions.</p>
+        <p class="hint">
+            Accès garanti au suivi du temps, feuilles de temps, clients, projets et dépenses. Les créations, mises à jour,
+            suppressions et pièces jointes sont enregistrées en attente avec un identifiant local pour éviter les doublons.
+            Les devis, la facturation et les paiements restent désactivés jusqu’au retour du réseau.
+        </p>
 
         <div class="status">
             <span class="status-icon"></span>
-            <span class="status-text">En attente de connexion...</span>
+            <span class="status-text">File de synchronisation en attente de connexion...</span>
         </div>
 
         <div class="features">
@@ -250,31 +265,55 @@
                 </div>
                 <div class="feature-text">
                     <div class="feature-title">Suivi du temps</div>
-                    <div class="feature-desc">Continuez à enregistrer vos heures de travail</div>
+                    <div class="feature-desc">Lancez/stoppez les timers, préchargez les projets et gardez vos entrées à jour</div>
                 </div>
             </div>
 
             <div class="feature-item">
                 <div class="feature-icon">
                     <svg viewBox="0 0 24 24">
-                        <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                        <path d="M5 4h14v2H5v14h14v2H5c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zm4 5h10v2H9V9zm0 4h10v2H9v-2zm0 4h7v2H9v-2z"/>
                     </svg>
                 </div>
                 <div class="feature-text">
-                    <div class="feature-title">Création de factures</div>
-                    <div class="feature-desc">Préparez vos factures pour envoi ultérieur</div>
+                    <div class="feature-title">Feuille de temps</div>
+                    <div class="feature-desc">Historique complet, filtres locaux et modifications synchronisées dès que possible</div>
                 </div>
             </div>
 
             <div class="feature-item">
                 <div class="feature-icon">
                     <svg viewBox="0 0 24 24">
-                        <path d="M4 6h18V4H4c-1.1 0-2 .9-2 2v11H0v3h14v-3H4V6zm19 2h-6c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h6c.55 0 1-.45 1-1V9c0-.55-.45-1-1-1zm-1 9h-4v-7h4v7z"/>
+                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                     </svg>
                 </div>
                 <div class="feature-text">
-                    <div class="feature-title">Consultation des données</div>
-                    <div class="feature-desc">Accédez à vos projets et clients en cache</div>
+                    <div class="feature-title">Clients</div>
+                    <div class="feature-desc">Ajoutez/éditez des fiches, retrouvez les contacts préchargés et voyez les créations en attente</div>
+                </div>
+            </div>
+
+            <div class="feature-item">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h6v-2H4V8h6V4zm10-2h-8c-1.1 0-2 .9-2 2v16l6-3 6 3V4c0-1.1-.9-2-2-2zm0 14l-4-2-4 2V4h8v12z"/>
+                    </svg>
+                </div>
+                <div class="feature-text">
+                    <div class="feature-title">Projets & tâches</div>
+                    <div class="feature-desc">Travaillez sur les projets et tâches existants même sans réseau, fichiers inclus</div>
+                </div>
+            </div>
+
+            <div class="feature-item">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M20 7h-4V3H8v4H4v13h16V7zm-10-2h4v2h-4V5zm8 13H6V9h12v9zm-10-7h4v2H8v-2zm0 4h8v2H8v-2z"/>
+                    </svg>
+                </div>
+                <div class="feature-text">
+                    <div class="feature-title">Dépenses</div>
+                    <div class="feature-desc">Créez des dépenses, attachez des reçus hors ligne et reliez-les aux projets préchargés</div>
                 </div>
             </div>
         </div>

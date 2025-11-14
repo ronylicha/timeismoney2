@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { MagnifyingGlassIcon, ChevronUpDownIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { Client, PaginatedResponse } from '../types';
+import { useOffline } from '@/contexts/OfflineContext';
 
 interface ClientSearchSelectProps {
     value: string;
@@ -24,6 +25,8 @@ const ClientSearchSelect: React.FC<ClientSearchSelectProps> = ({
     const [isOpen, setIsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const { isOnline, getOfflineData, offlineDB } = useOffline();
+    const [offlineClients, setOfflineClients] = useState<Client[]>([]);
 
     // Fetch clients with search
     const { data: clientsData, isLoading } = useQuery<PaginatedResponse<Client>>({
@@ -33,7 +36,8 @@ const ClientSearchSelect: React.FC<ClientSearchSelectProps> = ({
                 params: { search: searchQuery }
             });
             return response.data;
-        }
+        },
+        enabled: isOnline
     });
 
     // Fetch selected client details
@@ -41,12 +45,28 @@ const ClientSearchSelect: React.FC<ClientSearchSelectProps> = ({
         queryKey: ['client', value],
         queryFn: async () => {
             const response = await axios.get(`/clients/${value}`);
-            return response.data.data;
+            return response.data.data || response.data;
         },
-        enabled: !!value && value !== '',
-        staleTime: 0, // Force refresh when value changes
+        enabled: !!value && value !== '' && isOnline,
+        staleTime: 0,
         refetchOnMount: true,
     });
+
+    useEffect(() => {
+        if (isOnline && clientsData?.data?.length && offlineDB) {
+            clientsData.data.forEach(client => {
+                offlineDB.save('client', client).catch(() => {});
+            });
+        }
+    }, [isOnline, clientsData, offlineDB]);
+
+    useEffect(() => {
+        if (!isOnline) {
+            getOfflineData('clients')
+                .then(data => setOfflineClients(Array.isArray(data) ? data : data ? [data] : []))
+                .catch(() => setOfflineClients([]));
+        }
+    }, [isOnline, getOfflineData]);
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -60,7 +80,19 @@ const ClientSearchSelect: React.FC<ClientSearchSelectProps> = ({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const clients = clientsData?.data || [];
+    const clients = useMemo(() => {
+        if (isOnline) {
+            return clientsData?.data || [];
+        }
+        const cache = offlineClients || [];
+        if (!searchQuery) return cache;
+        const query = searchQuery.toLowerCase();
+        return cache.filter(client =>
+            client.name?.toLowerCase().includes(query) ||
+            client.company_name?.toLowerCase().includes(query) ||
+            client.email?.toLowerCase().includes(query)
+        );
+    }, [isOnline, clientsData, offlineClients, searchQuery]);
 
     const handleSelect = (clientId: string) => {
         onChange(clientId);
@@ -68,9 +100,15 @@ const ClientSearchSelect: React.FC<ClientSearchSelectProps> = ({
         setSearchQuery('');
     };
 
+    const offlineSelected = !isOnline && value
+        ? offlineClients.find(client => client.id?.toString() === value)
+        : null;
+
     const displayValue = selectedClient
         ? `${selectedClient.name}${selectedClient.company_name ? ` (${selectedClient.company_name})` : ''}`
-        : '';
+        : offlineSelected
+            ? `${offlineSelected.name}${offlineSelected.company_name ? ` (${offlineSelected.company_name})` : ''}`
+            : '';
 
     return (
         <div className="relative" ref={dropdownRef}>
@@ -121,7 +159,7 @@ const ClientSearchSelect: React.FC<ClientSearchSelectProps> = ({
 
                     {/* Options list */}
                     <div className="max-h-80 overflow-y-auto">
-                        {isLoading ? (
+                        {(isOnline && isLoading) ? (
                             <div className="p-4 text-center text-gray-500">
                                 Chargement...
                             </div>

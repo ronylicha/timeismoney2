@@ -30,6 +30,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
         { code: 'fr', name: 'French', nativeName: 'Français', flag: '🇫🇷' },
         { code: 'en', name: 'English', nativeName: 'English', flag: '🇬🇧' },
         { code: 'es', name: 'Spanish', nativeName: 'Español', flag: '🇪🇸' },
+        { code: 'pt', name: 'Portuguese', nativeName: 'Português', flag: '🇧🇷' },
     ];
 
     useEffect(() => {

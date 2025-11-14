@@ -20,6 +20,7 @@ class Invoice extends Model
         'created_by',
         'client_id',
         'project_id',
+        'quote_id',
         'invoice_number',
         'sequence_number',
         'date',
@@ -115,7 +116,10 @@ class Invoice extends Model
             }
 
             // Attribuer sequence_number uniquement si status != draft
-            if (!$invoice->sequence_number && $invoice->status !== 'draft') {
+            if ($invoice->status === 'draft') {
+                // Pour les brouillons, sequence_number est NULL
+                $invoice->sequence_number = null;
+            } elseif (!$invoice->sequence_number) {
                 $invoice->sequence_number = $invoice->getNextSequentialNumber();
             }
 
@@ -163,7 +167,7 @@ class Invoice extends Model
                     'action' => $invoice->status,
                     'signature' => $invoice->generateAuditSignature(),
                     'timestamp' => now(),
-                    'user_id' => auth()->id(),
+                    'user_id' => auth()->id() ?? $invoice->created_by ?? 1,
                     'ip_address' => request()->ip(),
                     'user_agent' => request()->userAgent(),
                     'changes' => $invoice->getDirty()
@@ -194,6 +198,14 @@ class Invoice extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    /**
+     * Get the quote referenced by this invoice
+     */
+    public function quote(): BelongsTo
+    {
+        return $this->belongsTo(Quote::class);
     }
 
     /**

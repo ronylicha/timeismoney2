@@ -25,6 +25,7 @@ import UserAvatar from '@/components/UserAvatar';
 import LanguageSelector from '@/components/LanguageSelector';
 import NotificationBell from '@/components/Notifications/NotificationBell';
 import PWAUpdatePrompt from '@/components/PWAUpdatePrompt';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 
 interface MainLayoutProps {
     isAdmin?: boolean;
@@ -37,6 +38,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
     const navigate = useNavigate();
     const { user, logout } = useAuth();
     const { t } = useTranslation();
+    const isOnline = useOnlineStatus();
 
     const isSuperAdmin = user?.role === 'super-admin';
     const isAdminOrManager = user?.role === 'admin' || user?.role === 'manager';
@@ -50,7 +52,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
         ...(isSuperAdmin ? [{ name: t('nav.settings'), href: '/admin/settings', icon: Cog6ToothIcon }] : []),
     ];
 
-    const navigation = isAdmin ? adminNavigation : [
+    const baseNavigation = [
         { name: t('nav.dashboard'), href: '/dashboard', icon: HomeIcon },
         { name: t('nav.time'), href: '/time', icon: ClockIcon },
         { name: t('nav.timesheet'), href: '/timesheet', icon: ClipboardDocumentListIcon },
@@ -65,6 +67,14 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
         ...(isAdminOrManager ? [{ name: t('nav.teamManagement'), href: '/team', icon: UsersIcon }] : []),
         { name: t('nav.settings'), href: '/settings', icon: Cog6ToothIcon },
     ];
+
+    const offlineSafeRoutes = new Set(['/time', '/timesheet', '/clients', '/projects', '/expenses']);
+
+    const navigation = isAdmin
+        ? adminNavigation
+        : (!isOnline
+            ? baseNavigation.filter(item => offlineSafeRoutes.has(item.href))
+            : baseNavigation);
 
     const handleLogout = () => {
         logout();
@@ -176,78 +186,86 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
                         </div>
 
                         <div className="ml-4 flex items-center space-x-4">
-                            {/* Language Selector */}
-                            <LanguageSelector />
+                            {isOnline ? (
+                                <>
+                                    {/* Language Selector */}
+                                    <LanguageSelector />
 
-                            {/* Notifications */}
-                            <NotificationBell />
+                                    {/* Notifications */}
+                                    <NotificationBell />
 
-                            {/* User menu */}
-                            <div className="relative">
-                                <button
-                                    onClick={() => setUserMenuOpen(!userMenuOpen)}
-                                    className="flex items-center text-sm focus:outline-none"
-                                >
-                                    <UserAvatar avatar={user?.avatar} name={user?.name} size="sm" />
-                                </button>
+                                    {/* User menu */}
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => setUserMenuOpen(!userMenuOpen)}
+                                            className="flex items-center text-sm focus:outline-none"
+                                        >
+                                            <UserAvatar avatar={user?.avatar} name={user?.name} size="sm" />
+                                        </button>
 
-                                {userMenuOpen && (
-                                    <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5">
-                                        <div className="py-1">
-                                            <Link
-                                                to="/profile"
-                                                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                                onClick={() => setUserMenuOpen(false)}
-                                            >
-                                                <div className="mr-3">
-                                                    <UserAvatar avatar={user?.avatar} name={user?.name} size="xs" />
+                                        {userMenuOpen && (
+                                            <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                                                <div className="py-1">
+                                                    <Link
+                                                        to="/profile"
+                                                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                        onClick={() => setUserMenuOpen(false)}
+                                                    >
+                                                        <div className="mr-3">
+                                                            <UserAvatar avatar={user?.avatar} name={user?.name} size="xs" />
+                                                        </div>
+                                                        {t('userMenu.profile')}
+                                                    </Link>
+                                                    <Link
+                                                        to="/settings"
+                                                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                        onClick={() => setUserMenuOpen(false)}
+                                                    >
+                                                        <Cog6ToothIcon className="mr-3 h-5 w-5 text-gray-400" />
+                                                        {t('userMenu.settings')}
+                                                    </Link>
+                                                    {user?.role === 'super-admin' && (
+                                                        location.pathname.startsWith('/admin') ? (
+                                                            <Link
+                                                                to="/dashboard"
+                                                                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                                onClick={() => setUserMenuOpen(false)}
+                                                            >
+                                                                <HomeIcon className="mr-3 h-5 w-5 text-gray-400" />
+                                                                {t('userMenu.dashboard')}
+                                                            </Link>
+                                                        ) : (
+                                                            <Link
+                                                                to="/admin"
+                                                                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                                onClick={() => setUserMenuOpen(false)}
+                                                            >
+                                                                <ShieldCheckIcon className="mr-3 h-5 w-5 text-gray-400" />
+                                                                {t('userMenu.administration')}
+                                                            </Link>
+                                                        )
+                                                    )}
+                                                    <div className="border-t border-gray-100"></div>
+                                                    <button
+                                                        onClick={() => {
+                                                            setUserMenuOpen(false);
+                                                            handleLogout();
+                                                        }}
+                                                        className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                                                    >
+                                                        <ArrowRightOnRectangleIcon className="mr-3 h-5 w-5" />
+                                                        {t('userMenu.logout')}
+                                                    </button>
                                                 </div>
-                                                {t('userMenu.profile')}
-                                            </Link>
-                                            <Link
-                                                to="/settings"
-                                                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                                onClick={() => setUserMenuOpen(false)}
-                                            >
-                                                <Cog6ToothIcon className="mr-3 h-5 w-5 text-gray-400" />
-                                                {t('userMenu.settings')}
-                                            </Link>
-                                            {user?.role === 'super-admin' && (
-                                                location.pathname.startsWith('/admin') ? (
-                                                    <Link
-                                                        to="/dashboard"
-                                                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                                        onClick={() => setUserMenuOpen(false)}
-                                                    >
-                                                        <HomeIcon className="mr-3 h-5 w-5 text-gray-400" />
-                                                        {t('userMenu.dashboard')}
-                                                    </Link>
-                                                ) : (
-                                                    <Link
-                                                        to="/admin"
-                                                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                                        onClick={() => setUserMenuOpen(false)}
-                                                    >
-                                                        <ShieldCheckIcon className="mr-3 h-5 w-5 text-gray-400" />
-                                                        {t('userMenu.administration')}
-                                                    </Link>
-                                                )
-                                            )}
-                                            <div className="border-t border-gray-100"></div>
-                                            <button
-                                                onClick={() => {
-                                                    setUserMenuOpen(false);
-                                                    handleLogout();
-                                                }}
-                                                className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                                            >
-                                                <ArrowRightOnRectangleIcon className="mr-3 h-5 w-5" />
-                                                {t('userMenu.logout')}
-                                            </button>
-                                        </div>
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                            </div>
+                                </>
+                            ) : (
+                                <div className="text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5">
+                                    {t('common.offlineMode') || 'Mode hors ligne'}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import axios from 'axios';
 import { toast } from 'react-toastify';
 import { setupNetworkListeners, isOnline, requestBackgroundSync } from '../utils/serviceWorker';
-import { initOfflineDB, OfflineDB } from '../utils/offlineDB';
+import { initOfflineDB, OfflineDB, deleteOfflineRecord, createLocalId } from '../utils/offlineDB';
+import { processAttachmentQueue, reassignPendingAttachments } from '../utils/offlineAttachments';
 
 interface OfflineContextValue {
     isOnline: boolean;
@@ -14,6 +16,51 @@ interface OfflineContextValue {
     saveOffline: (type: string, data: any) => Promise<void>;
     getOfflineData: (type: string, id?: string) => Promise<any>;
 }
+
+const PRIME_WINDOW_DAYS = 30;
+type SyncableEntity = 'timeEntry' | 'invoice' | 'expense';
+
+const toApiDate = (date: Date) => date.toISOString().slice(0, 10);
+
+interface QueueSyncConfig {
+    endpoint: string;
+    offlineType: string;
+    responseKeys: string[];
+}
+
+const QUEUED_ENTITY_SYNC_MAP: Record<string, QueueSyncConfig> = {
+    client: { endpoint: '/clients', offlineType: 'client', responseKeys: ['client', 'data'] },
+    clients: { endpoint: '/clients', offlineType: 'client', responseKeys: ['client', 'data'] },
+    project: { endpoint: '/projects', offlineType: 'project', responseKeys: ['project', 'data'] },
+    projects: { endpoint: '/projects', offlineType: 'project', responseKeys: ['project', 'data'] },
+    task: { endpoint: '/tasks', offlineType: 'task', responseKeys: ['task', 'data'] },
+    tasks: { endpoint: '/tasks', offlineType: 'task', responseKeys: ['task', 'data'] },
+    expense: { endpoint: '/expenses', offlineType: 'expense', responseKeys: ['expense', 'data'] },
+    expenses: { endpoint: '/expenses', offlineType: 'expense', responseKeys: ['expense', 'data'] },
+    expenseCategory: { endpoint: '/expense-categories', offlineType: 'expenseCategory', responseKeys: ['expense_category', 'data'] },
+};
+
+interface PrimeRequestConfig {
+    url: string;
+    params?: Record<string, any>;
+    saveType: string;
+    entityKey?: string;
+    extractor?: (payload: any) => any[];
+}
+
+const pickSyncedEntity = (payload: any, type: SyncableEntity) => {
+    if (!payload) return null;
+    switch (type) {
+        case 'timeEntry':
+            return payload.time_entry || payload.timer || payload.data || payload;
+        case 'invoice':
+            return payload.invoice || payload.data || payload;
+        case 'expense':
+            return payload.expense || payload.data || payload;
+        default:
+            return payload;
+    }
+};
 
 const OfflineContext = createContext<OfflineContextValue | undefined>(undefined);
 
@@ -31,7 +78,18 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const [isSyncing, setIsSyncing] = useState(false);
     const [pendingChanges, setPendingChanges] = useState(0);
     const [offlineDB, setOfflineDB] = useState<OfflineDB | null>(null);
+    const [authToken, setAuthToken] = useState<string | null>(() => {
+        if (typeof window === 'undefined') {
+            return null;
+        }
+        try {
+            return localStorage.getItem('auth_token');
+        } catch {
+            return null;
+        }
+    });
     const syncTimeoutRef = useRef<NodeJS.Timeout>();
+    const primeStateRef = useRef<{ token: string | null; primed: boolean }>({ token: null, primed: false });
 
     // Initialize offline database
     useEffect(() => {
@@ -94,7 +152,18 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
                     });
 
                     if (response.ok) {
+                        let payload: any = null;
+                        try {
+                            payload = await response.json();
+                        } catch {
+                            // ignore
+                        }
+                        const serverRecord = pickSyncedEntity(payload, 'timeEntry');
+                        if (serverRecord) {
+                            await offlineDB.save('timeEntry', serverRecord);
+                        }
                         await offlineDB.markAsSynced('timeEntries', entry.localId);
+                        await deleteOfflineRecord('time-entries', entry.localId);
                         syncedCount++;
                     } else {
                         errorCount++;
@@ -120,7 +189,18 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
                     });
 
                     if (response.ok) {
+                        let payload: any = null;
+                        try {
+                            payload = await response.json();
+                        } catch {
+                            // ignore
+                        }
+                        const serverInvoice = pickSyncedEntity(payload, 'invoice');
+                        if (serverInvoice) {
+                            await offlineDB.save('invoice', serverInvoice);
+                        }
                         await offlineDB.markAsSynced('invoices', invoice.localId);
+                        await deleteOfflineRecord('invoice', invoice.localId);
                         syncedCount++;
                     } else {
                         errorCount++;
@@ -146,7 +226,18 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
                     });
 
                     if (response.ok) {
+                        let payload: any = null;
+                        try {
+                            payload = await response.json();
+                        } catch {
+                            // ignore
+                        }
+                        const serverExpense = pickSyncedEntity(payload, 'expense');
+                        if (serverExpense) {
+                            await offlineDB.save('expense', serverExpense);
+                        }
                         await offlineDB.markAsSynced('expenses', expense.localId);
+                        await deleteOfflineRecord('expense', expense.localId);
                         syncedCount++;
                     } else {
                         errorCount++;
@@ -154,6 +245,118 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 } catch (error) {
                     if (import.meta.env.DEV) {
                         console.error('Failed to sync expense:', error);
+                    }
+                    errorCount++;
+                }
+            }
+
+            // Sync queued entities (clients, projects, tasks, expenses, expense categories)
+            const queuedEntities = await offlineDB.getQueuedEntities(['client', 'project', 'task', 'expense', 'expenseCategory']);
+
+            if (import.meta.env.DEV && queuedEntities.length > 0) {
+                console.log(`[Sync] Found ${queuedEntities.length} queued entities:`, queuedEntities.map(e => ({
+                    type: e.entityType,
+                    action: e.action,
+                    id: e.entityId
+                })));
+            }
+
+            for (const entry of queuedEntities) {
+                const config = QUEUED_ENTITY_SYNC_MAP[entry.entityType];
+                if (!config || !entry.payload) {
+                    if (import.meta.env.DEV) {
+                        console.warn(`[Sync] Skipping entry - no config or payload:`, entry);
+                    }
+                    continue;
+                }
+
+                try {
+                    const payload = sanitizeQueuedPayload(entry.payload);
+                    let response;
+                    let entity;
+
+                    // Handle different actions
+                    switch (entry.action) {
+                        case 'create': {
+                            response = await axios.post(config.endpoint, payload);
+                            entity = extractEntityFromResponse(response.data, config.responseKeys);
+                            if (entity) {
+                                await deleteOfflineRecord(config.offlineType, entry.entityId);
+                                await offlineDB.save(config.offlineType, entity);
+
+                                // Reassign pending attachments from local ID to server ID
+                                if (entity.id && entry.entityId !== entity.id) {
+                                    const attachmentEntityType = config.offlineType === 'project' ? 'projects' :
+                                        config.offlineType === 'expense' ? 'expenses' :
+                                        config.offlineType === 'task' ? 'tasks' : null;
+
+                                    if (attachmentEntityType) {
+                                        try {
+                                            await reassignPendingAttachments(
+                                                attachmentEntityType as any,
+                                                entry.entityId,
+                                                entity.id
+                                            );
+                                        } catch (error) {
+                                            if (import.meta.env.DEV) {
+                                                console.warn('Failed to reassign attachments:', error);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            break;
+                        }
+
+                        case 'update': {
+                            // Extract server ID from entityId (could be local_xxx or server ID)
+                            const serverId = payload.id || entry.entityId;
+                            if (serverId && !serverId.toString().startsWith('local_')) {
+                                response = await axios.put(`${config.endpoint}/${serverId}`, payload);
+                                entity = extractEntityFromResponse(response.data, config.responseKeys);
+                                if (entity) {
+                                    await offlineDB.save(config.offlineType, entity);
+                                }
+                            } else {
+                                // If still has local ID, treat as create
+                                response = await axios.post(config.endpoint, payload);
+                                entity = extractEntityFromResponse(response.data, config.responseKeys);
+                                if (entity) {
+                                    await deleteOfflineRecord(config.offlineType, entry.entityId);
+                                    await offlineDB.save(config.offlineType, entity);
+                                }
+                            }
+                            break;
+                        }
+
+                        case 'delete': {
+                            const serverId = entry.entityId;
+                            if (serverId && !serverId.toString().startsWith('local_')) {
+                                await axios.delete(`${config.endpoint}/${serverId}`);
+                                await deleteOfflineRecord(config.offlineType, entry.entityId);
+                            } else {
+                                // If local ID, just remove from local DB
+                                await deleteOfflineRecord(config.offlineType, entry.entityId);
+                            }
+                            break;
+                        }
+
+                        default:
+                            if (import.meta.env.DEV) {
+                                console.warn(`[Sync] Unknown action: ${entry.action}`);
+                            }
+                            continue;
+                    }
+
+                    await offlineDB.deleteQueueEntry(entry.id);
+                    syncedCount++;
+
+                    if (import.meta.env.DEV) {
+                        console.log(`[Sync] Successfully synced ${entry.action} ${entry.entityType} ${entry.entityId}`);
+                    }
+                } catch (error) {
+                    if (import.meta.env.DEV) {
+                        console.error(`Failed to sync ${entry.action} ${entry.entityType}:`, error);
                     }
                     errorCount++;
                 }
@@ -202,6 +405,11 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 }
                 syncTimeoutRef.current = setTimeout(() => {
                     syncNow();
+                    processAttachmentQueue().catch(error => {
+                        if (import.meta.env.DEV) {
+                            console.warn('Attachment queue sync failed', error);
+                        }
+                    });
                 }, 2000); // Wait 2 seconds before syncing
             },
             () => {
@@ -217,6 +425,122 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
             }
         };
     }, [syncNow]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            return undefined;
+        }
+        const handleTokenEvent = (event: Event) => {
+            const detail = (event as CustomEvent<string | null>).detail ?? null;
+            setAuthToken(detail);
+        };
+        const handleStorage = (event: StorageEvent) => {
+            if (event.key === 'auth_token') {
+                setAuthToken(event.newValue);
+            }
+        };
+        window.addEventListener('tim2-auth-token-changed', handleTokenEvent as EventListener);
+        window.addEventListener('storage', handleStorage);
+        return () => {
+            window.removeEventListener('tim2-auth-token-changed', handleTokenEvent as EventListener);
+            window.removeEventListener('storage', handleStorage);
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!isOnlineState || !offlineDB) {
+            return;
+        }
+        const token = authToken;
+        if (!token) {
+            primeStateRef.current = { token: null, primed: false };
+            return;
+        }
+        if (primeStateRef.current.primed && primeStateRef.current.token === token) {
+            return;
+        }
+
+        const prime = async () => {
+            try {
+                primeStateRef.current = { token, primed: true };
+                const endDate = new Date();
+                const startDate = new Date();
+                startDate.setDate(endDate.getDate() - PRIME_WINDOW_DAYS);
+
+                const baseListParams = { per_page: 250 };
+                const rangeParams = {
+                    start_date: toApiDate(startDate),
+                    end_date: toApiDate(endDate),
+                    per_page: 500,
+                };
+
+                const primeConfigs: PrimeRequestConfig[] = [
+                    { url: '/projects', params: baseListParams, saveType: 'project', entityKey: 'project' },
+                    { url: '/clients', params: baseListParams, saveType: 'client', entityKey: 'client' },
+                    { url: '/expenses', params: baseListParams, saveType: 'expense', entityKey: 'expense' },
+                    { url: '/expense-categories', params: { per_page: 250 }, saveType: 'expenseCategory', entityKey: 'expense_category' },
+                    { url: '/users', params: baseListParams, saveType: 'user', entityKey: 'user' },
+                    { url: '/tasks', params: { ...baseListParams, include_full: true }, saveType: 'task', entityKey: 'task' }, // Include all relations for offline
+                    { url: '/time-entries', params: rangeParams, saveType: 'timeEntry', extractor: extractTimeEntries },
+                    { url: '/time-entries/timesheet', params: { start_date: rangeParams.start_date, end_date: rangeParams.end_date }, saveType: 'timeEntry', extractor: extractTimeEntries },
+                ];
+
+                // Execute requests sequentially with delay to avoid rate limiting
+                const results: PromiseSettledResult<any>[] = [];
+                for (let i = 0; i < primeConfigs.length; i++) {
+                    const cfg = primeConfigs[i];
+                    try {
+                        const result = await axios.get(cfg.url, { params: cfg.params });
+                        results.push({ status: 'fulfilled', value: result });
+                    } catch (error) {
+                        results.push({ status: 'rejected', reason: error });
+                    }
+
+                    // Wait 200ms between requests to avoid rate limiting
+                    if (i < primeConfigs.length - 1) {
+                        await new Promise(resolve => setTimeout(resolve, 200));
+                    }
+                }
+
+                let hasFailure = false;
+                await Promise.all(
+                    results.map(async (result, index) => {
+                        const cfg = primeConfigs[index];
+                        if (result.status !== 'fulfilled') {
+                            hasFailure = true;
+                            return;
+                        }
+
+                        const payload = result.value.data;
+                        const items = cfg.extractor
+                            ? cfg.extractor(payload)
+                            : extractItems(payload, cfg.entityKey || cfg.saveType);
+
+                        if (!items.length) {
+                            return;
+                        }
+
+                        await Promise.all(
+                            items.map(item =>
+                                offlineDB.save(cfg.saveType, item).catch(() => undefined)
+                            )
+                        );
+                    })
+                );
+
+                if (hasFailure) {
+                    primeStateRef.current = { token: null, primed: false };
+                }
+            } catch (error) {
+                primeStateRef.current = { token: null, primed: false };
+                if (import.meta.env.DEV) {
+                    console.warn('Offline cache prime failed', error);
+                }
+            }
+        };
+
+        prime();
+    }, [isOnlineState, offlineDB, authToken]);
 
     // Clear all offline data
     const clearOfflineData = useCallback(async () => {
@@ -318,3 +642,101 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
         </OfflineContext.Provider>
     );
 };
+
+
+function extractItems(payload: any, singularKey: string): any[] {
+    if (!payload) return [];
+    if (Array.isArray(payload)) return payload.filter(Boolean);
+    if (Array.isArray(payload.data)) return payload.data.filter(Boolean);
+    if (payload.data && Array.isArray(payload.data.data)) return payload.data.data.filter(Boolean);
+    if (payload[singularKey]) {
+        return Array.isArray(payload[singularKey]) ? payload[singularKey] : [payload[singularKey]];
+    }
+    if (payload.data && payload.data[singularKey]) {
+        const value = payload.data[singularKey];
+        return Array.isArray(value) ? value : [value];
+    }
+    if (payload.data && typeof payload.data === 'object') {
+        return [payload.data];
+    }
+    return [payload].filter(Boolean);
+}
+
+function extractTimeEntries(payload: any): any[] {
+    if (!payload) return [];
+    const entriesMap = new Map<string, any>();
+
+    const pushEntry = (entry: any) => {
+        if (!entry || typeof entry !== 'object') {
+            return;
+        }
+        const key = entry.id || entry.local_id || entry.localId || createLocalId();
+        if (!entriesMap.has(key)) {
+            entriesMap.set(key, entry);
+        }
+    };
+
+    const pushArray = (value: any) => {
+        if (!value) return;
+        if (Array.isArray(value)) {
+            value.forEach(pushEntry);
+        }
+    };
+
+    if (Array.isArray(payload)) {
+        pushArray(payload);
+    } else {
+        pushArray(payload.data);
+        pushArray(payload.data?.data);
+        pushArray(payload.entries);
+        if (payload.by_date) {
+            Object.values(payload.by_date).forEach((list) => pushArray(list));
+        }
+        if (payload.by_project) {
+            Object.values(payload.by_project).forEach((bucket: any) => {
+                pushArray(bucket?.entries);
+            });
+        }
+        if (payload.time_entry) {
+            pushEntry(payload.time_entry);
+        }
+        if (payload.timer) {
+            pushEntry(payload.timer);
+        }
+        if (payload.data && !Array.isArray(payload.data) && payload.data.id) {
+            pushEntry(payload.data);
+        }
+    }
+
+    if (!entriesMap.size && payload.id) {
+        pushEntry(payload);
+    }
+
+    return Array.from(entriesMap.values());
+}
+
+function sanitizeQueuedPayload(payload: any) {
+    if (!payload || typeof payload !== 'object') {
+        return payload;
+    }
+    const cloned = { ...payload };
+    if (typeof cloned.id === 'string' && cloned.id.startsWith('local_')) {
+        delete cloned.id;
+    }
+    if ('__offline' in cloned) {
+        delete cloned.__offline;
+    }
+    return cloned;
+}
+
+function extractEntityFromResponse(data: any, keys: string[]) {
+    if (!data) {
+        return null;
+    }
+    for (const key of keys) {
+        if (data[key]) {
+            return data[key];
+        }
+    }
+    return data;
+}

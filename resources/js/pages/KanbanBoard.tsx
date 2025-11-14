@@ -304,7 +304,7 @@ const KanbanBoard: React.FC = () => {
         { id: 'todo', name: t('tasks.status.todo'), color: 'bg-gray-200' },
         { id: 'in_progress', name: t('tasks.status.in_progress'), color: 'bg-blue-200' },
         { id: 'in_review', name: t('tasks.status.in_review'), color: 'bg-purple-200' },
-        { id: 'completed', name: t('tasks.status.completed'), color: 'bg-green-200' },
+        { id: 'done', name: t('tasks.status.done'), color: 'bg-green-200' },
     ];
 
     const getTasksByStatus = (status: string) => {

@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { PlusIcon, MagnifyingGlassIcon, BanknotesIcon } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useOffline } from '@/contexts/OfflineContext';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 
 interface Expense {
     id: number;
@@ -22,7 +24,12 @@ interface Expense {
 
 const Expenses: React.FC = () => {
     const { t } = useTranslation();
+    const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
+    const { getOfflineData } = useOffline();
+    const isOnline = useOnlineStatus();
+    const [cachedExpenses, setCachedExpenses] = useState<Expense[]>([]);
+    const [offlineDrafts, setOfflineDrafts] = useState<Expense[]>([]);
 
     const { data: expenses, isLoading } = useQuery({
         queryKey: ['expenses', searchTerm],
@@ -32,11 +39,59 @@ const Expenses: React.FC = () => {
             });
             return response.data.data;
         },
+        enabled: isOnline,
     });
 
+    useEffect(() => {
+        if (isOnline && expenses?.length) {
+            setCachedExpenses(expenses);
+        }
+    }, [expenses, isOnline]);
+
+    const refreshOfflineExpenses = async () => {
+        try {
+            const data = await getOfflineData('expenses');
+            const normalized: Expense[] = Array.isArray(data) ? data : data ? [data] : [];
+            const drafts = normalized.filter((expense) => expense.id?.toString().startsWith('local_'));
+            setOfflineDrafts(drafts);
+            if (!isOnline && normalized.length) {
+                setCachedExpenses(normalized.filter((expense) => !expense.id?.toString().startsWith('local_')));
+            }
+        } catch (error) {
+            if (import.meta.env.DEV) {
+                console.warn('Failed to load offline expenses', error);
+            }
+        }
+    };
+
+    useEffect(() => {
+        refreshOfflineExpenses();
+    }, [searchTerm, expenses, isOnline]);
+
+    const mergedExpenses = useMemo(() => {
+        const base = isOnline ? (expenses ?? cachedExpenses) : cachedExpenses;
+        const map = new Map((base || []).map((expense) => [expense.id, expense]));
+        offlineDrafts.forEach((draft) => {
+            if (!map.has(draft.id)) {
+                map.set(draft.id, draft);
+            }
+        });
+
+        let list = Array.from(map.values());
+        if (searchTerm) {
+            const query = searchTerm.toLowerCase();
+            list = list.filter((expense) =>
+                expense.description?.toLowerCase().includes(query) ||
+                expense.project?.name?.toLowerCase().includes(query)
+            );
+        }
+
+        return list;
+    }, [expenses, cachedExpenses, offlineDrafts, isOnline, searchTerm]);
+
     const getTotalExpenses = () => {
-        if (!expenses) return 0;
-        return expenses.reduce((acc: number, expense: Expense) => acc + expense.amount, 0);
+        if (!mergedExpenses.length) return 0;
+        return mergedExpenses.reduce((acc: number, expense: Expense) => acc + expense.amount, 0);
     };
 
     return (
@@ -95,12 +150,12 @@ const Expenses: React.FC = () => {
                 </div>
             </div>
 
-            {isLoading ? (
+            {isLoading && isOnline ? (
                 <div className="text-center py-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
                     <p className="mt-4 text-gray-600">{t('common.loading')}</p>
                 </div>
-            ) : expenses?.length === 0 ? (
+            ) : mergedExpenses.length === 0 ? (
                 <div className="bg-white rounded-lg shadow p-12 text-center">
                     <BanknotesIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">{t('expenses.noExpenses')}</h3>
@@ -136,12 +191,12 @@ const Expenses: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {expenses?.map((expense: Expense) => (
-                                <tr
-                                    key={expense.id}
-                                    onClick={() => window.location.href = `/expenses/${expense.id}`}
-                                    className="hover:bg-gray-50 cursor-pointer transition"
-                                >
+                    {mergedExpenses.map((expense: Expense) => (
+                        <tr
+                            key={expense.id}
+                            onClick={() => navigate(`/expenses/${expense.id}`)}
+                            className="hover:bg-gray-50 cursor-pointer transition"
+                        >
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                         {format(new Date(expense.date), 'dd MMM yyyy', { locale: fr })}
                                     </td>

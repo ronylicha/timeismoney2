@@ -5,6 +5,7 @@ import { useMutation } from '@tanstack/react-query';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { syncServiceWorkerAuthToken } from '../../utils/serviceWorker';
 
 const TwoFactorAuth: React.FC = () => {
     const { t } = useTranslation();
@@ -21,6 +22,7 @@ const TwoFactorAuth: React.FC = () => {
         onSuccess: (data) => {
             if (data.token) {
                 localStorage.setItem('auth_token', data.token);
+                syncServiceWorkerAuthToken(data.token);
             }
             toast.success(t('auth.twoFactorSuccess'));
             navigate('/dashboard');

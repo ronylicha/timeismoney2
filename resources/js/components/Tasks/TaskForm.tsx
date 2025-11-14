@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -15,11 +15,14 @@ import {
     TagIcon,
 } from '@heroicons/react/24/outline';
 
+import { useOffline } from '@/contexts/OfflineContext';
+import { OFFLINE_ENTITY_EVENT } from '@/utils/offlineDB';
+
 interface Task {
     id?: number;
     title: string;
     description?: string;
-    status: 'todo' | 'in_progress' | 'review' | 'done' | 'cancelled';
+    status: 'todo' | 'in_progress' | 'in_review' | 'done' | 'cancelled';
     priority: 'low' | 'normal' | 'high' | 'urgent';
     type?: 'task' | 'bug' | 'feature' | 'improvement';
     project_id: number;
@@ -52,6 +55,13 @@ interface TaskFormProps {
     projectId?: number;
 }
 
+const normalizeRecords = <T,>(data: T | T[] | null | undefined): T[] => {
+    if (Array.isArray(data)) {
+        return data.filter(Boolean) as T[];
+    }
+    return data ? [data] : [];
+};
+
 const TaskForm: React.FC<TaskFormProps> = ({ 
     task, 
     isModal = false, 
@@ -62,6 +72,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     const navigate = useNavigate();
     const location = useLocation();
     const queryClient = useQueryClient();
+    const { isOnline, getOfflineData } = useOffline();
     
     const [formData, setFormData] = useState<Task>({
         title: '',
@@ -79,6 +90,104 @@ const TaskForm: React.FC<TaskFormProps> = ({
         assigned_users: [],
     });
 
+    const [cachedProjects, setCachedProjects] = useState<Project[]>([]);
+    const [offlineProjects, setOfflineProjects] = useState<Project[]>([]);
+    const [cachedUsers, setCachedUsers] = useState<User[]>([]);
+    const [offlineUsers, setOfflineUsers] = useState<User[]>([]);
+
+    // Fetch projects
+    const { data: projectsData } = useQuery({
+        queryKey: ['projects'],
+        queryFn: async () => {
+            const response = await axios.get('/projects');
+            return response.data.data;
+        },
+        enabled: isOnline,
+    });
+
+    // Fetch users for assignment
+    const { data: usersData } = useQuery({
+        queryKey: ['users'],
+        queryFn: async () => {
+            const response = await axios.get('/users');
+            return response.data.data;
+        },
+        enabled: isOnline,
+    });
+
+    const loadOfflineProjects = useCallback(() => {
+        getOfflineData('projects')
+            .then((data) => setOfflineProjects(normalizeRecords<Project>(data)))
+            .catch(() => setOfflineProjects([]));
+    }, [getOfflineData]);
+
+    const loadOfflineUsers = useCallback(() => {
+        getOfflineData('users')
+            .then((data) => setOfflineUsers(normalizeRecords<User>(data)))
+            .catch(() => setOfflineUsers([]));
+    }, [getOfflineData]);
+
+    useEffect(() => {
+        if (isOnline && Array.isArray(projectsData)) {
+            setCachedProjects(projectsData);
+        }
+    }, [projectsData, isOnline]);
+
+    useEffect(() => {
+        if (isOnline && Array.isArray(usersData)) {
+            setCachedUsers(usersData);
+        }
+    }, [usersData, isOnline]);
+
+    useEffect(() => {
+        loadOfflineProjects();
+        loadOfflineUsers();
+    }, [loadOfflineProjects, loadOfflineUsers]);
+
+    useEffect(() => {
+        const handler = (event: Event) => {
+            const detail = (event as CustomEvent).detail;
+            if (detail?.type === 'project') {
+                loadOfflineProjects();
+            }
+            if (detail?.type === 'user') {
+                loadOfflineUsers();
+            }
+        };
+        window.addEventListener(OFFLINE_ENTITY_EVENT, handler as EventListener);
+        return () => window.removeEventListener(OFFLINE_ENTITY_EVENT, handler as EventListener);
+    }, [loadOfflineProjects, loadOfflineUsers]);
+
+    const projectOptions = useMemo(() => {
+        const map = new Map<string, Project>();
+        (projectsData ?? cachedProjects).forEach((project) => {
+            if (project) {
+                map.set(String(project.id), project);
+            }
+        });
+        offlineProjects.forEach((project) => {
+            if (project) {
+                map.set(String(project.id), project);
+            }
+        });
+        return Array.from(map.values());
+    }, [projectsData, cachedProjects, offlineProjects]);
+
+    const userOptions = useMemo(() => {
+        const map = new Map<string, User>();
+        (usersData ?? cachedUsers).forEach((user) => {
+            if (user) {
+                map.set(String(user.id), user);
+            }
+        });
+        offlineUsers.forEach((user) => {
+            if (user) {
+                map.set(String(user.id), user);
+            }
+        });
+        return Array.from(map.values());
+    }, [usersData, cachedUsers, offlineUsers]);
+
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [projectSearchTerm, setProjectSearchTerm] = useState('');
     const [showProjectDropdown, setShowProjectDropdown] = useState(false);
@@ -88,30 +197,12 @@ const TaskForm: React.FC<TaskFormProps> = ({
     const [parentTaskSearchTerm, setParentTaskSearchTerm] = useState('');
     const [showParentTaskDropdown, setShowParentTaskDropdown] = useState(false);
 
-    // Fetch projects
-    const { data: projects } = useQuery({
-        queryKey: ['projects'],
-        queryFn: async () => {
-            const response = await axios.get('/projects');
-            return response.data.data;
-        },
-    });
-
-    // Fetch users for assignment
-    const { data: users } = useQuery({
-        queryKey: ['users'],
-        queryFn: async () => {
-            const response = await axios.get('/users');
-            return response.data.data;
-        },
-    });
-
     // Fetch available tasks for parent selection
     const { data: availableTasks } = useQuery({
         queryKey: ['tasks', 'parent-options', formData.project_id],
         queryFn: async () => {
             if (!formData.project_id) return [];
-            const response = await axios.get(`/tasks?project_id=${formData.project_id}&status=todo,in_progress,review`);
+            const response = await axios.get(`/tasks?project_id=${formData.project_id}&status=todo,in_progress,in_review`);
             return response.data.data.filter((t: Task) => t.id !== task?.id);
         },
         enabled: !!formData.project_id,
@@ -127,7 +218,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
             });
             
             // Set project search term when editing
-            const project = projects?.find((p: Project) => p.id === task.project_id);
+            const project = projectOptions.find((p: Project) => p.id === task.project_id);
             if (project) {
                 setProjectSearchTerm(`${project.code} - ${project.name}`);
             }
@@ -146,12 +237,12 @@ const TaskForm: React.FC<TaskFormProps> = ({
             }
         } else if (projectId) {
             setFormData(prev => ({ ...prev, project_id: projectId }));
-            const project = projects?.find((p: Project) => p.id === projectId);
+            const project = projectOptions.find((p: Project) => p.id === projectId);
             if (project) {
                 setProjectSearchTerm(`${project.code} - ${project.name}`);
             }
         }
-    }, [task, projectId, projects]);
+    }, [task, projectId, projectOptions, availableTasks]);
 
     // Get project_id from URL query params
     useEffect(() => {
@@ -171,10 +262,15 @@ const TaskForm: React.FC<TaskFormProps> = ({
             return response.data;
         },
         onSuccess: (data) => {
+            // Update the cache immediately with the new data
+            queryClient.setQueryData(['task', data.task.id.toString()], data.task);
+
+            // Then invalidate to ensure fresh data on next load
             queryClient.invalidateQueries({ queryKey: ['tasks'] });
             queryClient.invalidateQueries({ queryKey: ['kanbanTasks'] });
+
             toast.success('Tâche créée avec succès');
-            
+
             if (isModal && onClose) {
                 onClose();
             } else {
@@ -197,11 +293,15 @@ const TaskForm: React.FC<TaskFormProps> = ({
             return response.data;
         },
         onSuccess: (data) => {
+            // Update the cache immediately with the new data
+            queryClient.setQueryData(['task', task?.id?.toString()], data.task);
+
+            // Then invalidate to ensure fresh data on next load
             queryClient.invalidateQueries({ queryKey: ['tasks'] });
-            queryClient.invalidateQueries({ queryKey: ['task', task?.id] });
             queryClient.invalidateQueries({ queryKey: ['kanbanTasks'] });
+
             toast.success('Tâche mise à jour avec succès');
-            
+
             if (isModal && onClose) {
                 onClose();
             } else {
@@ -245,8 +345,6 @@ const TaskForm: React.FC<TaskFormProps> = ({
         const labels = e.target.value.split(',').map(label => label.trim()).filter(Boolean);
         setFormData(prev => ({ ...prev, labels }));
     };
-
-
 
     const isLoading = createTaskMutation.isPending || updateTaskMutation.isPending;
 
@@ -301,23 +399,26 @@ const TaskForm: React.FC<TaskFormProps> = ({
                             {/* Dropdown */}
                             {showProjectDropdown && (
                                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
-                                    {projects
-                                        ?.filter((project: Project) => 
-                                            project.name.toLowerCase().includes(projectSearchTerm.toLowerCase()) ||
-                                            project.code.toLowerCase().includes(projectSearchTerm.toLowerCase())
-                                        )
+                                    {projectOptions
+                                        .filter((project: Project) => {
+                                            const query = projectSearchTerm.toLowerCase();
+                                            return (project.name || '').toLowerCase().includes(query) || (project.code || '').toLowerCase().includes(query);
+                                        })
                                         .map((project: Project) => (
                                             <div
                                                 key={project.id}
                                                 onClick={() => {
                                                     setFormData(prev => ({ ...prev, project_id: project.id }));
-                                                    setProjectSearchTerm(`${project.code} - ${project.name}`);
+                                                    const label = project.code ? `${project.code} - ${project.name}` : project.name;
+                                                    setProjectSearchTerm(label);
                                                     setShowProjectDropdown(false);
                                                 }}
                                                 className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
                                             >
                                                 <div className="font-medium">{project.name}</div>
-                                                <div className="text-sm text-gray-500">{project.code}</div>
+                                                {project.code && (
+                                                    <div className="text-sm text-gray-500">{project.code}</div>
+                                                )}
                                             </div>
                                         ))}
                                 </div>
@@ -547,11 +648,11 @@ const TaskForm: React.FC<TaskFormProps> = ({
                         {/* Dropdown */}
                         {showUserDropdown && (
                             <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
-                                {users
-                                    ?.filter((user: User) => 
-                                        user.name.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-                                        user.email.toLowerCase().includes(userSearchTerm.toLowerCase())
-                                    )
+                                {userOptions
+                                    .filter((user: User) => {
+                                        const query = userSearchTerm.toLowerCase();
+                                        return (user.name || '').toLowerCase().includes(query) || (user.email || '').toLowerCase().includes(query);
+                                    })
                                     .filter((user: User) => !selectedUsers.includes(user.id))
                                     .map((user: User) => (
                                         <div
@@ -568,7 +669,9 @@ const TaskForm: React.FC<TaskFormProps> = ({
                                             className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
                                         >
                                             <div className="font-medium">{user.name}</div>
-                                            <div className="text-sm text-gray-500">{user.email}</div>
+                                            {user.email && (
+                                                <div className="text-sm text-gray-500">{user.email}</div>
+                                            )}
                                         </div>
                                     ))}
                             </div>
@@ -579,7 +682,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                     {selectedUsers.length > 0 && (
                         <div className="mt-3 flex flex-wrap gap-2">
                             {selectedUsers.map(userId => {
-                                const user = users?.find((u: User) => u.id === userId);
+                                const user = userOptions.find((u: User) => u.id === userId);
                                 return user ? (
                                     <div
                                         key={userId}

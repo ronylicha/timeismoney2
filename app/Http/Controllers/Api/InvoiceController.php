@@ -25,7 +25,7 @@ class InvoiceController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Invoice::with(['client', 'project', 'items'])
+        $query = Invoice::with(['client', 'project', 'quote', 'items'])
             ->where('tenant_id', auth()->user()->tenant_id);
 
         // Search
@@ -307,10 +307,11 @@ class InvoiceController extends Controller
     {
         // Load only safe relations to avoid infinite recursion
         $invoice = Invoice::with([
-            'client', 
-            'project', 
-            'items', 
-            'payments', 
+            'client',
+            'project',
+            'quote',
+            'items',
+            'payments',
             'auditLogs'
         ])
         ->where('tenant_id', auth()->user()->tenant_id)

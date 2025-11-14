@@ -14,7 +14,7 @@ import {
 interface Task {
     id: number;
     title: string;
-    status: 'todo' | 'in_progress' | 'review' | 'completed';
+    status: 'todo' | 'in_progress' | 'in_review' | 'done';
     code?: string;
 }
 
@@ -201,7 +201,7 @@ const TaskDependencies: React.FC<TaskDependenciesProps> = ({ taskId, projectId }
                                             {getDependencyTypeLabel(dependency.type)}
                                         </span>
                                         {getStatusIcon(dependency.depends_on_task.status)}
-                                        {dependency.depends_on_task.status !== 'completed' && (
+                                        {dependency.depends_on_task.status !== 'done' && (
                                             <div className="flex items-center space-x-1 text-amber-600">
                                                 <ExclamationTriangleIcon className="h-3 w-3" />
                                                 <span className="text-xs">

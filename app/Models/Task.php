@@ -50,6 +50,11 @@ class Task extends Model
     ];
 
     /**
+     * Append accessors to serialization
+     */
+    protected $appends = ['parent_id', 'assigned_users'];
+
+    /**
      * Boot the model
      */
     protected static function booted()
@@ -148,6 +153,30 @@ class Task extends Model
     }
 
     /**
+     * Get parent_id accessor (alias for parent_task_id)
+     * Frontend uses parent_id, but DB uses parent_task_id
+     */
+    public function getParentIdAttribute(): ?int
+    {
+        return $this->parent_task_id;
+    }
+
+    /**
+     * Get assigned_users accessor
+     * Returns array of user IDs assigned to this task
+     */
+    public function getAssignedUsersAttribute(): array
+    {
+        // Check if users relation is loaded to avoid N+1 queries
+        if ($this->relationLoaded('users')) {
+            return $this->users->pluck('id')->toArray();
+        }
+
+        // If not loaded, return empty array to avoid triggering query
+        return [];
+    }
+
+    /**
      * Get total tracked hours
      */
     public function getTrackedHoursAttribute(): float
@@ -164,7 +193,7 @@ class Task extends Model
             return min(100, ($this->tracked_hours / $this->estimated_hours) * 100);
         }
 
-        return $this->status === 'completed' ? 100 : 0;
+        return $this->status === 'done' ? 100 : 0;
     }
 
     /**
@@ -172,7 +201,7 @@ class Task extends Model
      */
     public function isOverdue(): bool
     {
-        return $this->due_date && $this->due_date->isPast() && $this->status !== 'completed';
+        return $this->due_date && $this->due_date->isPast() && $this->status !== 'done';
     }
 
     /**
@@ -181,7 +210,7 @@ class Task extends Model
     public function markAsCompleted(): void
     {
         $this->update([
-            'status' => 'completed',
+            'status' => 'done',
             'completed_at' => now(),
             'actual_hours' => $this->tracked_hours
         ]);
@@ -192,7 +221,7 @@ class Task extends Model
      */
     public function scopeIncomplete($query)
     {
-        return $query->where('status', '!=', 'completed');
+        return $query->where('status', '!=', 'done');
     }
 
     /**

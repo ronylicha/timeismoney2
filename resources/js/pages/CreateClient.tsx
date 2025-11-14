@@ -14,6 +14,9 @@ import {
 } from '@heroicons/react/24/outline';
 import AddressAutocomplete from '../components/AddressAutocomplete';
 import { COUNTRIES } from '../constants/countries';
+import { useOffline } from '@/contexts/OfflineContext';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { createLocalId } from '@/utils/offlineDB';
 
 interface ClientFormData {
     name: string;
@@ -43,6 +46,8 @@ interface ClientFormData {
 const CreateClient: React.FC = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const { saveOffline } = useOffline();
+    const isOnline = useOnlineStatus();
     const [formData, setFormData] = useState<ClientFormData>({
         name: '',
         company_name: '',
@@ -69,15 +74,38 @@ const CreateClient: React.FC = () => {
     });
     const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
 
+    const persistClientToOffline = async (clientPayload: Partial<ClientFormData> & { id?: string }, isOfflineDraft: boolean) => {
+        try {
+            const tempId = clientPayload.id || createLocalId();
+            await saveOffline('client', {
+                ...clientPayload,
+                id: tempId,
+                client_type: clientPayload.is_company ? 'company' : 'individual',
+                __offline: isOfflineDraft,
+                created_at: clientPayload.created_at || new Date().toISOString(),
+            });
+        } catch (error) {
+            if (import.meta.env.DEV) {
+                console.warn('Failed to cache client offline', error);
+            }
+        }
+    };
+
     // Create client mutation
     const createClientMutation = useMutation({
         mutationFn: async (data: ClientFormData) => {
             const response = await axios.post('/clients', data);
             return response.data;
         },
-        onSuccess: (response) => {
+        onSuccess: async (response) => {
+            const payload = response?.client || response?.data || response;
+            if (payload) {
+                await persistClientToOffline(payload, Boolean(response?.offline));
+            } else if (!isOnline) {
+                await persistClientToOffline(formData, true);
+            }
             toast.success(t('clients.clientCreatedSuccess'));
-            navigate(`/clients/${response.client.id}`);
+            navigate('/clients');
         },
         onError: (error: any) => {
             // Handle validation errors
@@ -166,6 +194,23 @@ const CreateClient: React.FC = () => {
             }
         }
 
+        if (!isOnline) {
+            const tempId = createLocalId();
+            persistClientToOffline({ ...formData, id: tempId }, true).then(() => {
+                toast.success(
+                    t('clients.clientCreatedSuccess') ||
+                    'Client enregistré hors ligne. Il sera synchronisé automatiquement.'
+                );
+                navigate('/clients', { replace: true });
+            }).catch(() => {
+                toast.error(
+                    t('clients.clientCreatedError') ||
+                    'Impossible d’enregistrer le client hors ligne.'
+                );
+            });
+            return;
+        }
+
         createClientMutation.mutate(formData);
     };
 
@@ -215,6 +260,13 @@ const CreateClient: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {!isOnline && (
+                <div className="mb-6 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800 border border-amber-200">
+                    {t('clients.offlineFormInfo') ||
+                        'Mode hors ligne : vous pouvez continuer à créer des clients. Nous synchroniserons automatiquement ces données dès que la connexion sera rétablie.'}
+                </div>
+            )}
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-6">

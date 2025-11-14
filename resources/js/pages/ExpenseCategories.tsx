@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import { PlusIcon, TagIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { useOffline } from '@/contexts/OfflineContext';
+import { createLocalId } from '@/utils/offlineDB';
 
 interface ExpenseCategory {
     id: number;
@@ -18,6 +20,9 @@ const ExpenseCategories: React.FC = () => {
     const queryClient = useQueryClient();
     const [showAddModal, setShowAddModal] = useState(false);
     const [newCategory, setNewCategory] = useState({ name: '', description: '' });
+    const { isOnline, getOfflineData, saveOffline } = useOffline();
+    const [offlineCategories, setOfflineCategories] = useState<ExpenseCategory[]>([]);
+    const [cachedCategories, setCachedCategories] = useState<ExpenseCategory[]>([]);
 
     const { data: categories, isLoading } = useQuery({
         queryKey: ['expense-categories'],
@@ -25,14 +30,36 @@ const ExpenseCategories: React.FC = () => {
             const response = await axios.get('/expense-categories');
             return response.data.data;
         },
+        enabled: isOnline,
     });
+
+    useEffect(() => {
+        if (isOnline && categories?.length) {
+            setCachedCategories(categories);
+        }
+    }, [isOnline, categories]);
+
+    useEffect(() => {
+        if (!isOnline) {
+            getOfflineData('expenseCategories')
+                .then((data) => {
+                    const normalized: ExpenseCategory[] = Array.isArray(data) ? data : data ? [data] : [];
+                    setOfflineCategories(normalized);
+                })
+                .catch(() => setOfflineCategories([]));
+        }
+    }, [isOnline, getOfflineData]);
 
     const createCategoryMutation = useMutation({
         mutationFn: async (data: { name: string; description: string }) => {
             const response = await axios.post('/expense-categories', data);
             return response.data;
         },
-        onSuccess: () => {
+        onSuccess: async (response) => {
+            const payload = response?.category || response?.data || response;
+            if (payload) {
+                await saveOffline('expenseCategory', payload).catch(() => {});
+            }
             queryClient.invalidateQueries({ queryKey: ['expense-categories'] });
             toast.success(t('expenses.categoryCreated'));
             setShowAddModal(false);
@@ -48,9 +75,27 @@ const ExpenseCategories: React.FC = () => {
         if (!newCategory.name.trim()) {
             toast.error(t('expenses.categoryNameRequired'));
             return;
+            return;
         }
+
+        if (!isOnline) {
+            const tempCategory = {
+                id: createLocalId(),
+                name: newCategory.name.trim(),
+                description: newCategory.description || null,
+            };
+            saveOffline('expenseCategory', tempCategory).catch(() => {});
+            setOfflineCategories((prev) => [tempCategory as ExpenseCategory, ...prev]);
+            toast.success(t('expenses.categoryCreated'));
+            setShowAddModal(false);
+            setNewCategory({ name: '', description: '' });
+            return;
+        }
+
         createCategoryMutation.mutate(newCategory);
     };
+
+    const displayedCategories = isOnline ? (categories ?? cachedCategories) : offlineCategories;
 
     return (
         <div className="p-6">
@@ -80,12 +125,19 @@ const ExpenseCategories: React.FC = () => {
                 </div>
             </div>
 
-            {isLoading ? (
+            {!isOnline && (
+                <div className="mb-4 rounded-lg bg-amber-50 border border-amber-200 px-4 py-2 text-sm text-amber-800">
+                    {t('expenses.offlineFormInfo') ||
+                        'Mode hors ligne : les catégories sont chargées depuis votre cache local.'}
+                </div>
+            )}
+
+            {isOnline && isLoading ? (
                 <div className="text-center py-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
                     <p className="mt-4 text-gray-600">{t('common.loading')}</p>
                 </div>
-            ) : categories?.length === 0 ? (
+            ) : displayedCategories?.length === 0 ? (
                 <div className="bg-white rounded-lg shadow p-12 text-center">
                     <TagIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">{t('expenses.noCategories')}</h3>
@@ -100,7 +152,7 @@ const ExpenseCategories: React.FC = () => {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {categories?.map((category: ExpenseCategory) => (
+                    {displayedCategories?.map((category: ExpenseCategory) => (
                         <div
                             key={category.id}
                             className="bg-white rounded-lg shadow hover:shadow-lg transition p-6"

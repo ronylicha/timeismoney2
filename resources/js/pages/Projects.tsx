@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 import {
     FolderIcon,
@@ -12,6 +11,11 @@ import {
     ClockIcon,
     ChartBarIcon
 } from '@heroicons/react/24/outline';
+import { useOffline } from '@/contexts/OfflineContext';
+import { OFFLINE_ENTITY_EVENT } from '@/utils/offlineDB';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 interface Project {
     id: number;
@@ -30,9 +34,13 @@ interface Project {
 
 const Projects: React.FC = () => {
     const { t } = useTranslation();
-    const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    const { getOfflineData } = useOffline();
+    const isOnline = useOnlineStatus();
+    const [cachedProjects, setCachedProjects] = useState<Project[]>([]);
+    const [offlineProjects, setOfflineProjects] = useState<Project[]>([]);
+    const [offlineDrafts, setOfflineDrafts] = useState<Project[]>([]);
 
     const { data: projects, isLoading } = useQuery({
         queryKey: ['projects', searchTerm, statusFilter],
@@ -45,7 +53,74 @@ const Projects: React.FC = () => {
             });
             return response.data.data;
         },
+        enabled: isOnline,
     });
+
+    useEffect(() => {
+        if (isOnline && projects?.length) {
+            setCachedProjects(projects);
+        }
+    }, [projects, isOnline]);
+
+    const refreshOfflineProjects = useCallback(async () => {
+        try {
+            const data = await getOfflineData('projects');
+            const normalized: Project[] = Array.isArray(data) ? data : data ? [data] : [];
+            setOfflineProjects(normalized);
+            setOfflineDrafts(normalized.filter((project) => project.id?.toString().startsWith('local_')));
+            if (!isOnline && normalized.length) {
+                setCachedProjects(normalized.filter((project) => !project.id?.toString().startsWith('local_')));
+            }
+        } catch (error) {
+            if (import.meta.env.DEV) {
+                console.warn('Failed to load offline projects', error);
+            }
+        }
+    }, [getOfflineData, isOnline]);
+
+    useEffect(() => {
+        refreshOfflineProjects();
+    }, [refreshOfflineProjects]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return undefined;
+        const handler = (event: Event) => {
+            const detail = (event as CustomEvent).detail;
+            if (detail?.type === 'project') {
+                refreshOfflineProjects();
+            }
+        };
+        window.addEventListener(OFFLINE_ENTITY_EVENT, handler as EventListener);
+        return () => window.removeEventListener(OFFLINE_ENTITY_EVENT, handler as EventListener);
+    }, [refreshOfflineProjects]);
+
+    const mergedProjects = useMemo(() => {
+        const onlineBase = projects ?? cachedProjects;
+        const base = isOnline ? onlineBase : offlineProjects;
+        const map = new Map((base || []).map(project => [project.id, project]));
+
+        offlineDrafts.forEach(draft => {
+            if (!map.has(draft.id)) {
+                map.set(draft.id, draft);
+            }
+        });
+
+        let list = Array.from(map.values());
+
+        if (statusFilter !== 'all') {
+            list = list.filter(project => project.status === statusFilter);
+        }
+
+        if (searchTerm) {
+            const query = searchTerm.toLowerCase();
+            list = list.filter(project =>
+                project.name?.toLowerCase().includes(query) ||
+                project.client?.name?.toLowerCase().includes(query)
+            );
+        }
+
+        return list;
+    }, [projects, cachedProjects, offlineDrafts, isOnline, searchTerm, statusFilter]);
 
     const getStatusBadge = (status: string) => {
         const colors = {
@@ -122,12 +197,12 @@ const Projects: React.FC = () => {
             </div>
 
             {/* Projects Grid */}
-            {isLoading ? (
+            {isLoading && isOnline ? (
                 <div className="text-center py-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
                     <p className="mt-4 text-gray-600">{t('common.loading')}</p>
                 </div>
-            ) : projects?.length === 0 ? (
+            ) : mergedProjects.length === 0 ? (
                 <div className="bg-white rounded-lg shadow p-12 text-center">
                     <FolderIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">{t('projects.noProjects')}</h3>
@@ -142,7 +217,7 @@ const Projects: React.FC = () => {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {projects?.map((project: Project) => (
+                    {mergedProjects.map((project: Project) => (
                         <Link
                             key={project.id}
                             to={`/projects/${project.id}`}
@@ -153,12 +228,24 @@ const Projects: React.FC = () => {
                                     <h3 className="text-lg font-semibold text-gray-900 mb-1">
                                         {project.name}
                                     </h3>
+                                    {project.created_at && (
+                                        <p className="text-xs text-gray-400">
+                                            {t('projects.addedOn') || 'Ajouté le'}{' '}
+                                            {format(new Date(project.created_at), 'dd MMM yyyy HH:mm', { locale: fr })}
+                                        </p>
+                                    )}
                                     {project.client && (
                                         <p className="text-sm text-gray-600">{project.client.name}</p>
                                     )}
                                 </div>
                                 {getStatusBadge(project.status)}
                             </div>
+
+                            {project.id?.toString().startsWith('local_') && (
+                                <span className="inline-flex items-center text-xs font-medium px-2 py-1 rounded-full bg-amber-100 text-amber-800 mb-3">
+                                    {t('common.pendingSync') || 'En attente de synchro'}
+                                </span>
+                            )}
 
                             {project.description && (
                                 <p className="text-sm text-gray-600 mb-4 line-clamp-2">

@@ -324,6 +324,9 @@
             @endif
             
             {{-- Références documents (si applicables) --}}
+            @if($invoice->quote && $invoice->quote->quote_number)
+                <strong>Devis de référence:</strong> {{ $invoice->quote->quote_number }}<br>
+            @endif
             @if($invoice->purchase_order_number)
                 <strong>Bon de commande:</strong> {{ $invoice->purchase_order_number }}<br>
             @endif

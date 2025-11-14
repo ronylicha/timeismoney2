@@ -30,6 +30,7 @@ const EditProject = lazy(() => import('./pages/EditProject'));
 const Tasks = lazy(() => import('./pages/Tasks'));
 const TaskDetail = lazy(() => import('./pages/TaskDetail'));
 const TaskForm = lazy(() => import('./components/Tasks/TaskForm'));
+const EditTask = lazy(() => import('./pages/EditTask'));
 const KanbanBoard = lazy(() => import('./pages/KanbanBoard'));
 const Clients = lazy(() => import('./pages/Clients'));
 const ClientDetail = lazy(() => import('./pages/ClientDetail'));
@@ -43,6 +44,7 @@ const QuoteDetail = lazy(() => import('./pages/QuoteDetail'));
 const CreateQuote = lazy(() => import('./pages/CreateQuote'));
 const Expenses = lazy(() => import('./pages/Expenses'));
 const CreateExpense = lazy(() => import('./pages/CreateExpense'));
+const ExpenseDetail = lazy(() => import('./pages/ExpenseDetail'));
 const ExpenseCategories = lazy(() => import('./pages/ExpenseCategories'));
 const Reports = lazy(() => import('./pages/Reports'));
 const Analytics = lazy(() => import('./pages/Analytics'));
@@ -76,9 +78,11 @@ import PrivateRoute from './components/PrivateRoute';
 import AdminRoute from './components/AdminRoute';
 
 // PWA
-import { registerServiceWorker } from './utils/serviceWorker';
+import { registerServiceWorker, syncServiceWorkerAuthToken } from './utils/serviceWorker';
 import { InstallPromptBanner } from './components/PWAInstallPrompt';
 import { ServiceWorkerUpdatePrompt } from './components/ServiceWorkerUpdatePrompt';
+import { getOfflineDB, deleteOfflineRecord, createLocalId } from './utils/offlineDB';
+import { reassignPendingAttachments, AttachmentEntityType } from './utils/offlineAttachments';
 
 // Create QueryClient instance
 const queryClient = new QueryClient({
@@ -123,6 +127,9 @@ axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 // Don't use withCredentials since we're using Bearer tokens, not cookies
 // axios.defaults.withCredentials = true;
 
+const initialAuthToken = localStorage.getItem('auth_token');
+syncServiceWorkerAuthToken(initialAuthToken);
+
 // Add auth token to requests
 axios.interceptors.request.use(
     (config) => {
@@ -162,6 +169,7 @@ axios.interceptors.response.use(
                         console.error('Authentication failed - clearing session');
                     }
                     localStorage.removeItem('auth_token');
+                    syncServiceWorkerAuthToken(null);
                     localStorage.removeItem('user');
 
                     // Redirect immediately without delay
@@ -172,6 +180,185 @@ axios.interceptors.response.use(
         return Promise.reject(error);
     }
 );
+
+axios.interceptors.response.use(
+    (response) => {
+        seedOfflineFromResponse(response);
+        return response;
+    },
+    (error) => Promise.reject(error)
+);
+
+function getCurrentTenantId(): string | null {
+    if (typeof window === 'undefined') {
+        return null;
+    }
+    try {
+        const tenantFromStorage = localStorage.getItem('tenant_id');
+        if (tenantFromStorage) {
+            return tenantFromStorage;
+        }
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+            const parsed = JSON.parse(storedUser);
+            if (parsed?.tenant_id) {
+                return String(parsed.tenant_id);
+            }
+        }
+    } catch (error) {
+        if (import.meta.env.DEV) {
+            console.warn('Failed to resolve tenant id from storage', error);
+        }
+    }
+    return null;
+}
+
+function isRecordInTenant(recordTenantId: any, tenantId: string | null): boolean {
+    if (!tenantId) {
+        return true;
+    }
+    if (recordTenantId === undefined || recordTenantId === null) {
+        return false;
+    }
+    return String(recordTenantId) === tenantId;
+}
+
+async function seedOfflineFromResponse(response: any) {
+    try {
+        const method = response?.config?.method?.toLowerCase();
+        if (method !== 'get') {
+            return;
+        }
+        const db = getOfflineDB();
+        if (!db) return;
+
+        const path = resolvePath(response.config);
+        if (!path) return;
+
+        if (path.startsWith('/projects')) {
+            const projects = extractItems(response.data, 'project');
+            await Promise.all(projects.map(project => db.save('project', project)));
+        }
+
+        if (path.startsWith('/clients')) {
+            const clients = extractItems(response.data, 'client');
+            await Promise.all(clients.map(client => db.save('client', client)));
+        }
+
+        if (path.startsWith('/expenses')) {
+            const expenses = extractItems(response.data, 'expense');
+            await Promise.all(expenses.map(expense => db.save('expense', expense)));
+        }
+
+        if (path.startsWith('/tasks')) {
+            const tasks = extractItems(response.data, 'task');
+            await Promise.all(tasks.map(task => db.save('task', task)));
+        }
+
+        if (path.startsWith('/expense-categories')) {
+            const categories = extractItems(response.data, 'expense_category');
+            await Promise.all(categories.map(category => db.save('expenseCategory', category)));
+        }
+
+        if (path.startsWith('/users')) {
+            const tenantScope = getCurrentTenantId();
+            const users = extractItems(response.data, 'user')
+                .filter(user => isRecordInTenant(user?.tenant_id, tenantScope));
+            if (users.length) {
+                await Promise.all(users.map(user => db.save('user', user)));
+            }
+        }
+
+        if (path.startsWith('/time-entries')) {
+            const entries = extractTimeEntries(response.data);
+            if (entries.length) {
+                await Promise.all(entries.map(entry => db.save('timeEntry', entry)));
+            }
+        }
+    } catch (error) {
+        if (import.meta.env.DEV) {
+            console.warn('Offline seed failed', error);
+        }
+    }
+}
+
+function resolvePath(config: any): string | null {
+    const rawUrl = config?.url;
+    if (!rawUrl) return null;
+    try {
+        if (rawUrl.startsWith('http')) {
+            return new URL(rawUrl).pathname;
+        }
+        const base = config?.baseURL || axios.defaults.baseURL || window.location.origin;
+        const full = new URL(rawUrl, base);
+        return full.pathname;
+    } catch {
+        return null;
+    }
+}
+
+function extractItems(payload: any, singularKey: string): any[] {
+    if (!payload) return [];
+    if (Array.isArray(payload)) return payload.filter(Boolean);
+    if (Array.isArray(payload.data)) return payload.data.filter(Boolean);
+    if (payload.data && typeof payload.data === 'object') return [payload.data];
+    if (payload[singularKey]) return [payload[singularKey]];
+    if (payload.item) return [payload.item];
+    return [payload];
+}
+
+function extractTimeEntries(payload: any): any[] {
+    if (!payload) return [];
+    const entriesMap = new Map<string, any>();
+
+    const pushEntry = (entry: any) => {
+        if (!entry || typeof entry !== 'object') {
+            return;
+        }
+        const key = entry.id || entry.local_id || entry.localId || createLocalId();
+        if (!entriesMap.has(key)) {
+            entriesMap.set(key, entry);
+        }
+    };
+
+    const pushArray = (value: any) => {
+        if (!value) return;
+        if (Array.isArray(value)) {
+            value.forEach(pushEntry);
+        }
+    };
+
+    if (Array.isArray(payload)) {
+        pushArray(payload);
+    } else {
+        pushArray(payload.data);
+        pushArray(payload.data?.data);
+        pushArray(payload.entries);
+        if (payload.by_date) {
+            Object.values(payload.by_date).forEach((list) => pushArray(list));
+        }
+        if (payload.by_project) {
+            Object.values(payload.by_project).forEach((bucket: any) => {
+                pushArray(bucket?.entries);
+            });
+        }
+        if (payload.time_entry) {
+            pushEntry(payload.time_entry);
+        }
+        if (payload.timer) {
+            pushEntry(payload.timer);
+        }
+        if (payload.data && !Array.isArray(payload.data) && payload.data.id) {
+            pushEntry(payload.data);
+        }
+    }
+
+    if (!entriesMap.size && payload.id) {
+        pushEntry(payload);
+    }
+
+    return Array.from(entriesMap.values());
+}
 
 function App() {
     useEffect(() => {
@@ -198,6 +385,80 @@ function App() {
         return () => {
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
+
+    const ENTITY_SAVE_MAP: Record<string, string> = {
+        projects: 'project',
+        clients: 'client',
+        expenses: 'expense',
+        'time-entries': 'timeEntry',
+    };
+
+    useEffect(() => {
+        if (!('serviceWorker' in navigator)) {
+            return;
+        }
+
+        const handler = (event: MessageEvent) => {
+            const data: any = event.data;
+            if (!data || data.type !== 'SYNC_SUCCESS') {
+                return;
+            }
+            const offlineDbInstance = getOfflineDB();
+
+            const invalidationMap: Record<string, string[][]> = {
+                projects: [['projects'], ['project']],
+                clients: [['clients'], ['client']],
+                tasks: [['tasks'], ['task']],
+                'time-entries': [['timeEntries'], ['time-entries']],
+            };
+
+            const targets = invalidationMap[data.entityType];
+            if (targets) {
+                targets.forEach((key) => {
+                    queryClient.invalidateQueries({ queryKey: key });
+                });
+            }
+
+            const saveKey = ENTITY_SAVE_MAP[data.entityType];
+            if (saveKey && data.payload && offlineDbInstance) {
+                offlineDbInstance.save(saveKey, data.payload).catch((err) => {
+                    if (import.meta.env.DEV) {
+                        console.warn('offline save (sync) failed', err);
+                    }
+                });
+            }
+
+            if (
+                data.payload?.id &&
+                data.clientId &&
+                (data.entityType === 'projects' || data.entityType === 'expenses')
+            ) {
+                reassignPendingAttachments(
+                    data.entityType as AttachmentEntityType,
+                    data.clientId,
+                    data.payload.id
+                ).catch((err) => {
+                    if (import.meta.env.DEV) {
+                        console.warn('attachment reassignment failed', err);
+                    }
+                });
+            }
+
+            if (data.clientId && data.entityType) {
+                deleteOfflineRecord(data.entityType, data.clientId).catch((err) => {
+                    if (import.meta.env.DEV) {
+                        console.warn('offline cleanup failed', err);
+                    }
+                });
+            }
+        };
+
+        navigator.serviceWorker.addEventListener('message', handler);
+
+        return () => {
+            navigator.serviceWorker.removeEventListener('message', handler);
         };
     }, []);
 
@@ -249,7 +510,7 @@ function App() {
                                         <Route path="/tasks" element={<Tasks />} />
                                         <Route path="/tasks/new" element={<TaskForm />} />
                                         <Route path="/tasks/:id" element={<TaskDetail />} />
-                                        <Route path="/tasks/:id/edit" element={<TaskForm />} />
+                                        <Route path="/tasks/:id/edit" element={<EditTask />} />
 
                                         {/* Clients */}
                                         <Route path="/clients" element={<Clients />} />
@@ -272,6 +533,7 @@ function App() {
                                         {/* Expenses */}
                                         <Route path="/expenses" element={<Expenses />} />
                                         <Route path="/expenses/new" element={<CreateExpense />} />
+                                        <Route path="/expenses/:id" element={<ExpenseDetail />} />
                                         <Route path="/expense-categories" element={<ExpenseCategories />} />
 
                                         {/* Reports & Analytics */}

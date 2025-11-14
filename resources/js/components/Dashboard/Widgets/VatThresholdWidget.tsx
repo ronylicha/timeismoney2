@@ -22,7 +22,7 @@ const VatThresholdWidget: React.FC = () => {
     const { data, isLoading, error } = useQuery<VatThresholdData>({
         queryKey: ['vatThreshold'],
         queryFn: async () => {
-            const response = await axios.get('/api/tenant/vat-threshold-status');
+            const response = await axios.get('/tenant/vat-threshold-status');
             return response.data;
         },
         refetchInterval: 300000, // Refresh every 5 minutes
@@ -62,209 +62,291 @@ const VatThresholdWidget: React.FC = () => {
     const isAboveThreshold = percentage >= 100;
 
     // Determine color scheme based on threshold percentage
-    const getColorScheme = () => {
+    const getProgressColor = () => {
+        if (isAboveThreshold) return '#dc2626'; // red-600
+        if (isNearThreshold) return '#f59e0b'; // amber-500
+        return '#10b981'; // green-500
+    };
+
+    const getStatusInfo = () => {
         if (isAboveThreshold) {
             return {
-                bg: 'bg-red-50 dark:bg-red-900/20',
-                border: 'border-red-200 dark:border-red-800',
-                text: 'text-red-900 dark:text-red-200',
-                icon: 'text-red-600 dark:text-red-400',
-                iconBg: 'bg-red-100 dark:bg-red-900',
-                progressBar: 'bg-red-600',
+                icon: AlertTriangle,
+                color: '#dc2626',
+                title: 'Seuil dépassé',
+                message: data.autoApply
+                    ? 'TVA à 20% appliquée automatiquement sur vos nouvelles factures'
+                    : 'Vous devez passer en régime normal avec TVA à 20%'
             };
         } else if (isNearThreshold) {
             return {
-                bg: 'bg-orange-50 dark:bg-orange-900/20',
-                border: 'border-orange-200 dark:border-orange-800',
-                text: 'text-orange-900 dark:text-orange-200',
-                icon: 'text-orange-600 dark:text-orange-400',
-                iconBg: 'bg-orange-100 dark:bg-orange-900',
-                progressBar: 'bg-orange-500',
+                icon: Info,
+                color: '#f59e0b',
+                title: 'Attention, proche du seuil',
+                message: 'Vous approchez du seuil de franchise. Préparez-vous au passage en TVA.'
             };
         } else {
             return {
-                bg: 'bg-blue-50 dark:bg-blue-900/20',
-                border: 'border-blue-200 dark:border-blue-800',
-                text: 'text-blue-900 dark:text-blue-200',
-                icon: 'text-blue-600 dark:text-blue-400',
-                iconBg: 'bg-blue-100 dark:bg-blue-900',
-                progressBar: 'bg-blue-600',
+                icon: CheckCircle,
+                color: '#10b981',
+                title: 'Franchise en base active',
+                message: 'Vos factures sont à 0% de TVA. Tout va bien !'
             };
         }
     };
 
-    const colors = getColorScheme();
-    const Icon = isAboveThreshold ? AlertTriangle : isNearThreshold ? Info : CheckCircle;
+    const statusInfo = getStatusInfo();
+    const StatusIcon = statusInfo.icon;
 
     const handleClick = () => {
         navigate('/settings/billing');
     };
 
+    const widgetStyles: React.CSSProperties = {
+        backgroundColor: '#ffffff',
+        borderRadius: '12px',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+        padding: '0',
+        border: '1px solid #e5e7eb',
+        overflow: 'hidden',
+        cursor: 'pointer',
+        transition: 'all 0.3s ease'
+    };
+
     return (
         <div
-            className={`${colors.bg} border-2 ${colors.border} rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-all`}
+            className="vat-threshold-widget"
             onClick={handleClick}
+            style={widgetStyles}
+            onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.12)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.08)';
+                e.currentTarget.style.transform = 'translateY(0)';
+            }}
         >
+            <style>
+                {`
+                    .vat-threshold-widget * {
+                        box-sizing: border-box !important;
+                    }
+                    .vat-widget-header {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+                        padding: 20px 24px !important;
+                    }
+                    .vat-widget-header-icon {
+                        background-color: rgba(255, 255, 255, 0.2) !important;
+                        border-radius: 8px !important;
+                        padding: 8px !important;
+                        display: inline-flex !important;
+                        margin-right: 12px !important;
+                    }
+                    .vat-widget-title {
+                        font-size: 18px !important;
+                        font-weight: 700 !important;
+                        color: #ffffff !important;
+                        margin: 0 0 4px 0 !important;
+                        line-height: 1.2 !important;
+                    }
+                    .vat-widget-subtitle {
+                        font-size: 13px !important;
+                        color: rgba(255, 255, 255, 0.9) !important;
+                        margin: 0 !important;
+                    }
+                    .vat-widget-body {
+                        padding: 24px !important;
+                    }
+                    .vat-widget-progress-container {
+                        display: flex !important;
+                        align-items: center !important;
+                        gap: 24px !important;
+                        margin-bottom: 24px !important;
+                    }
+                    .vat-widget-circle {
+                        flex-shrink: 0 !important;
+                        position: relative !important;
+                        width: 120px !important;
+                        height: 120px !important;
+                    }
+                    .vat-widget-circle-text {
+                        position: absolute !important;
+                        top: 50% !important;
+                        left: 50% !important;
+                        transform: translate(-50%, -50%) !important;
+                        text-align: center !important;
+                    }
+                    .vat-widget-percentage {
+                        font-size: 32px !important;
+                        font-weight: 800 !important;
+                        line-height: 1 !important;
+                        display: block !important;
+                    }
+                    .vat-widget-percentage-label {
+                        font-size: 11px !important;
+                        color: #6b7280 !important;
+                        margin-top: 4px !important;
+                        display: block !important;
+                    }
+                    .vat-widget-info {
+                        flex: 1 !important;
+                        display: flex !important;
+                        flex-direction: column !important;
+                        gap: 12px !important;
+                    }
+                    .vat-widget-info-row {
+                        display: flex !important;
+                        justify-content: space-between !important;
+                        align-items: center !important;
+                        padding: 10px 0 !important;
+                        border-bottom: 1px solid #e5e7eb !important;
+                    }
+                    .vat-widget-info-row:last-child {
+                        border-bottom: none !important;
+                    }
+                    .vat-widget-info-label {
+                        font-size: 14px !important;
+                        color: #6b7280 !important;
+                        font-weight: 500 !important;
+                    }
+                    .vat-widget-info-value {
+                        font-size: 16px !important;
+                        font-weight: 700 !important;
+                        color: #111827 !important;
+                    }
+                    .vat-widget-status {
+                        display: flex !important;
+                        gap: 12px !important;
+                        padding: 16px !important;
+                        border-radius: 10px !important;
+                        margin-bottom: 16px !important;
+                    }
+                    .vat-widget-status-icon {
+                        flex-shrink: 0 !important;
+                        width: 36px !important;
+                        height: 36px !important;
+                        border-radius: 50% !important;
+                        display: flex !important;
+                        align-items: center !important;
+                        justify-content: center !important;
+                    }
+                    .vat-widget-status-content {
+                        flex: 1 !important;
+                    }
+                    .vat-widget-status-title {
+                        font-size: 14px !important;
+                        font-weight: 700 !important;
+                        color: #111827 !important;
+                        margin: 0 0 4px 0 !important;
+                    }
+                    .vat-widget-status-message {
+                        font-size: 13px !important;
+                        color: #4b5563 !important;
+                        margin: 0 !important;
+                        line-height: 1.5 !important;
+                    }
+                    .vat-widget-footer {
+                        text-align: center !important;
+                        padding: 12px !important;
+                        background-color: #f9fafb !important;
+                        border-radius: 6px !important;
+                    }
+                    .vat-widget-footer-text {
+                        font-size: 12px !important;
+                        color: #6b7280 !important;
+                        margin: 0 !important;
+                        font-weight: 500 !important;
+                    }
+                `}
+            </style>
+
             {/* Header */}
-            <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                    <div className={`p-3 ${colors.iconBg} rounded-lg`}>
-                        <TrendingUp className={colors.icon} size={24} />
+            <div className="vat-widget-header">
+                <span className="vat-widget-header-icon">
+                    <TrendingUp size={24} color="#ffffff" />
+                </span>
+                <div style={{ display: 'inline-block', verticalAlign: 'middle' }}>
+                    <h3 className="vat-widget-title">Seuil de franchise TVA</h3>
+                    <p className="vat-widget-subtitle">{data.thresholdLabel}</p>
+                </div>
+            </div>
+
+            <div className="vat-widget-body">
+                {/* Progress Section */}
+                <div className="vat-widget-progress-container">
+                    {/* Circular Progress */}
+                    <div className="vat-widget-circle">
+                        <svg style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
+                            <circle
+                                cx="60"
+                                cy="60"
+                                r="52"
+                                fill="none"
+                                stroke="#e5e7eb"
+                                strokeWidth="10"
+                            />
+                            <circle
+                                cx="60"
+                                cy="60"
+                                r="52"
+                                fill="none"
+                                stroke={getProgressColor()}
+                                strokeWidth="10"
+                                strokeDasharray={`${2 * Math.PI * 52}`}
+                                strokeDashoffset={`${2 * Math.PI * 52 * (1 - Math.min(percentage, 100) / 100)}`}
+                                strokeLinecap="round"
+                                style={{ transition: 'stroke-dashoffset 0.5s ease' }}
+                            />
+                        </svg>
+                        <div className="vat-widget-circle-text">
+                            <span className="vat-widget-percentage" style={{ color: getProgressColor() }}>
+                                {Math.round(percentage)}%
+                            </span>
+                            <span className="vat-widget-percentage-label">du seuil</span>
+                        </div>
                     </div>
-                    <div>
-                        <h3 className={`text-lg font-semibold ${colors.text}`}>
-                            Seuil de franchise TVA
-                        </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {data.thresholdLabel}
-                        </p>
+
+                    {/* Info */}
+                    <div className="vat-widget-info">
+                        <div className="vat-widget-info-row">
+                            <span className="vat-widget-info-label">CA actuel</span>
+                            <span className="vat-widget-info-value">{formatCurrency(data.yearlyRevenue)}</span>
+                        </div>
+                        <div className="vat-widget-info-row">
+                            <span className="vat-widget-info-label">Seuil</span>
+                            <span className="vat-widget-info-value">{formatCurrency(data.threshold)}</span>
+                        </div>
+                        <div className="vat-widget-info-row">
+                            <span className="vat-widget-info-label">Restant</span>
+                            <span className="vat-widget-info-value" style={{ color: isAboveThreshold ? '#dc2626' : '#059669' }}>
+                                {formatCurrency(Math.max(0, data.threshold - data.yearlyRevenue))}
+                            </span>
+                        </div>
                     </div>
                 </div>
-                <Icon className={colors.icon} size={32} />
-            </div>
 
-            {/* Circular Progress Gauge */}
-            <div className="relative w-32 h-32 mx-auto mb-6">
-                <svg className="transform -rotate-90 w-32 h-32">
-                    {/* Background circle */}
-                    <circle
-                        cx="64"
-                        cy="64"
-                        r="56"
-                        stroke="currentColor"
-                        strokeWidth="8"
-                        fill="transparent"
-                        className="text-gray-200 dark:text-gray-700"
-                    />
-                    {/* Progress circle */}
-                    <circle
-                        cx="64"
-                        cy="64"
-                        r="56"
-                        stroke="currentColor"
-                        strokeWidth="8"
-                        fill="transparent"
-                        strokeDasharray={`${2 * Math.PI * 56}`}
-                        strokeDashoffset={`${2 * Math.PI * 56 * (1 - Math.min(percentage, 100) / 100)}`}
-                        className={colors.progressBar}
-                        strokeLinecap="round"
-                    />
-                </svg>
-                {/* Percentage text */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className={`text-3xl font-bold ${colors.text}`}>
-                        {Math.round(percentage)}%
-                    </span>
-                    <span className="text-xs text-gray-600 dark:text-gray-400">du seuil</span>
-                </div>
-            </div>
-
-            {/* Revenue Info */}
-            <div className="space-y-3 mb-4">
-                <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">CA actuel :</span>
-                    <span className={`text-lg font-semibold ${colors.text}`}>
-                        {formatCurrency(data.yearlyRevenue)}
-                    </span>
-                </div>
-                <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Seuil :</span>
-                    <span className="text-lg font-semibold text-gray-700 dark:text-gray-300">
-                        {formatCurrency(data.threshold)}
-                    </span>
-                </div>
-                <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Restant :</span>
-                    <span className={`text-lg font-semibold ${
-                        isAboveThreshold ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
-                    }`}>
-                        {formatCurrency(Math.max(0, data.threshold - data.yearlyRevenue))}
-                    </span>
-                </div>
-            </div>
-
-            {/* Progress bar */}
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mb-4">
+                {/* Status Message */}
                 <div
-                    className={`${colors.progressBar} h-3 rounded-full transition-all duration-500`}
-                    style={{ width: `${Math.min(percentage, 100)}%` }}
-                />
-            </div>
+                    className="vat-widget-status"
+                    style={{
+                        backgroundColor: `${statusInfo.color}15`,
+                        border: `2px solid ${statusInfo.color}30`
+                    }}
+                >
+                    <div className="vat-widget-status-icon" style={{ backgroundColor: statusInfo.color }}>
+                        <StatusIcon size={20} color="#ffffff" />
+                    </div>
+                    <div className="vat-widget-status-content">
+                        <p className="vat-widget-status-title">{statusInfo.title}</p>
+                        <p className="vat-widget-status-message">{statusInfo.message}</p>
+                    </div>
+                </div>
 
-            {/* Status Message */}
-            <div className={`p-3 rounded-lg ${colors.bg} border ${colors.border}`}>
-                {isAboveThreshold ? (
-                    <div className="flex items-start space-x-2">
-                        <AlertTriangle className={`${colors.icon} flex-shrink-0 mt-0.5`} size={20} />
-                        <div>
-                            <p className={`text-sm font-semibold ${colors.text}`}>
-                                Seuil dépassé !
-                            </p>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                                {data.autoApply 
-                                    ? 'TVA à 20% appliquée automatiquement sur vos nouvelles factures'
-                                    : 'Vous devez passer en régime normal avec TVA à 20%'
-                                }
-                            </p>
-                        </div>
-                    </div>
-                ) : isNearThreshold ? (
-                    <div className="flex items-start space-x-2">
-                        <Info className={`${colors.icon} flex-shrink-0 mt-0.5`} size={20} />
-                        <div>
-                            <p className={`text-sm font-semibold ${colors.text}`}>
-                                Attention, proche du seuil !
-                            </p>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                                Vous approchez du seuil de franchise. Préparez-vous au passage en TVA.
-                            </p>
-                            <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded text-xs">
-                                <p className="font-semibold text-yellow-800 dark:text-yellow-200">⚠️ Rappel légal important</p>
-                                <p className="text-yellow-700 dark:text-yellow-300 mt-1">
-                                    En cas de dépassement, <strong>TOUS les encaissements du mois concerné</strong> sont assujettis à la TVA (Art. 293 B CGI).
-                                    Consultez votre expert-comptable.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                ) : percentage >= 80 ? (
-                    <div className="flex items-start space-x-2">
-                        <Info className={`${colors.icon} flex-shrink-0 mt-0.5`} size={20} />
-                        <div>
-                            <p className={`text-sm font-semibold ${colors.text}`}>
-                                Surveillance recommandée
-                            </p>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                                Vous avez atteint {Math.round(percentage)}% du seuil. Restez vigilant.
-                            </p>
-                            <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-xs">
-                                <p className="font-semibold text-blue-800 dark:text-blue-200">💡 Conseil</p>
-                                <p className="text-blue-700 dark:text-blue-300 mt-1">
-                                    Envisagez de facturer avec TVA dès maintenant pour éviter une régularisation rétroactive en cas de dépassement.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="flex items-start space-x-2">
-                        <CheckCircle className={`${colors.icon} flex-shrink-0 mt-0.5`} size={20} />
-                        <div>
-                            <p className={`text-sm font-semibold ${colors.text}`}>
-                                Franchise en base active
-                            </p>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                                Vos factures sont à 0% de TVA. Tout va bien !
-                            </p>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* Footer hint */}
-            <div className="mt-4 text-center">
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Cliquez pour accéder aux paramètres TVA
-                </p>
+                {/* Footer */}
+                <div className="vat-widget-footer">
+                    <p className="vat-widget-footer-text">💡 Cliquez pour accéder aux paramètres TVA</p>
+                </div>
             </div>
         </div>
     );

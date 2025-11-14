@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
@@ -13,6 +13,10 @@ import {
     BriefcaseIcon,
     CurrencyEuroIcon,
 } from '@heroicons/react/24/outline';
+import { useOffline } from '@/contexts/OfflineContext';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 interface Client {
     id: number;
@@ -33,6 +37,10 @@ interface Client {
 const Clients: React.FC = () => {
     const { t } = useTranslation();
     const [searchTerm, setSearchTerm] = useState('');
+    const { getOfflineData } = useOffline();
+    const isOnline = useOnlineStatus();
+    const [cachedClients, setCachedClients] = useState<Client[]>([]);
+    const [offlineDrafts, setOfflineDrafts] = useState<Client[]>([]);
 
     // Fetch clients
     const { data: clients, isLoading } = useQuery({
@@ -45,18 +53,64 @@ const Clients: React.FC = () => {
             });
             return response.data.data;
         },
+        enabled: isOnline,
     });
 
-    const getTotalClients = () => clients?.length || 0;
+    useEffect(() => {
+        if (isOnline && clients?.length) {
+            setCachedClients(clients);
+        }
+    }, [clients, isOnline]);
+
+    const refreshOfflineClients = async () => {
+        try {
+            const data = await getOfflineData('clients');
+            const normalized: Client[] = Array.isArray(data) ? data : data ? [data] : [];
+            const drafts = normalized.filter((client) => client.id?.toString().startsWith('local_'));
+            setOfflineDrafts(drafts);
+            if (!isOnline && normalized.length) {
+                setCachedClients(normalized.filter((client) => !client.id?.toString().startsWith('local_')));
+            }
+        } catch (error) {
+            if (import.meta.env.DEV) {
+                console.warn('Failed to load offline clients', error);
+            }
+        }
+    };
+
+    useEffect(() => {
+        refreshOfflineClients();
+    }, [searchTerm, isOnline, clients]);
+
+    const mergedClients = useMemo(() => {
+        const base = isOnline ? (clients ?? cachedClients) : cachedClients;
+        const map = new Map((base || []).map((client) => [client.id, client]));
+        offlineDrafts.forEach((draft) => {
+            if (!map.has(draft.id)) {
+                map.set(draft.id, draft);
+            }
+        });
+        const list = Array.from(map.values());
+        if (searchTerm) {
+            const query = searchTerm.toLowerCase();
+            return list.filter((client) =>
+                client.name?.toLowerCase().includes(query) ||
+                client.email?.toLowerCase().includes(query)
+            );
+        }
+        return list;
+    }, [clients, cachedClients, offlineDrafts, isOnline, searchTerm]);
+
+    const getTotalClients = () => mergedClients.length;
 
     const getTotalRevenue = () => {
-        if (!clients) return 0;
-        return clients.reduce((acc: number, client: Client) => acc + (client.total_revenue || 0), 0);
+        if (!mergedClients.length) return 0;
+        return mergedClients.reduce((acc: number, client: Client) => acc + (client.total_revenue || 0), 0);
     };
 
     const getActiveProjects = () => {
-        if (!clients) return 0;
-        return clients.reduce((acc: number, client: Client) => acc + (client.active_projects_count || 0), 0);
+        if (!mergedClients.length) return 0;
+        return mergedClients.reduce((acc: number, client: Client) => acc + (client.active_projects_count || 0), 0);
     };
 
     return (
@@ -138,12 +192,12 @@ const Clients: React.FC = () => {
             </div>
 
             {/* Clients Grid */}
-            {isLoading ? (
+            {isLoading && isOnline ? (
                 <div className="text-center py-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
                     <p className="mt-4 text-gray-600">{t('common.loading')}</p>
                 </div>
-            ) : clients?.length === 0 ? (
+            ) : mergedClients.length === 0 ? (
                 <div className="bg-white rounded-lg shadow p-12 text-center">
                     <UserGroupIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">{t('clients.noClients')}</h3>
@@ -158,7 +212,7 @@ const Clients: React.FC = () => {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {clients?.map((client: Client) => (
+                    {mergedClients.map((client: Client) => (
                         <Link
                             key={client.id}
                             to={`/clients/${client.id}`}
@@ -170,6 +224,12 @@ const Clients: React.FC = () => {
                                     <h3 className="text-lg font-semibold text-gray-900 mb-1">
                                         {client.name}
                                     </h3>
+                                    {client.created_at && (
+                                        <p className="text-xs text-gray-400">
+                                            {t('clients.addedOn') || 'Ajouté le'}{' '}
+                                            {format(new Date(client.created_at), 'dd MMM yyyy HH:mm', { locale: fr })}
+                                        </p>
+                                    )}
                                     {client.company && (
                                         <p className="text-sm text-gray-600">{client.company}</p>
                                     )}
@@ -178,6 +238,12 @@ const Clients: React.FC = () => {
                                     <UserGroupIcon className="h-5 w-5 text-blue-600" />
                                 </div>
                             </div>
+
+                            {client.id?.toString().startsWith('local_') && (
+                                <span className="inline-flex items-center text-xs font-medium px-2 py-1 rounded-full bg-amber-100 text-amber-800 mb-3">
+                                    {t('common.pendingSync') || 'En attente de synchro'}
+                                </span>
+                            )}
 
                             {/* Contact Information */}
                             <div className="space-y-2 mb-4">

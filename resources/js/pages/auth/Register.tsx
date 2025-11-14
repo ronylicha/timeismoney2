@@ -13,6 +13,7 @@ import {
     EyeSlashIcon,
     ArrowRightIcon
 } from '@heroicons/react/24/outline';
+import { syncServiceWorkerAuthToken } from '../../utils/serviceWorker';
 
 interface RegisterFormData {
     name: string;
@@ -61,6 +62,7 @@ const Register: React.FC = () => {
             // Store auth token
             if (data.token) {
                 localStorage.setItem('auth_token', data.token);
+                syncServiceWorkerAuthToken(data.token);
             }
 
             // Store user data

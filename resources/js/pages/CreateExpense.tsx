@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import axios from 'axios';
@@ -12,6 +12,17 @@ import {
     PhotoIcon
 } from '@heroicons/react/24/outline';
 import { Project, PaginatedResponse } from '../types';
+import { useOffline } from '@/contexts/OfflineContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { createLocalId } from '@/utils/offlineDB';
+import {
+    ATTACHMENT_QUEUE_EVENT,
+    PendingAttachmentRecord,
+    listPendingAttachmentsByEntity,
+    queueAttachmentUpload,
+    removePendingAttachment,
+    processAttachmentQueue,
+} from '@/utils/offlineAttachments';
 
 interface ExpenseFormData {
     description: string;
@@ -28,6 +39,8 @@ interface ExpenseFormData {
 const CreateExpense: React.FC = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const { isOnline, saveOffline, getOfflineData, offlineDB } = useOffline();
+    const { user } = useAuth();
     const [formData, setFormData] = useState<ExpenseFormData>({
         description: '',
         amount: 0,
@@ -41,6 +54,10 @@ const CreateExpense: React.FC = () => {
     });
 
     const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+    const [offlineProjects, setOfflineProjects] = useState<Project[]>([]);
+    const [offlineCategories, setOfflineCategories] = useState<any[]>([]);
+    const [draftId] = useState(() => createLocalId());
+    const [queuedAttachments, setQueuedAttachments] = useState<PendingAttachmentRecord[]>([]);
 
     // Fetch expense categories
     const { data: categoriesData } = useQuery<PaginatedResponse<any>>({
@@ -48,7 +65,8 @@ const CreateExpense: React.FC = () => {
         queryFn: async () => {
             const response = await axios.get('/expense-categories');
             return response.data;
-        }
+        },
+        enabled: isOnline,
     });
 
     // Fetch projects for dropdown
@@ -57,8 +75,61 @@ const CreateExpense: React.FC = () => {
         queryFn: async () => {
             const response = await axios.get('/projects');
             return response.data;
-        }
+        },
+        enabled: isOnline,
     });
+
+    useEffect(() => {
+        getOfflineData('projects')
+            .then((data) => {
+                const normalized: Project[] = Array.isArray(data) ? data : data ? [data] : [];
+                setOfflineProjects(normalized);
+            })
+            .catch(() => setOfflineProjects([]));
+
+        getOfflineData('expenseCategories')
+            .then((data) => {
+                const normalized = Array.isArray(data) ? data : data ? [data] : [];
+                setOfflineCategories(normalized);
+            })
+            .catch(() => setOfflineCategories([]));
+    }, [getOfflineData]);
+
+    useEffect(() => {
+        if (!projectsData?.data?.length || !offlineDB) {
+            return;
+        }
+        projectsData.data.forEach((project: Project) => {
+            if (!project) return;
+            offlineDB.save('project', project).catch(() => undefined);
+        });
+    }, [projectsData, offlineDB]);
+
+    useEffect(() => {
+        if (!categoriesData?.data?.length || !offlineDB) {
+            return;
+        }
+        categoriesData.data.forEach((category: any) => {
+            if (!category) return;
+            offlineDB.save('expenseCategory', category).catch(() => undefined);
+        });
+    }, [categoriesData, offlineDB]);
+
+    const refreshQueuedAttachments = useCallback(() => {
+        listPendingAttachmentsByEntity('expenses', draftId)
+            .then(setQueuedAttachments)
+            .catch(() => setQueuedAttachments([]));
+    }, [draftId]);
+
+    useEffect(() => {
+        refreshQueuedAttachments();
+    }, [refreshQueuedAttachments]);
+
+    useEffect(() => {
+        const listener = () => refreshQueuedAttachments();
+        window.addEventListener(ATTACHMENT_QUEUE_EVENT, listener);
+        return () => window.removeEventListener(ATTACHMENT_QUEUE_EVENT, listener);
+    }, [refreshQueuedAttachments]);
 
     // Create expense mutation
     const createExpenseMutation = useMutation({
@@ -117,37 +188,75 @@ const CreateExpense: React.FC = () => {
         }
     };
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            // Validate file type
-            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
-            if (!allowedTypes.includes(file.type)) {
-                toast.error(t('expenses.invalidFileType'));
-                return;
+    const categoryOptions = useMemo(() => {
+        const map = new Map<string, any>();
+        (categoriesData?.data ?? []).forEach((category: any) => {
+            if (category) {
+                map.set(String(category.id), category);
             }
+        });
+        offlineCategories.forEach((category: any) => {
+            if (category) {
+                map.set(String(category.id), category);
+            }
+        });
+        return Array.from(map.values());
+    }, [categoriesData, offlineCategories]);
 
-            // Validate file size (5MB max)
-            if (file.size > 5 * 1024 * 1024) {
-                toast.error(t('expenses.fileSizeError'));
-                return;
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) {
+            return;
+        }
+
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+        if (!allowedTypes.includes(file.type)) {
+            toast.error(t('expenses.invalidFileType'));
+            e.target.value = '';
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error(t('expenses.fileSizeError'));
+            e.target.value = '';
+            return;
+        }
+
+        if (!isOnline) {
+            try {
+                await queueAttachmentUpload({
+                    entityType: 'expenses',
+                    entityId: draftId,
+                    file,
+                });
+                refreshQueuedAttachments();
+                toast.success(
+                    t('expenses.attachmentQueued') ||
+                    'Justificatif enregistré hors ligne. Il sera envoyé automatiquement.'
+                );
+            } catch (error) {
+                toast.error(
+                    t('expenses.attachmentQueueError') ||
+                    'Impossible d’enregistrer le justificatif hors ligne.'
+                );
             }
-            
-            setFormData(prev => ({
-                ...prev,
-                receipt: file
-            }));
-            
-            // Create preview for images
-            if (file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    setReceiptPreview(reader.result as string);
-                };
-                reader.readAsDataURL(file);
-            } else {
-                setReceiptPreview(null);
-            }
+            e.target.value = '';
+            return;
+        }
+
+        setFormData(prev => ({
+            ...prev,
+            receipt: file
+        }));
+
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setReceiptPreview(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        } else {
+            setReceiptPreview(null);
         }
     };
 
@@ -159,7 +268,28 @@ const CreateExpense: React.FC = () => {
         setReceiptPreview(null);
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleRemoveQueuedAttachment = async (attachmentId: string) => {
+        await removePendingAttachment(attachmentId);
+        refreshQueuedAttachments();
+        toast.info(
+            t('expenses.attachmentRemoved') ||
+            'Justificatif retiré de la file d’attente.'
+        );
+    };
+
+    const handleSyncQueuedAttachments = async () => {
+        if (!isOnline) {
+            toast.info(
+                t('expenses.syncWhenOnline') ||
+                'Reconnectez-vous pour envoyer les justificatifs.'
+            );
+            return;
+        }
+        await processAttachmentQueue();
+        refreshQueuedAttachments();
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
         if (!formData.description.trim()) {
@@ -174,6 +304,37 @@ const CreateExpense: React.FC = () => {
 
         if (!formData.expense_date) {
             toast.error(t('expenses.dateRequired'));
+            return;
+        }
+
+        if (!isOnline) {
+            try {
+                await saveOffline('expense', {
+                    id: draftId,
+                    description: formData.description,
+                    amount: Number(formData.amount),
+                    expense_date: formData.expense_date,
+                    category_id: formData.category,
+                    vendor: formData.vendor,
+                    project_id: formData.project_id || null,
+                    is_billable: formData.billable,
+                    notes: formData.notes,
+                    user_id: user?.id || null,
+                    synced: false,
+                    __offline: true,
+                });
+                toast.success(
+                    t('expenses.offlineQueued') ||
+                    'Dépense enregistrée hors ligne. Elle sera synchronisée automatiquement.'
+                );
+                navigate('/expenses');
+            } catch (error) {
+                console.error('Failed to save offline expense', error);
+                toast.error(
+                    t('expenses.offlineSaveError') ||
+                    'Impossible d’enregistrer la dépense hors ligne.'
+                );
+            }
             return;
         }
 
@@ -201,6 +362,13 @@ const CreateExpense: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {!isOnline && (
+                <div className="mb-6 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800 border border-amber-200">
+                    {t('expenses.offlineFormInfo') ||
+                        'Vous êtes hors ligne. Les dépenses seront synchronisées automatiquement dès que la connexion reviendra. Ajoutez les justificatifs plus tard si nécessaire.'}
+                </div>
+            )}
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -264,9 +432,15 @@ const CreateExpense: React.FC = () => {
                                 name="category"
                                 value={formData.category}
                                 onChange={handleInputChange}
+                                list="expense-category-options"
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 placeholder={t('expenses.categoryPlaceholder')}
                             />
+                            <datalist id="expense-category-options">
+                                {categoryOptions?.map((category: any) => (
+                                    <option key={category.id} value={category.name} />
+                                ))}
+                            </datalist>
                         </div>
 
                         <div>
@@ -294,7 +468,7 @@ const CreateExpense: React.FC = () => {
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             >
                                 <option value="">{t('expenses.selectProject')}</option>
-                                {projectsData?.data?.map(project => (
+                                {(isOnline ? projectsData?.data : offlineProjects)?.map(project => (
                                     <option key={project.id} value={project.id}>
                                         {project.name}
                                     </option>
@@ -331,30 +505,77 @@ const CreateExpense: React.FC = () => {
                     </h2>
 
                     <div className="space-y-4">
-                        {!formData.receipt ? (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    {t('expenses.uploadReceipt')}
-                                </label>
-                                <div className="flex items-center justify-center w-full">
-                                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
-                                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                            <PhotoIcon className="w-8 h-8 mb-3 text-gray-400" />
-                                            <p className="mb-2 text-sm text-gray-500">
-                                                <span className="font-semibold">{t('expenses.clickToUpload')}</span> {t('expenses.orDragDrop')}
-                                            </p>
-                                            <p className="text-xs text-gray-500">{t('expenses.fileTypeHint')}</p>
-                                        </div>
-                                        <input
-                                            type="file"
-                                            className="hidden"
-                                            accept="image/*,.pdf"
-                                            onChange={handleFileChange}
-                                        />
-                                    </label>
+                        {queuedAttachments.length > 0 && (
+                            <div className="rounded-lg border border-dashed border-amber-300 bg-amber-50/60 p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                    <p className="text-sm font-medium text-amber-900">
+                                        {t('expenses.queuedReceipts') || 'Justificatifs en attente'}
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={handleSyncQueuedAttachments}
+                                        className="text-xs font-semibold text-amber-800 hover:underline"
+                                    >
+                                        {isOnline
+                                            ? (t('expenses.syncNow') || 'Synchroniser maintenant')
+                                            : (t('expenses.waitForConnection') || 'En attente de connexion')}
+                                    </button>
                                 </div>
+                                <ul className="space-y-2 text-sm text-amber-900">
+                                    {queuedAttachments.map((attachment) => (
+                                        <li
+                                            key={attachment.id}
+                                            className="flex items-center justify-between rounded bg-white/80 px-3 py-2"
+                                        >
+                                            <div>
+                                                <p className="font-medium">{attachment.fileName}</p>
+                                                <p className="text-xs text-amber-600">
+                                                    {(attachment.size / 1024).toFixed(1)} KB • {attachment.mimeType}
+                                                </p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveQueuedAttachment(attachment.id)}
+                                                className="text-xs text-amber-700 hover:text-amber-900"
+                                            >
+                                                {t('common.remove') || 'Retirer'}
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
                             </div>
-                        ) : (
+                        )}
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                {t('expenses.uploadReceipt')}
+                            </label>
+                            <div className="flex items-center justify-center w-full">
+                                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
+                                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                        <PhotoIcon className="w-8 h-8 mb-3 text-gray-400" />
+                                        <p className="mb-2 text-sm text-gray-500">
+                                            <span className="font-semibold">{t('expenses.clickToUpload')}</span> {t('expenses.orDragDrop')}
+                                        </p>
+                                        <p className="text-xs text-gray-500">{t('expenses.fileTypeHint')}</p>
+                                    </div>
+                                    <input
+                                        type="file"
+                                        className="hidden"
+                                        accept="image/*,.pdf"
+                                        onChange={handleFileChange}
+                                    />
+                                </label>
+                            </div>
+                            {!isOnline && (
+                                <p className="mt-3 text-sm text-amber-600">
+                                    {t('expenses.offlineAttachmentInfo') ||
+                                        'Les justificatifs sélectionnés hors ligne sont enregistrés localement et seront envoyés automatiquement.'}
+                                </p>
+                            )}
+                        </div>
+
+                        {formData.receipt && (
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                                     <div className="flex items-center">

@@ -6,6 +6,8 @@
 import initSqlJs, { Database, SqlJsStatic } from 'sql.js';
 import { checkStorageQuota, isIOSDevice } from './platform';
 
+export const OFFLINE_ENTITY_EVENT = 'tim2-offline-entity-saved';
+
 export interface OfflineDB {
     db: Database;
     save: (type: string, data: any) => Promise<void>;
@@ -17,6 +19,17 @@ export interface OfflineDB {
     countPendingChanges: () => Promise<number>;
     clearAll: () => Promise<void>;
     close: () => void;
+    getQueuedEntities: (types?: string[]) => Promise<SyncQueueEntry[]>;
+    deleteQueueEntry: (id: number) => Promise<void>;
+    queueDelete: (type: string, entityId: string) => Promise<void>;
+}
+
+export interface SyncQueueEntry {
+    id: number;
+    entityType: string;
+    entityId: string;
+    action: string;
+    payload: any;
 }
 
 let SQL: SqlJsStatic;
@@ -24,6 +37,76 @@ let dbInstance: OfflineDB | null = null;
 
 // Storage quota warning state
 let hasWarnedAboutQuota = false;
+const OFFLINE_DB_STORAGE_KEY = 'offlineDb';
+const OFFLINE_TENANT_KEY = 'offlineDbTenant';
+const IDB_SNAPSHOT_DB = 'tim2-offline-cache';
+const IDB_SNAPSHOT_STORE = 'snapshots';
+const IDB_SNAPSHOT_KEY = 'offlineDb';
+let cachedWasmBinary: ArrayBuffer | null = null;
+
+function safeGetLocalStorage(key: string): string | null {
+    if (typeof window === 'undefined') {
+        return null;
+    }
+    try {
+        return localStorage.getItem(key);
+    } catch (error) {
+        console.warn(`localStorage get failed for ${key}`, error);
+        return null;
+    }
+}
+
+function safeSetLocalStorage(key: string, value: string | null): void {
+    if (typeof window === 'undefined') {
+        return;
+    }
+    try {
+        if (value === null) {
+            localStorage.removeItem(key);
+        } else {
+            localStorage.setItem(key, value);
+        }
+    } catch (error) {
+        console.warn(`localStorage set failed for ${key}`, error);
+    }
+}
+
+function getActiveTenantId(): string | null {
+    if (typeof window === 'undefined') {
+        return null;
+    }
+    const direct = safeGetLocalStorage('tenant_id');
+    if (direct) {
+        return direct;
+    }
+    const storedUser = safeGetLocalStorage('user');
+    if (!storedUser) {
+        return null;
+    }
+    try {
+        const parsed = JSON.parse(storedUser);
+        return parsed?.tenant_id ?? null;
+    } catch {
+        return null;
+    }
+}
+
+function uint8ArrayToBase64(buffer: Uint8Array): string {
+    const globalBuffer = typeof globalThis !== 'undefined' ? (globalThis as any).Buffer : undefined;
+    if (typeof window === 'undefined' && globalBuffer) {
+        return globalBuffer.from(buffer).toString('base64');
+    }
+
+    let binary = '';
+    const chunkSize = 0x8000;
+
+    for (let i = 0; i < buffer.length; i += chunkSize) {
+        const chunk = buffer.subarray(i, i + chunkSize);
+        binary += String.fromCharCode.apply(null, Array.from(chunk));
+    }
+
+    return btoa(binary);
+}
 
 /**
  * Initialize SQLite WASM database
@@ -35,23 +118,52 @@ export async function initOfflineDB(): Promise<OfflineDB> {
 
     try {
         // Load SQLite WASM
+        const wasmBinary = await loadSqlWasmBinary();
         SQL = await initSqlJs({
-            locateFile: file => `/wasm/${file}`
+            wasmBinary,
         });
 
         // Create or load database
         let db: Database;
-        const savedDb = localStorage.getItem('offlineDb');
+        const currentTenantId = getActiveTenantId();
+        const storedTenantId = safeGetLocalStorage(OFFLINE_TENANT_KEY);
+        const shouldResetTenant = Boolean(currentTenantId && storedTenantId && currentTenantId !== storedTenantId);
+
+        if (shouldResetTenant) {
+            safeSetLocalStorage(OFFLINE_DB_STORAGE_KEY, null);
+            await deleteSnapshotFromIndexedDB();
+        }
+
+        let savedDb: string | null = null;
+        if (!shouldResetTenant) {
+            savedDb = await loadSnapshotFromIndexedDB();
+            if (!savedDb) {
+                savedDb = safeGetLocalStorage(OFFLINE_DB_STORAGE_KEY);
+            }
+        }
 
         if (savedDb) {
-            const buff = Uint8Array.from(atob(savedDb), c => c.charCodeAt(0));
-            db = new SQL.Database(buff);
+            try {
+                const buff = Uint8Array.from(atob(savedDb), c => c.charCodeAt(0));
+                db = new SQL.Database(buff);
+            } catch (error) {
+                console.warn('Failed to restore offline database snapshot. Resetting...', error);
+                safeSetLocalStorage(OFFLINE_DB_STORAGE_KEY, null);
+                await deleteSnapshotFromIndexedDB();
+                db = new SQL.Database();
+            }
         } else {
             db = new SQL.Database();
-
-            // Create tables
-            createTables(db);
         }
+
+        if (currentTenantId) {
+            safeSetLocalStorage(OFFLINE_TENANT_KEY, currentTenantId);
+        } else if (!currentTenantId && storedTenantId) {
+            safeSetLocalStorage(OFFLINE_TENANT_KEY, null);
+        }
+
+        // Ensure tables exist even on older snapshots
+        createTables(db);
 
         // Create the OfflineDB instance
         dbInstance = {
@@ -64,6 +176,9 @@ export async function initOfflineDB(): Promise<OfflineDB> {
             markAsSynced: (type: string, localId: string) => markAsSynced(db, type, localId),
             countPendingChanges: () => countPendingChanges(db),
             clearAll: () => clearAllData(db),
+            getQueuedEntities: (types?: string[]) => getQueuedEntities(db, types),
+            deleteQueueEntry: (id: number) => deleteQueueEntry(db, id),
+            queueDelete: (type: string, entityId: string) => queueDelete(db, type, entityId),
             close: () => {
                 saveToLocalStorage(db);
                 db.close();
@@ -194,6 +309,29 @@ function createTables(db: Database): void {
         )
     `);
 
+    // Expense categories table
+    db.run(`
+        CREATE TABLE IF NOT EXISTS expense_categories (
+            id TEXT PRIMARY KEY,
+            name TEXT,
+            description TEXT,
+            color TEXT,
+            data TEXT,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
+    // Users table (for offline access)
+    db.run(`
+        CREATE TABLE IF NOT EXISTS users (
+            id TEXT PRIMARY KEY,
+            name TEXT,
+            email TEXT,
+            data TEXT,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
     // Sync queue table
     db.run(`
         CREATE TABLE IF NOT EXISTS sync_queue (
@@ -219,19 +357,33 @@ function createTables(db: Database): void {
  * Save data to the database
  */
 async function saveData(db: Database, type: string, data: any): Promise<void> {
-    const localId = data.localId || generateLocalId();
-    const jsonData = JSON.stringify(data);
+    const timestamp = new Date().toISOString();
+    if (!data.created_at) {
+        data.created_at = timestamp;
+    }
+    if (!data.updated_at) {
+        data.updated_at = timestamp;
+    }
+
+    const ensureId = () => data.id || data.localId || data.local_id || generateLocalId();
 
     switch (type) {
-        case 'timeEntry':
+        case 'timeEntry': {
+            const localId = data.localId || data.local_id || data.id || generateLocalId();
+            const recordId = data.id || localId;
+            data.local_id = localId;
+            data.id = recordId;
+            const isServerOwned = recordId && !recordId.toString().startsWith('local_');
+            const jsonData = JSON.stringify(data);
+
             db.run(`
                 INSERT OR REPLACE INTO time_entries
                 (local_id, id, user_id, project_id, task_id, started_at, ended_at,
                  duration_seconds, description, is_billable, hourly_rate, data, synced)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `, [
                 localId,
-                data.id || null,
+                recordId,
                 data.user_id,
                 data.project_id,
                 data.task_id || null,
@@ -241,19 +393,28 @@ async function saveData(db: Database, type: string, data: any): Promise<void> {
                 data.description || '',
                 data.is_billable ? 1 : 0,
                 data.hourly_rate || 0,
-                jsonData
+                jsonData,
+                isServerOwned ? 1 : 0,
             ]);
-            break;
 
-        case 'invoice':
+            maybeQueueSync(db, type, localId, jsonData, recordId);
+            break;
+        }
+
+        case 'invoice': {
+            const localId = data.localId || data.local_id || data.id || generateLocalId();
+            const recordId = data.id || localId;
+            data.id = recordId;
+            const isServerOwned = recordId && !recordId.toString().startsWith('local_');
+            const jsonData = JSON.stringify(data);
             db.run(`
                 INSERT OR REPLACE INTO invoices
                 (local_id, id, client_id, project_id, invoice_number, invoice_date,
                  due_date, status, total, data, synced)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `, [
                 localId,
-                data.id || null,
+                recordId,
                 data.client_id,
                 data.project_id || null,
                 data.invoice_number || generateInvoiceNumber(),
@@ -261,19 +422,28 @@ async function saveData(db: Database, type: string, data: any): Promise<void> {
                 data.due_date,
                 data.status || 'draft',
                 data.total || 0,
-                jsonData
+                jsonData,
+                isServerOwned ? 1 : 0,
             ]);
-            break;
 
-        case 'expense':
+            maybeQueueSync(db, type, localId, jsonData, recordId);
+            break;
+        }
+
+        case 'expense': {
+            const recordId = ensureId();
+            data.id = recordId;
+            const localId = data.localId || data.local_id || recordId;
+            const isServerOwned = recordId && !recordId.toString().startsWith('local_');
+            const jsonData = JSON.stringify(data);
             db.run(`
                 INSERT OR REPLACE INTO expenses
                 (local_id, id, user_id, project_id, category_id, description,
                  amount, expense_date, is_billable, is_reimbursable, data, synced)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `, [
                 localId,
-                data.id || null,
+                recordId,
                 data.user_id,
                 data.project_id || null,
                 data.category_id || null,
@@ -282,17 +452,24 @@ async function saveData(db: Database, type: string, data: any): Promise<void> {
                 data.expense_date,
                 data.is_billable ? 1 : 0,
                 data.is_reimbursable ? 1 : 0,
-                jsonData
+                jsonData,
+                isServerOwned ? 1 : 0,
             ]);
-            break;
 
-        case 'project':
+            maybeQueueSync(db, type, recordId, jsonData, recordId);
+            break;
+        }
+
+        case 'project': {
+            const recordId = ensureId();
+            data.id = recordId;
+            const jsonData = JSON.stringify(data);
             db.run(`
                 INSERT OR REPLACE INTO projects
                 (id, client_id, name, code, status, billable_type, hourly_rate, data)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `, [
-                data.id,
+                recordId,
                 data.client_id,
                 data.name,
                 data.code || null,
@@ -301,30 +478,42 @@ async function saveData(db: Database, type: string, data: any): Promise<void> {
                 data.hourly_rate || null,
                 jsonData
             ]);
-            break;
 
-        case 'client':
+            maybeQueueSync(db, type, recordId, jsonData, data.id);
+            break;
+        }
+
+        case 'client': {
+            const recordId = ensureId();
+            data.id = recordId;
+            const jsonData = JSON.stringify(data);
             db.run(`
                 INSERT OR REPLACE INTO clients
                 (id, name, email, phone, client_type, data)
                 VALUES (?, ?, ?, ?, ?, ?)
             `, [
-                data.id,
+                recordId,
                 data.name,
                 data.email || null,
                 data.phone || null,
-                data.client_type,
+                data.client_type || 'standard',
                 jsonData
             ]);
-            break;
 
-        case 'task':
+            maybeQueueSync(db, type, recordId, jsonData, data.id);
+            break;
+        }
+
+        case 'task': {
+            const recordId = ensureId();
+            data.id = recordId;
+            const jsonData = JSON.stringify(data);
             db.run(`
                 INSERT OR REPLACE INTO tasks
                 (id, project_id, title, status, priority, assignee_id, data)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             `, [
-                data.id,
+                recordId,
                 data.project_id,
                 data.title,
                 data.status,
@@ -333,17 +522,83 @@ async function saveData(db: Database, type: string, data: any): Promise<void> {
                 jsonData
             ]);
             break;
-    }
+        }
 
-    // Add to sync queue if it's a change that needs syncing
-    if (['timeEntry', 'invoice', 'expense'].includes(type) && !data.id) {
-        db.run(`
-            INSERT INTO sync_queue (entity_type, entity_id, action, data)
-            VALUES (?, ?, 'create', ?)
-        `, [type, localId, jsonData]);
+        case 'expenseCategory': {
+            const recordId = ensureId();
+            data.id = recordId;
+            const jsonData = JSON.stringify(data);
+            db.run(`
+                INSERT OR REPLACE INTO expense_categories
+                (id, name, description, color, data)
+                VALUES (?, ?, ?, ?, ?)
+            `, [
+                recordId,
+                data.name,
+                data.description || null,
+                data.color || null,
+                jsonData,
+            ]);
+            break;
+        }
+
+        case 'user': {
+            const recordId = ensureId();
+            data.id = recordId;
+            const jsonData = JSON.stringify(data);
+            db.run(`
+                INSERT OR REPLACE INTO users
+                (id, name, email, data)
+                VALUES (?, ?, ?, ?)
+            `, [
+                recordId,
+                data.name,
+                data.email || null,
+                jsonData,
+            ]);
+            break;
+        }
+
+        default:
+            break;
     }
 
     saveToLocalStorage(db);
+    emitOfflineEntityEvent(type, data);
+}
+
+function shouldQueueSync(type: string): boolean {
+    return ['timeEntry', 'invoice', 'expense', 'client', 'project', 'task', 'expenseCategory'].includes(type);
+}
+
+function maybeQueueSync(db: Database, type: string, entityId: string, payload: string, serverId: string | null | undefined): void {
+    if (!shouldQueueSync(type)) {
+        return;
+    }
+
+    const isTemporaryId = !serverId || serverId.toString().startsWith('local_');
+    const action = isTemporaryId ? 'create' : 'update';
+
+    // Check if already in queue for this entity
+    const stmt = db.prepare('SELECT id FROM sync_queue WHERE entity_type = ? AND entity_id = ? LIMIT 1');
+    stmt.bind([type, entityId]);
+    const hasExisting = stmt.step();
+    stmt.free();
+
+    if (hasExisting) {
+        // Update existing queue entry
+        db.run(`
+            UPDATE sync_queue
+            SET action = ?, data = ?, created_at = CURRENT_TIMESTAMP
+            WHERE entity_type = ? AND entity_id = ?
+        `, [action, payload, type, entityId]);
+    } else {
+        // Insert new queue entry
+        db.run(`
+            INSERT INTO sync_queue (entity_type, entity_id, action, data)
+            VALUES (?, ?, ?, ?)
+        `, [type, entityId, action, payload]);
+    }
 }
 
 /**
@@ -405,6 +660,15 @@ async function getData(db: Database, type: string, id?: string): Promise<any> {
                 stmt.bind([id]);
             } else {
                 stmt = db.prepare('SELECT data FROM tasks ORDER BY created_at DESC');
+            }
+            break;
+
+        case 'expenseCategories':
+            if (id) {
+                stmt = db.prepare('SELECT data FROM expense_categories WHERE id = ?');
+                stmt.bind([id]);
+            } else {
+                stmt = db.prepare('SELECT data FROM expense_categories ORDER BY name');
             }
             break;
 
@@ -484,18 +748,89 @@ async function getPendingExpenses(db: Database): Promise<any[]> {
  * Mark an item as synced
  */
 async function markAsSynced(db: Database, type: string, localId: string): Promise<void> {
-    const table = type === 'timeEntries' ? 'time_entries' :
-                  type === 'invoices' ? 'invoices' :
-                  type === 'expenses' ? 'expenses' : null;
+    const config: Record<string, { table: string; queueType: string }> = {
+        timeEntries: { table: 'time_entries', queueType: 'timeEntry' },
+        invoices: { table: 'invoices', queueType: 'invoice' },
+        expenses: { table: 'expenses', queueType: 'expense' },
+    };
 
-    if (table) {
-        db.run(`UPDATE ${table} SET synced = 1 WHERE local_id = ?`, [localId]);
-
-        // Remove from sync queue
-        db.run('DELETE FROM sync_queue WHERE entity_type = ? AND entity_id = ?', [type, localId]);
-
-        saveToLocalStorage(db);
+    const map = config[type];
+    if (!map) {
+        return;
     }
+
+    db.run(`UPDATE ${map.table} SET synced = 1 WHERE local_id = ?`, [localId]);
+    db.run('DELETE FROM sync_queue WHERE entity_type = ? AND entity_id = ?', [map.queueType, localId]);
+
+    saveToLocalStorage(db);
+}
+
+async function getQueuedEntities(db: Database, types?: string[]): Promise<SyncQueueEntry[]> {
+    let stmt;
+    if (types?.length) {
+        const placeholders = types.map(() => '?').join(',');
+        stmt = db.prepare(`SELECT id, entity_type, entity_id, action, data FROM sync_queue WHERE entity_type IN (${placeholders}) ORDER BY id`);
+        stmt.bind(types);
+    } else {
+        stmt = db.prepare('SELECT id, entity_type, entity_id, action, data FROM sync_queue ORDER BY id');
+    }
+
+    const entries: SyncQueueEntry[] = [];
+    while (stmt.step()) {
+        const row = stmt.getAsObject();
+        entries.push({
+            id: row.id as number,
+            entityType: row.entity_type as string,
+            entityId: row.entity_id as string,
+            action: row.action as string,
+            payload: parseJSON(row.data as string),
+        });
+    }
+    stmt.free();
+    return entries;
+}
+
+function parseJSON(value: string | null): any {
+    if (!value) return null;
+    try {
+        return JSON.parse(value);
+    } catch {
+        return null;
+    }
+}
+
+async function deleteQueueEntry(db: Database, id: number): Promise<void> {
+    db.run('DELETE FROM sync_queue WHERE id = ?', [id]);
+    saveToLocalStorage(db);
+}
+
+async function queueDelete(db: Database, type: string, entityId: string): Promise<void> {
+    if (!shouldQueueSync(type)) {
+        return;
+    }
+
+    // Check if already in queue for this entity
+    const stmt = db.prepare('SELECT id FROM sync_queue WHERE entity_type = ? AND entity_id = ? LIMIT 1');
+    stmt.bind([type, entityId]);
+    const hasExisting = stmt.step();
+    stmt.free();
+
+    if (hasExisting) {
+        // Update existing queue entry to delete action
+        db.run(`
+            UPDATE sync_queue
+            SET action = 'delete', data = NULL, created_at = CURRENT_TIMESTAMP
+            WHERE entity_type = ? AND entity_id = ?
+        `, [type, entityId]);
+    } else {
+        // Insert new delete queue entry
+        db.run(`
+            INSERT INTO sync_queue (entity_type, entity_id, action, data)
+            VALUES (?, ?, 'delete', NULL)
+        `, [type, entityId]);
+    }
+
+    saveToLocalStorage(db);
 }
 
 /**
@@ -514,6 +849,13 @@ async function countPendingChanges(db: Database): Promise<number> {
         stmt.free();
     }
 
+    const queueStmt = db.prepare('SELECT COUNT(*) as count FROM sync_queue');
+    if (queueStmt.step()) {
+        const row = queueStmt.getAsObject();
+        count += row.count as number;
+    }
+    queueStmt.free();
+
     return count;
 }
 
@@ -523,7 +865,7 @@ async function countPendingChanges(db: Database): Promise<number> {
 async function clearAllData(db: Database): Promise<void> {
     const tables = [
         'time_entries', 'invoices', 'expenses',
-        'projects', 'clients', 'tasks', 'sync_queue'
+        'projects', 'clients', 'tasks', 'expense_categories', 'sync_queue'
     ];
 
     for (const table of tables) {
@@ -540,9 +882,7 @@ async function saveToLocalStorage(db: Database): Promise<void> {
     try {
         const data = db.export();
         // Convert Uint8Array to base64 string for storage in browser
-        const base64String = btoa(
-            String.fromCharCode.apply(null, Array.from(data))
-        );
+        const base64String = uint8ArrayToBase64(data);
 
         const dataSize = base64String.length * 2; // UTF-16 encoding
         const dataSizeMB = (dataSize / 1024 / 1024).toFixed(2);
@@ -579,7 +919,8 @@ async function saveToLocalStorage(db: Database): Promise<void> {
             }
         }
 
-        localStorage.setItem('offlineDb', base64String);
+        safeSetLocalStorage(OFFLINE_DB_STORAGE_KEY, base64String);
+        await saveSnapshotToIndexedDB(base64String);
         console.debug(`Database saved: ${dataSizeMB} MB`);
 
     } catch (error) {
@@ -609,6 +950,10 @@ function generateLocalId(): string {
     return `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
+export function createLocalId(): string {
+    return generateLocalId();
+}
+
 /**
  * Generate a temporary invoice number
  */
@@ -621,4 +966,158 @@ function generateInvoiceNumber(): string {
  */
 export function getOfflineDB(): OfflineDB | null {
     return dbInstance;
+}
+
+const TABLE_MAP: Record<string, string> = {
+    timeEntry: 'time_entries',
+    timeEntries: 'time_entries',
+    'time-entries': 'time_entries',
+    invoice: 'invoices',
+    invoices: 'invoices',
+    expense: 'expenses',
+    expenses: 'expenses',
+    project: 'projects',
+    projects: 'projects',
+    client: 'clients',
+    clients: 'clients',
+    task: 'tasks',
+    tasks: 'tasks',
+    expenseCategory: 'expense_categories',
+    expenseCategories: 'expense_categories',
+    user: 'users',
+    users: 'users',
+};
+
+export async function deleteOfflineRecord(type: string, id: string): Promise<void> {
+    const table = TABLE_MAP[type];
+    if (!table) return;
+
+    const db = dbInstance?.db || (await initOfflineDB()).db;
+    const hasLocalColumn = ['time_entries', 'invoices', 'expenses'].includes(table);
+    if (hasLocalColumn) {
+        db.run(`DELETE FROM ${table} WHERE id = ? OR local_id = ?`, [id, id]);
+    } else {
+        db.run(`DELETE FROM ${table} WHERE id = ?`, [id]);
+    }
+    await saveToLocalStorage(db);
+}
+
+function emitOfflineEntityEvent(type: string, payload: any) {
+    if (typeof window === 'undefined') {
+        return;
+    }
+    try {
+        window.dispatchEvent(new CustomEvent(OFFLINE_ENTITY_EVENT, { detail: { type, payload } }));
+    } catch {
+        // ignore
+    }
+}
+
+async function loadSnapshotFromIndexedDB(): Promise<string | null> {
+    if (!('indexedDB' in globalThis)) {
+        return null;
+    }
+    try {
+        const db = await openSnapshotDB();
+        if (!db) {
+            return null;
+        }
+        return await new Promise((resolve, reject) => {
+            const tx = db.transaction(IDB_SNAPSHOT_STORE, 'readonly');
+            const store = tx.objectStore(IDB_SNAPSHOT_STORE);
+            const request = store.get(IDB_SNAPSHOT_KEY);
+            request.onsuccess = () => resolve((request.result as string) || null);
+            request.onerror = () => reject(request.error);
+        });
+    } catch (error) {
+        console.warn('Failed to load offline snapshot from IndexedDB', error);
+        return null;
+    }
+}
+
+async function saveSnapshotToIndexedDB(value: string): Promise<void> {
+    if (!('indexedDB' in globalThis)) {
+        return;
+    }
+    try {
+        const db = await openSnapshotDB();
+        if (!db) {
+            return;
+        }
+        await new Promise<void>((resolve, reject) => {
+            const tx = db.transaction(IDB_SNAPSHOT_STORE, 'readwrite');
+            const store = tx.objectStore(IDB_SNAPSHOT_STORE);
+            const request = store.put(value, IDB_SNAPSHOT_KEY);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    } catch (error) {
+        console.warn('Failed to save offline snapshot to IndexedDB', error);
+    }
+}
+
+async function deleteSnapshotFromIndexedDB(): Promise<void> {
+    if (!('indexedDB' in globalThis)) {
+        return;
+    }
+    try {
+        const db = await openSnapshotDB();
+        if (!db) {
+            return;
+        }
+        await new Promise<void>((resolve, reject) => {
+            const tx = db.transaction(IDB_SNAPSHOT_STORE, 'readwrite');
+            const store = tx.objectStore(IDB_SNAPSHOT_STORE);
+            const request = store.delete(IDB_SNAPSHOT_KEY);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    } catch (error) {
+        console.warn('Failed to delete offline snapshot from IndexedDB', error);
+    }
+}
+
+function openSnapshotDB(): Promise<IDBDatabase | null> {
+    return new Promise((resolve, reject) => {
+        if (!('indexedDB' in globalThis)) {
+            resolve(null);
+            return;
+        }
+        const request = indexedDB.open(IDB_SNAPSHOT_DB, 1);
+        request.onupgradeneeded = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains(IDB_SNAPSHOT_STORE)) {
+                db.createObjectStore(IDB_SNAPSHOT_STORE);
+            }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function loadSqlWasmBinary(): Promise<ArrayBuffer> {
+    if (cachedWasmBinary) {
+        return cachedWasmBinary;
+    }
+
+    if (typeof fetch === 'undefined') {
+        throw new Error('Fetch is not available to load sql-wasm.wasm');
+    }
+
+    const response = await fetch('/wasm/sql-wasm.wasm', {
+        credentials: 'same-origin',
+    });
+
+    if (!response.ok) {
+        throw new Error(`Unable to load sql-wasm.wasm (status ${response.status})`);
+    }
+
+    const buffer = await response.arrayBuffer();
+
+    if (!buffer || buffer.byteLength === 0) {
+        throw new Error('sql-wasm.wasm is empty');
+    }
+
+    cachedWasmBinary = buffer;
+    return buffer;
 }

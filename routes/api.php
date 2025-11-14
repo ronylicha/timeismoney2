@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\Api\ClientController;
 use App\Http\Controllers\Api\ProjectController;
+use App\Http\Controllers\Api\ProjectAttachmentController;
 use App\Http\Controllers\Api\TaskController;
 use App\Http\Controllers\Api\TimeEntryController;
 use App\Http\Controllers\Api\InvoiceController;
@@ -13,6 +14,8 @@ use App\Http\Controllers\Api\InvoiceTypeController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\ExpenseController;
+use App\Http\Controllers\Api\ExpenseCategoryController;
+use App\Http\Controllers\Api\ExpenseAttachmentController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\NotificationController;
@@ -88,6 +91,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/projects/{project}/time-entries', [ProjectController::class, 'timeEntries']);
     Route::get('/projects/{project}/kanban-tasks', [ProjectController::class, 'kanbanTasks']);
     Route::post('/projects/{project}/users', [ProjectController::class, 'assignUsers']);
+    Route::get('/projects/{project}/attachments', [ProjectAttachmentController::class, 'index']);
+    Route::post('/projects/{project}/attachments', [ProjectAttachmentController::class, 'store']);
+    Route::get('/projects/{project}/attachments/{attachment}', [ProjectAttachmentController::class, 'download'])->name('api.projects.attachments.download');
+    Route::delete('/projects/{project}/attachments/{attachment}', [ProjectAttachmentController::class, 'destroy']);
 
     // Tasks
     Route::get('/tasks/export', [TaskController::class, 'export']);
@@ -221,10 +228,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/payments/payment-intents/{paymentIntent}/cancel', [PaymentController::class, 'cancelPayment']);
     Route::post('/payments/{payment}/refund', [PaymentController::class, 'refundPayment']);
 
+    // Expense Categories
+    Route::apiResource('expense-categories', ExpenseCategoryController::class);
+
     // Expenses
     Route::apiResource('expenses', ExpenseController::class);
     Route::post('/expenses/{expense}/approve', [ExpenseController::class, 'approve']);
     Route::post('/expenses/{expense}/attach-receipt', [ExpenseController::class, 'attachReceipt']);
+    Route::get('/expenses/{expense}/attachments', [ExpenseAttachmentController::class, 'index']);
+    Route::post('/expenses/{expense}/attachments', [ExpenseAttachmentController::class, 'store']);
+    Route::get('/expenses/{expense}/attachments/{attachment}', [ExpenseAttachmentController::class, 'download'])->name('api.expenses.attachments.download');
+    Route::delete('/expenses/{expense}/attachments/{attachment}', [ExpenseAttachmentController::class, 'destroy']);
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index']);

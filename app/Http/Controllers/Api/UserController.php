@@ -158,7 +158,7 @@ class UserController extends Controller
         $user = $request->user();
 
         $validated = $request->validate([
-            'locale' => 'sometimes|string|in:en,fr,es',
+            'locale' => 'sometimes|string|in:en,fr,es,pt',
             'timezone' => 'sometimes|string|timezone',
             'date_format' => 'sometimes|string|max:20',
             'time_format' => 'sometimes|string|max:20',

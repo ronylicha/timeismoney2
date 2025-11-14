@@ -59,6 +59,9 @@ class FacturXService
         $startTime = microtime(true);
 
         try {
+            // Load required relations
+            $invoice->load(['quote']);
+
             // P3: Logging détaillé
             Log::info('FacturX generation requested', [
                 'invoice_id' => $invoice->id,
@@ -545,6 +548,22 @@ class FacturXService
                     'advance_date' => $advanceDate->format('Y-m-d'),
                 ]);
             }
+        }
+
+        // Référence au devis (si applicable)
+        if ($invoice->quote_id && $invoice->quote) {
+            $quoteDate = $invoice->quote->date instanceof \DateTime
+                ? $invoice->quote->date
+                : new \DateTime($invoice->quote->date);
+
+            $document->addDocumentNote(
+                "Devis de référence : {$invoice->quote->quote_number} du {$quoteDate->format('d/m/Y')}"
+            );
+
+            Log::debug('Added quote reference to FacturX', [
+                'quote_number' => $invoice->quote->quote_number,
+                'quote_date' => $quoteDate->format('Y-m-d'),
+            ]);
         }
 
         // Moyen de paiement

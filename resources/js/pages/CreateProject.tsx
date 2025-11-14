@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import axios from 'axios';
@@ -9,10 +9,24 @@ import {
     FolderIcon,
     CurrencyEuroIcon,
     CalendarIcon,
-    CheckCircleIcon
+    CheckCircleIcon,
+    DocumentIcon,
+    PhotoIcon,
 } from '@heroicons/react/24/outline';
 import { Project, Client } from '../types';
 import ClientSearchSelect from '../components/ClientSearchSelect';
+import { useOffline } from '@/contexts/OfflineContext';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { createLocalId } from '@/utils/offlineDB';
+import {
+    ATTACHMENT_QUEUE_EVENT,
+    PendingAttachmentRecord,
+    queueAttachmentUpload,
+    listPendingAttachmentsByEntity,
+    removePendingAttachment,
+    processAttachmentQueue,
+    reassignPendingAttachments,
+} from '@/utils/offlineAttachments';
 
 interface ProjectFormData {
     name: string;
@@ -37,6 +51,8 @@ interface ProjectFormData {
 const CreateProject: React.FC = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const isOnline = useOnlineStatus();
+    const { saveOffline } = useOffline();
     const [searchParams] = useSearchParams();
     const clientIdFromUrl = searchParams.get('client_id') || '';
 
@@ -59,6 +75,8 @@ const CreateProject: React.FC = () => {
         color: '#3B82F6',
         is_billable: true
     });
+    const [draftId] = useState(() => createLocalId());
+    const [queuedAttachments, setQueuedAttachments] = useState<PendingAttachmentRecord[]>([]);
 
     // Initialize client_id from URL parameter
     useEffect(() => {
@@ -70,15 +88,65 @@ const CreateProject: React.FC = () => {
         }
     }, [clientIdFromUrl]);
 
+    const refreshQueuedAttachments = useCallback(() => {
+        listPendingAttachmentsByEntity('projects', draftId)
+            .then(setQueuedAttachments)
+            .catch(() => setQueuedAttachments([]));
+    }, [draftId]);
+
+    useEffect(() => {
+        refreshQueuedAttachments();
+    }, [refreshQueuedAttachments]);
+
+    useEffect(() => {
+        const handler = () => refreshQueuedAttachments();
+        window.addEventListener(ATTACHMENT_QUEUE_EVENT, handler);
+        return () => window.removeEventListener(ATTACHMENT_QUEUE_EVENT, handler);
+    }, [refreshQueuedAttachments]);
+
+    const persistProjectToOffline = async (
+        payload: Partial<ProjectFormData> & { id?: string },
+        offlineDraft: boolean,
+        forcedId?: string
+    ) => {
+        try {
+            const tempId = forcedId || payload.id || createLocalId();
+            await saveOffline('project', {
+                ...payload,
+                id: tempId,
+                __offline: offlineDraft,
+                created_at: payload.created_at || new Date().toISOString(),
+            });
+        } catch (error) {
+            if (import.meta.env.DEV) {
+                console.warn('Failed to cache project offline', error);
+            }
+        }
+    };
+
     // Create project mutation
     const createProjectMutation = useMutation({
         mutationFn: async (data: ProjectFormData) => {
             const response = await axios.post('/projects', data);
             return response.data;
         },
-        onSuccess: (response) => {
+        onSuccess: async (response) => {
+            const payload = response?.project || response?.data || response;
+            if (payload) {
+                await persistProjectToOffline(payload, Boolean(response?.offline));
+                if (payload.id) {
+                    const pendingQueued = await listPendingAttachmentsByEntity('projects', draftId);
+                    if (pendingQueued.length) {
+                        await reassignPendingAttachments('projects', draftId, payload.id);
+                        await processAttachmentQueue();
+                        refreshQueuedAttachments();
+                    }
+                }
+            } else if (!isOnline) {
+                await persistProjectToOffline(formData, true, draftId);
+            }
             toast.success(t('projects.createSuccess'));
-            navigate(`/projects/${response.project.id}`);
+            navigate('/projects');
         },
         onError: (error: any) => {
             const message = error.response?.data?.message || t('projects.createError');
@@ -102,6 +170,56 @@ const CreateProject: React.FC = () => {
         }
     };
 
+    const handleAttachmentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf', 'application/zip'];
+        if (!allowedTypes.includes(file.type)) {
+            toast.error(t('projects.invalidAttachmentType') || 'Type de fichier non supporté');
+            e.target.value = '';
+            return;
+        }
+
+        if (file.size > 10 * 1024 * 1024) {
+            toast.error(t('projects.attachmentTooLarge') || 'Fichier trop volumineux (10 MB max)');
+            e.target.value = '';
+            return;
+        }
+
+        try {
+            await queueAttachmentUpload({
+                entityType: 'projects',
+                entityId: draftId,
+                file,
+            });
+            refreshQueuedAttachments();
+            toast.success(
+                t('projects.attachmentQueued') ||
+                'Pièce jointe ajoutée. Elle sera synchronisée après enregistrement.'
+            );
+        } catch (error) {
+            toast.error(t('projects.attachmentQueueError') || 'Impossible d’ajouter la pièce jointe.');
+        }
+
+        e.target.value = '';
+    };
+
+    const handleRemoveQueuedAttachment = async (attachmentId: string) => {
+        await removePendingAttachment(attachmentId);
+        refreshQueuedAttachments();
+        toast.info(t('projects.attachmentRemoved') || 'Pièce jointe retirée.');
+    };
+
+    const handleSyncQueuedAttachments = async () => {
+        if (!isOnline) {
+            toast.info(t('projects.waitForConnection') || 'Reconnectez-vous pour envoyer les pièces jointes.');
+            return;
+        }
+        await processAttachmentQueue();
+        refreshQueuedAttachments();
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -112,6 +230,30 @@ const CreateProject: React.FC = () => {
 
         if (!formData.client_id) {
             toast.error(t('projects.clientRequired'));
+            return;
+        }
+
+        if (!isOnline) {
+            const payload = {
+                ...formData,
+                id: draftId,
+                created_at: new Date().toISOString(),
+                __offline: true,
+            };
+            persistProjectToOffline(payload, true, draftId)
+                .then(() => {
+                    toast.success(
+                        t('projects.createSuccess') ||
+                        'Projet enregistré hors ligne. Il sera synchronisé automatiquement.'
+                    );
+                    navigate(`/projects/${draftId}`);
+                })
+                .catch(() => {
+                    toast.error(
+                        t('projects.createError') ||
+                        'Impossible d’enregistrer le projet hors ligne.'
+                    );
+                });
             return;
         }
 
@@ -160,6 +302,13 @@ const CreateProject: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {!isOnline && (
+                <div className="mb-6 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800 border border-amber-200">
+                    {t('projects.offlineFormInfo') ||
+                        'Vous pouvez continuer à créer des projets hors ligne. Ils seront synchronisés dès que la connexion reviendra.'}
+                </div>
+            )}
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -517,6 +666,86 @@ const CreateProject: React.FC = () => {
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
                         </div>
+                    </div>
+                </div>
+
+                {/* Attachments */}
+                <div className="bg-white rounded-lg shadow p-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <DocumentIcon className="h-5 w-5 mr-2" />
+                        {t('projects.attachments') || 'Pièces jointes'}
+                    </h2>
+
+                    {queuedAttachments.length > 0 && (
+                        <div className="mb-4 rounded-lg border border-dashed border-amber-300 bg-amber-50/60 p-4">
+                            <div className="flex items-center justify-between mb-2">
+                                <p className="text-sm font-medium text-amber-900">
+                                    {t('projects.queuedAttachments') || 'Fichiers en attente'}
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={handleSyncQueuedAttachments}
+                                    className="text-xs font-semibold text-amber-800 hover:underline"
+                                >
+                                    {isOnline
+                                        ? (t('projects.syncNow') || 'Synchroniser maintenant')
+                                        : (t('projects.waitForConnection') || 'En attente de connexion')}
+                                </button>
+                            </div>
+                            <ul className="space-y-2 text-sm text-amber-900">
+                                {queuedAttachments.map((attachment) => (
+                                    <li
+                                        key={attachment.id}
+                                        className="flex items-center justify-between rounded bg-white/80 px-3 py-2"
+                                    >
+                                        <div>
+                                            <p className="font-medium">{attachment.fileName}</p>
+                                            <p className="text-xs text-amber-600">
+                                                {(attachment.size / 1024).toFixed(1)} KB • {attachment.mimeType}
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveQueuedAttachment(attachment.id)}
+                                            className="text-xs text-amber-700 hover:text-amber-900"
+                                        >
+                                            {t('common.remove') || 'Retirer'}
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            {t('projects.addAttachment') || 'Ajouter une pièce jointe'}
+                        </label>
+                        <div className="flex items-center justify-center w-full">
+                            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
+                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                    <PhotoIcon className="w-8 h-8 mb-3 text-gray-400" />
+                                    <p className="mb-2 text-sm text-gray-500">
+                                        <span className="font-semibold">{t('projects.clickToUpload') || 'Cliquez pour téléverser'}</span> {t('projects.orDragDrop') || 'ou glissez-déposez'}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                        {t('projects.attachmentHint') || 'Images, PDF ou ZIP — 10 MB max'}
+                                    </p>
+                                </div>
+                                <input
+                                    type="file"
+                                    className="hidden"
+                                    accept="image/*,.pdf,.zip"
+                                    onChange={handleAttachmentUpload}
+                                />
+                            </label>
+                        </div>
+                        {!isOnline && (
+                            <p className="mt-3 text-sm text-amber-600">
+                                {t('projects.attachmentsOfflineHelp') ||
+                                    'Les pièces jointes sont stockées localement et seront envoyées automatiquement après synchronisation.'}
+                            </p>
+                        )}
                     </div>
                 </div>
 

@@ -16,6 +16,7 @@ import {
 import { Client } from '../types';
 import AddressAutocomplete from '../components/AddressAutocomplete';
 import { COUNTRIES } from '../constants/countries';
+import { useOffline } from '@/contexts/OfflineContext';
 
 interface ClientFormData {
     name: string;
@@ -47,6 +48,7 @@ const EditClient: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
+    const { isOnline, getOfflineData, saveOffline } = useOffline();
 
     const [formData, setFormData] = useState<ClientFormData>({
         name: '',
@@ -73,16 +75,35 @@ const EditClient: React.FC = () => {
         notes: ''
     });
     const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
+    const [offlineClient, setOfflineClient] = useState<Client | null>(null);
+    const [loadingOffline, setLoadingOffline] = useState(false);
+    const isLocalClient = id?.startsWith('local_');
+    const shouldFetchOnline = !!id && isOnline && !isLocalClient;
 
     // Fetch client details
-    const { data: client, isLoading, error } = useQuery({
+    const { data: fetchedClient, isLoading, error } = useQuery({
         queryKey: ['client', id],
         queryFn: async () => {
             const response = await axios.get(`/clients/${id}`);
             return response.data;
         },
-        enabled: !!id,
+        enabled: shouldFetchOnline,
     });
+
+    useEffect(() => {
+        if (!shouldFetchOnline && id) {
+            setLoadingOffline(true);
+            getOfflineData('clients', id)
+                .then((data) => setOfflineClient(data || null))
+                .catch(() => setOfflineClient(null))
+                .finally(() => setLoadingOffline(false));
+        } else if (shouldFetchOnline) {
+            setOfflineClient(null);
+        }
+    }, [shouldFetchOnline, id, getOfflineData]);
+
+    const client = fetchedClient ?? offlineClient;
+    const isClientLoading = shouldFetchOnline ? isLoading : loadingOffline;
 
     // Update form when client data is loaded
     useEffect(() => {
@@ -97,7 +118,7 @@ const EditClient: React.FC = () => {
                 address: client.address || '',
                 city: client.city || '',
                 postal_code: client.postal_code || '',
-                country: client.country || 'FR', // Default to France as per DB default
+                country: client.country || 'FR',
                 phone: client.phone || '',
                 email: client.email || '',
                 website: client.website || '',
@@ -120,7 +141,14 @@ const EditClient: React.FC = () => {
             const response = await axios.put(`/clients/${id}`, data);
             return response.data;
         },
-        onSuccess: () => {
+        onSuccess: async () => {
+            if (id) {
+                await saveOffline('client', {
+                    ...formData,
+                    id,
+                    updated_at: new Date().toISOString(),
+                }).catch(() => {});
+            }
             toast.success(t('clients.clientUpdatedSuccess'));
             queryClient.invalidateQueries({ queryKey: ['client', id] });
             queryClient.invalidateQueries({ queryKey: ['clients'] });
@@ -213,6 +241,20 @@ const EditClient: React.FC = () => {
             }
         }
 
+        if (!isOnline) {
+            toast.info(
+                t('clients.offlineQueued') ||
+                'Modification enregistrée hors ligne. Elle sera synchronisée automatiquement lorsque la connexion reviendra.'
+            );
+        }
+
+        if (!isOnline) {
+            toast.info(
+                t('clients.offlineFormInfo') ||
+                'Mode hors ligne : les modifications seront synchronisées automatiquement.'
+            );
+        }
+
         updateClientMutation.mutate(formData);
     };
 
@@ -240,7 +282,7 @@ const EditClient: React.FC = () => {
         return `${baseClass} border-gray-300 focus:ring-blue-500 focus:border-transparent`;
     };
 
-    if (isLoading) {
+    if (isClientLoading) {
         return (
             <div className="flex items-center justify-center h-screen">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -248,7 +290,7 @@ const EditClient: React.FC = () => {
         );
     }
 
-    if (error || !client) {
+    if ((error && shouldFetchOnline) || (!client && !isClientLoading)) {
         return (
             <div className="p-6">
                 <div className="bg-white rounded-lg shadow p-12 text-center">
@@ -287,6 +329,13 @@ const EditClient: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {!isOnline && (
+                <div className="mb-6 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800 border border-amber-200">
+                    {t('clients.offlineFormInfo') ||
+                        'Vous travaillez hors ligne. Toute mise à jour client sera synchronisée dès que la connexion sera rétablie.'}
+                </div>
+            )}
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-6">

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { User, LoginCredentials, RegisterData } from '../types';
 import { toast } from 'react-toastify';
+import { syncServiceWorkerAuthToken } from '../utils/serviceWorker';
 
 interface AuthContextValue {
     user: User | null;
@@ -63,6 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 console.error('Error status:', error.response?.status);
             }
             localStorage.removeItem('auth_token');
+            syncServiceWorkerAuthToken(null);
             setUser(null);
         } finally {
             setIsLoading(false);
@@ -96,6 +98,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 console.log('Storing auth token:', token.substring(0, 20) + '...');
             }
             localStorage.setItem('auth_token', token);
+            syncServiceWorkerAuthToken(token);
             setUser(user);
 
             toast.success('Successfully logged in!');
@@ -128,6 +131,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             localStorage.removeItem('2fa_token');
             localStorage.setItem('auth_token', token);
+            syncServiceWorkerAuthToken(token);
             setUser(user);
 
             toast.success('2FA verification successful!');
@@ -150,6 +154,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const { user, token } = response.data;
 
             localStorage.setItem('auth_token', token);
+            syncServiceWorkerAuthToken(token);
             setUser(user);
 
             toast.success('Registration successful! Welcome to TimeIsMoney!');
@@ -180,6 +185,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.error('Logout error:', error);
         } finally {
             localStorage.removeItem('auth_token');
+            syncServiceWorkerAuthToken(null);
             localStorage.removeItem('user');
             setUser(null);
             setIsLoading(false);

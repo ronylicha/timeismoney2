@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
@@ -20,6 +20,15 @@ import {
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { User, PaginatedResponse } from '../types';
+import AttachmentManager from '../components/Attachments/AttachmentManager';
+import { useOffline } from '@/contexts/OfflineContext';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import ViewModeSelector, { ViewMode } from '../components/ViewModeSelector';
+import TasksList from '../components/Tasks/TasksList';
+import KanbanView from '../components/Kanban/KanbanView';
+
+// Lazy load GanttChart for better initial load performance
+const GanttChart = lazy(() => import('../components/Gantt/GanttChart'));
 
 interface Task {
     id: number;
@@ -65,19 +74,60 @@ const ProjectDetail: React.FC = () => {
     const [selectedUserId, setSelectedUserId] = useState('');
     const [selectedRole, setSelectedRole] = useState<'manager' | 'member' | 'viewer'>('member');
     const [memberHourlyRate, setMemberHourlyRate] = useState('');
+    const [viewMode, setViewMode] = useState<ViewMode>(() => {
+        const saved = localStorage.getItem('projectViewMode');
+        return (saved as ViewMode) || 'list';
+    });
     const isNewProject = !id || id === 'new';
+    const isOnline = useOnlineStatus();
+    const { getOfflineData } = useOffline();
+    const [offlineProject, setOfflineProject] = useState<any>(null);
+    const [offlineLoading, setOfflineLoading] = useState(false);
+    const isLocalProject = id?.startsWith('local_');
+    const shouldFetchOnline = !isNewProject && !!id && isOnline && !isLocalProject;
 
-    // Fetch project details (skip if creating new project)
-    const { data: project, isLoading } = useQuery({
+    const { data: projectData, isLoading } = useQuery({
         queryKey: ['project', id],
         queryFn: async () => {
             const response = await axios.get(`/projects/${id}`);
             return response.data;
         },
-        enabled: !isNewProject, // Only fetch if we have a valid ID
+        enabled: shouldFetchOnline, // Only fetch if we have a valid ID and online
     });
 
-    // Fetch available tenant users
+    useEffect(() => {
+        if (!shouldFetchOnline && !isNewProject && id) {
+            setOfflineLoading(true);
+            Promise.all([
+                getOfflineData('projects', id),
+                getOfflineData('tasks'),
+                getOfflineData('timeEntries'),
+            ])
+                .then(([projectRecord, tasksData, entriesData]) => {
+                    if (!projectRecord) {
+                        setOfflineProject(null);
+                        return;
+                    }
+                    const tasksArray = Array.isArray(tasksData) ? tasksData : tasksData ? [tasksData] : [];
+                    const entriesArray = Array.isArray(entriesData) ? entriesData : entriesData ? [entriesData] : [];
+                    const relatedTasks = tasksArray.filter(task => String(task.project_id) === String(id));
+                    const relatedEntries = entriesArray.filter(entry => String(entry.project_id) === String(id));
+                    setOfflineProject({
+                        ...projectRecord,
+                        tasks: relatedTasks,
+                        time_entries: relatedEntries,
+                    });
+                })
+                .catch(() => setOfflineProject(null))
+                .finally(() => setOfflineLoading(false));
+        } else if (shouldFetchOnline) {
+            setOfflineProject(null);
+        }
+    }, [shouldFetchOnline, isNewProject, id, getOfflineData]);
+
+    const project = projectData ?? offlineProject;
+    const isProjectLoading = shouldFetchOnline ? isLoading : offlineLoading;
+
     const { data: availableUsers } = useQuery<PaginatedResponse<User>>({
         queryKey: ['users'],
         queryFn: async () => {
@@ -125,6 +175,16 @@ const ProjectDetail: React.FC = () => {
         },
     });
 
+    // Save view mode to localStorage when it changes
+    useEffect(() => {
+        localStorage.setItem('projectViewMode', viewMode);
+    }, [viewMode]);
+
+    // Handler for view mode change
+    const handleViewModeChange = (newMode: ViewMode) => {
+        setViewMode(newMode);
+    };
+
     const getStatusBadge = (status: string) => {
         const colors = {
             active: 'bg-green-100 text-green-800',
@@ -147,52 +207,6 @@ const ProjectDetail: React.FC = () => {
         );
     };
 
-    const getTaskStatusBadge = (status: string) => {
-        const colors = {
-            todo: 'bg-gray-100 text-gray-800',
-            in_progress: 'bg-blue-100 text-blue-800',
-            in_review: 'bg-purple-100 text-purple-800',
-            completed: 'bg-green-100 text-green-800',
-            cancelled: 'bg-red-100 text-red-800',
-        };
-
-        const labels = {
-            todo: t('tasks.todo'),
-            in_progress: t('tasks.inProgress'),
-            in_review: t('tasks.inReview'),
-            completed: t('tasks.completed'),
-            cancelled: t('tasks.cancelled'),
-        };
-
-        return (
-            <span className={`px-2 py-1 text-xs font-medium rounded-full ${colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800'}`}>
-                {labels[status as keyof typeof labels] || status}
-            </span>
-        );
-    };
-
-    const getPriorityBadge = (priority: string) => {
-        const colors = {
-            low: 'bg-gray-100 text-gray-800',
-            normal: 'bg-blue-100 text-blue-800',
-            high: 'bg-orange-100 text-orange-800',
-            urgent: 'bg-red-100 text-red-800',
-        };
-
-        const labels = {
-            low: t('tasks.low'),
-            normal: t('tasks.normal'),
-            high: t('tasks.high'),
-            urgent: t('tasks.urgent'),
-        };
-
-        return (
-            <span className={`px-2 py-1 text-xs font-medium rounded-full ${colors[priority as keyof typeof colors] || 'bg-gray-100 text-gray-800'}`}>
-                {labels[priority as keyof typeof labels] || priority}
-            </span>
-        );
-    };
-
     const formatDuration = (seconds: number) => {
         const hours = Math.floor(seconds / 3600);
         const minutes = Math.floor((seconds % 3600) / 60);
@@ -201,12 +215,12 @@ const ProjectDetail: React.FC = () => {
 
     const getTotalTime = () => {
         if (!project?.time_entries) return 0;
-        return project.time_entries.reduce((acc, entry) => acc + entry.duration_seconds, 0);
+        return project.time_entries.reduce((acc, entry) => acc + (entry.duration_seconds || (entry as any).duration || 0), 0);
     };
 
     const getCompletedTasksCount = () => {
         if (!project?.tasks) return 0;
-        return project.tasks.filter(task => task.status === 'completed').length;
+        return project.tasks.filter(task => task.status === 'done').length;
     };
 
     const getBudgetUsed = () => {
@@ -216,7 +230,7 @@ const ProjectDetail: React.FC = () => {
         return (cost / project.budget) * 100;
     };
 
-    if (isLoading) {
+    if (isProjectLoading) {
         return (
             <div className="flex items-center justify-center h-screen">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -268,13 +282,10 @@ const ProjectDetail: React.FC = () => {
                     </div>
 
                     <div className="flex items-center space-x-3 mt-4 md:mt-0">
-                        <Link
-                            to={`/projects/${id}/kanban`}
-                            className="flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition"
-                        >
-                            <ViewColumnsIcon className="h-5 w-5" />
-                            <span>{t('projects.kanban')}</span>
-                        </Link>
+                        <ViewModeSelector
+                            currentView={viewMode}
+                            onChange={handleViewModeChange}
+                        />
                         <Link
                             to={`/projects/${id}/edit`}
                             className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
@@ -493,70 +504,39 @@ const ProjectDetail: React.FC = () => {
                 </div>
             </div>
 
-            {/* Tasks Section */}
-            <div className="bg-white rounded-lg shadow mb-8">
-                <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-gray-900">{t('projects.tasks')}</h2>
-                    <Link
-                        to={`/tasks/new?project_id=${id}`}
-                        className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm"
-                    >
-                        <PlusIcon className="h-4 w-4" />
-                        <span>{t('tasks.newTask')}</span>
-                    </Link>
-                </div>
-
-                <div className="divide-y divide-gray-200">
-                    {project.tasks?.length === 0 ? (
-                        <div className="p-8 text-center text-gray-500">
-                            <ChartBarIcon className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                            <p>{t('projects.noTasks')}</p>
-                        </div>
-                    ) : (
-                        project.tasks?.map((task) => (
-                            <div key={task.id} className="p-6 hover:bg-gray-50 transition">
-                                <div className="flex items-start justify-between">
-                                    <div className="flex-1">
-                                        <div className="flex items-center space-x-3 mb-2">
-                                            <Link 
-                                                to={`/tasks/${task.id}`}
-                                                className="font-medium text-gray-900 hover:text-blue-600 transition"
-                                            >
-                                                {task.title}
-                                            </Link>
-                                            {getTaskStatusBadge(task.status)}
-                                            {getPriorityBadge(task.priority)}
-                                        </div>
-                                        {task.description && (
-                                            <p className="text-sm text-gray-600 mb-2">{task.description}</p>
-                                        )}
-                                        <div className="flex items-center space-x-4 text-sm text-gray-500">
-                                            {task.assigned_to && (
-                                                <span>{t('tasks.assignedTo')}: {task.assigned_to.name}</span>
-                                            )}
-                                            {task.due_date && (
-                                                <span>
-                                                    {t('tasks.dueDate')}: {format(new Date(task.due_date), 'dd MMM yyyy', { locale: fr })}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center space-x-2 ml-4">
-                                        <Link
-                                            to={`/tasks/${task.id}`}
-                                            className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 transition text-sm"
-                                            title={t('common.view')}
-                                        >
-                                            <EyeIcon className="h-4 w-4" />
-                                            <span>{t('common.view')}</span>
-                                        </Link>
-                                    </div>
-                                </div>
-                            </div>
-                        ))
-                    )}
-                </div>
+            {/* Attachments */}
+            <div className="bg-white rounded-lg shadow p-6 mb-8">
+                <AttachmentManager
+                    entityType="projects"
+                    entityId={String(project?.id || id || '')}
+                />
             </div>
+
+            {/* Tasks Section - Conditional rendering based on view mode */}
+            {viewMode === 'list' && (
+                <TasksList tasks={project.tasks || []} projectId={id || ''} />
+            )}
+
+            {viewMode === 'kanban' && (
+                <KanbanView tasks={project.tasks || []} projectId={id || ''} />
+            )}
+
+            {viewMode === 'gantt' && (
+                <Suspense
+                    fallback={
+                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-8 p-12 text-center">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                            <p className="text-gray-600 dark:text-gray-400">{t('projects.gantt.loading')}</p>
+                        </div>
+                    }
+                >
+                    <GanttChart
+                        tasks={project.tasks || []}
+                        projectId={id || ''}
+                        projectName={project.name}
+                    />
+                </Suspense>
+            )}
 
             {/* Team Members */}
             <div className="bg-white rounded-lg shadow mb-8">
@@ -620,7 +600,7 @@ const ProjectDetail: React.FC = () => {
                                     </div>
                                     <div className="text-right">
                                         <div className="text-lg font-semibold text-gray-900">
-                                            {formatDuration(entry.duration_seconds)}
+                                            {formatDuration(entry.duration_seconds || (entry as any).duration || 0)}
                                         </div>
                                     </div>
                                 </div>

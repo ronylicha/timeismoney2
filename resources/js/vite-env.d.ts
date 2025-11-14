@@ -8,3 +8,8 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
+
+declare module '*.wasm?arraybuffer' {
+  const src: ArrayBuffer;
+  export default src;
+}
