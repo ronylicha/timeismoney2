@@ -59,3 +59,10 @@ Schedule::command('vat:reset-annual')
     ->name('reset-annual-vat-revenue')
     ->withoutOverlapping()
     ->runInBackground();
+
+// Reset demo database - Run daily at midnight
+Schedule::command('migrate:fresh --force --seed')
+    ->dailyAt('00:00')
+    ->name('reset-demo-database')
+    ->withoutOverlapping()
+    ->runInBackground();

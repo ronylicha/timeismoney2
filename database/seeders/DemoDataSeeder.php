@@ -15,7 +15,7 @@ class DemoDataSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create demo tenant
+        // Create demo tenant with complete FacturX information
         $tenant = Tenant::firstOrCreate(
             ['slug' => 'demo'],
             [
@@ -24,10 +24,19 @@ class DemoDataSeeder extends Seeder
                 'email' => 'contact@timeismoney.com',
                 'phone' => '+33 1 23 45 67 89',
                 'address_line1' => '123 Rue de la Paix',
+                'address_line2' => 'Bâtiment A',
                 'city' => 'Paris',
                 'country' => 'FR',
                 'postal_code' => '75001',
                 'company_name' => 'Time Is Money Demo',
+                'legal_form' => 'SAS',
+                'siret' => '12345678901234', // Required for FacturX
+                'vat_number' => 'FR12345678901', // Required for FacturX
+                'rcs_number' => '123456789',
+                'rcs_city' => 'Paris',
+                'capital' => 10000.00,
+                'ape_code' => '6201Z',
+                'website' => 'https://demo.timeismoney.fr',
                 'is_active' => true,
             ]
         );

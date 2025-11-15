@@ -3,9 +3,9 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PublicQuoteController;
 
-// Landing page - serve welcome view
+// Redirect root to login
 Route::get('/', function () {
-    return view('welcome');
+    return redirect('/login');
 })->name('home');
 
 // Marketing pages
